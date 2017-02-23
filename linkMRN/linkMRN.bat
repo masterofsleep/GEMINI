@@ -1,0 +1,1 @@
+"C:\Users\guoyi\Documents\R\R-3.3.2\bin\R.exe" CMD BATCH "run.r"
