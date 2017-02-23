@@ -155,3 +155,14 @@ length(unique(overlapped.micro$EncID.new))
 
 micro[!EncID.new%in%overlapped.micro$EncID.new] -> check
 check2 <- check[!Hash%in%overlapped.micro$Hash]
+
+
+
+# -------------------- new sbk micro pos data ----------------------------------
+# ------------feb 23 2017, collection time added -------------------------------
+library(gemini)
+lib.pa()
+sbk.pos <- fread("R:/GEMINI/_RESTORE/SBK/Micro/sbk.micro_pos.nophi-2.csv")
+warnings()
+sbk.pos$EncID.new <- paste("12", sbk.pos$EncID.new, sep = "")
+fwrite(sbk.pos, "H:/GEMINI/Data/SBK/Micro/sbk.micro_pos.csv")
