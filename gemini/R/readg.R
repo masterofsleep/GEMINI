@@ -28,6 +28,3 @@ readg <- function(site = site, data_name = data_name, dt = FALSE, colClasses = N
     return(merge(dat, dad, by = "EncID.new"))
   }
 }
-
-
-

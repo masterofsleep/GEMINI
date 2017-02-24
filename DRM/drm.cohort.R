@@ -83,9 +83,10 @@ sbk.mic <- readg(sbk, micro_pos.csv, dt = T)
 cul.ns.paste <- paste(cul.ns$culture_test_cd, cul.ns$description, cul.ns$specimen_source,
                       sep = "")
 cul.ns.sbk <- sbk.mic[paste(culture_test_cd, description, specimen_source, sep = "")%in%
-                        cul.ns.paste]
+                        cul.ns.paste&
+                      mdy_hm(specimen_collection_datetime)>=ymd_hm(paste(Admit.Date, Admit.Time))&
+                      mdy_hm(specimen_collection_datetime)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
 
-# not done yet, collection time not available
 
 tgh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
                                   sheet = 3)%>%data.table
@@ -158,3 +159,16 @@ for(i in 1:length(files)){
   print(nrow(dat.ns))
   twh.ns.inc <- c(twh.ns.inc, dat.ns$EncID.new)
 }
+
+
+cul.inc <- c(cul.ns.smh$EncID.new,
+             cul.ns.sbk$EncID.new,
+             twh.ns.inc,
+             tgh.ns.inc)
+
+fwrite(data.table(cul.inc), "H:/GEMINI/Results/DRM/cul.ns.inc.csv")
+
+rm(list = ls())
+antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
+cul.inc <- fread("H:/GEMINI/Results/DRM/cul.ns.inc.csv")
+drm.cohort <- intersect(antibio.inc$drm.antibio.inc, cul.inc$cul.inc)
