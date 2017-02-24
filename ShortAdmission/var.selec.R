@@ -5,7 +5,7 @@ library(gemini)
 lib.pa()
 
 cohort <- fread("H:/GEMINI/Results/Shortadm/cohort.csv")
-cohort <- cohort[ymd(Admit.Date)>ymd("2011-03-31")]
+cohort <- cohort[ymd(Discharge.Date)>ymd("2011-03-31")]
 
 # charlson comorbidity index 
 smh.ip <- readg(smh, ip_diag)

@@ -404,3 +404,40 @@ uhn <- readg(uhn, dad)
 uhn[,':='(Admit.Date = mdy(Admit.Date),
           Discharge.Date = mdy(Discharge.Date))]
 fwrite(uhn, "H:/GEMINI/Data/UHN/CIHI/uhn.ip_dad.nophi.csv")
+
+
+
+
+# --------------------- feb 24 new varaible map --------------------------------
+msh.adm <- readg(msh, adm)
+drop <- c("phar", "diet", "trans")
+msh.adm[,c("phar", "diet", "trans"):=NULL]
+names(msh.adm) <- c("City", "Province", "Country","Language", "Admit_Date", 
+                    "Admit_Time", "EncID.new", "newHash")
+fwrite(msh.adm, "H:/GEMINI/Data/MSH/CIHI/msh.adm.nophi.csv")
+msh.adm[EncID.new%in%msh.adm$EncID.new[duplicated(msh.adm$EncID.new)]] -> check
+check[!duplicated(paste(check$EncID.new, check$newHash))] %>% fwrite("R:/GEMINI/Check/msh.discre.enc.hash.csv")
+library(gemini)
+lib.pa()
+smh <- readg(smh, adm)
+sbk <- readg(sbk, adm)
+uhn <- readg(uhn, adm)
+msh <- readg(msh, adm)
+thp<- readg(thp, adm)
+apply(smh, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(sbk, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(uhn, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(msh, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(thp, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+
+smh <- readg(smh, dad)
+sbk <- readg(sbk, dad)
+uhn <- readg(uhn, dad)
+msh <- readg(msh, dad)
+thp<- readg(thp, dad)
+apply(smh, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(sbk, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(uhn, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(msh, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(thp, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+ 

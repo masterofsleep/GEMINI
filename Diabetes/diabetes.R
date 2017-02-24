@@ -205,3 +205,99 @@ diabetes.tab2 <- function(){
 
 res2 <- diabetes.tab2()
 fwrite(res2, "H:/GEMINI/Results/Diabetes/table2.csv")
+
+
+
+
+# ----------------------- Feb 24 2017-------------------------------------------
+# ----------------------- new tables -------------------------------------------
+ip.diag <- readg(gim, ip_diag)
+er.diag <- readg(gim, er_diag)
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+dad <- dad[, .(EncID.new, Age, Gender, Discharge.Disposition, Number.of.ALC.Days,
+               Institution.Number, LoS, SCU.adm, Cost)]
+dbt.code <- c("E11", "E10")
+dbt <- union(ip.diag[startwith.any(Diagnosis.Code, dbt.code), EncID.new],
+             er.diag[startwith.any(ER.Diagnosis.Code, dbt.code), EncID.new])
+dad$diabetic <- dad$EncID.new%in%dbt
+
+mrd <- ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code = str_sub(Diagnosis.Code, 1, 3), EncID.new)]
+# icd10 <- fread("R:/GEMINI/Coding/CIHI/ICD10-2015-PARSED-CATEGORIES.txt",header = F)
+# icd10 <- rbind(icd10, data.table(Code = c("A17", "A90", "A91", 
+#                                                       "B24", "B59", "I84"),
+#                                  Diagnosis = c("Tuberculosis of nervous system",
+#                                                  "Dengue fever (classical dengue)",
+#                                                  "Dengue haemorrhagic fever",
+#                                                  "Unspecified human HIV disease",
+#                                                  "Pneumocystosis",
+#                                                  "Haemorrhoids")))
+# fwrite(icd10, "H:/GEMINI/Coding/icd10_3digit.csv")
+icd10 <- fread("H:/GEMINI/Coding/icd10_3digit.csv")
+names(icd10) <- c("Code", "Diagnosis")
+mrd <- merge(mrd, icd10, by.x = "Diagnosis.Code", by.y = "Code",
+                  all.x = T, all.y = F)
+
+dad <- merge(dad, mrd[,.(Diagnosis, EncID.new)], by = "EncID.new")
+dad <- dad[!is.na(Cost)]
+
+tab1 <- function(df, nr){
+  rbind(df[, .(
+    Diagnosis = "all",
+    "N(%)" = paste(length(EncID.new), " (",
+                   round(length(EncID.new)/nr*100, 1), ")", sep = ""),
+    cost.mean = round(mean(Cost), 1), 
+    cost.sd = round(sd(Cost), 1),
+    cost.median = round(median(Cost), 1),
+    cost.range = paste("(", round(min(Cost), 1),",",
+                       round(max(Cost), 1), ")", sep = ""),
+    cost.total = sum(Cost),
+    length.of.stay.mean = round(mean(LoS), 1),
+    length.of.stay.sd = round(sd(LoS), 1),
+    length.of.stay.median = round(median(LoS), 1),
+    "mortality(N(%))" = paste(sum(Discharge.Disposition=="7"), " (",
+                              round(sum(Discharge.Disposition=="7")/length(EncID.new)*100, 1),
+                              ")", sep = ""),
+    "ICU(N(%))" = paste(sum(SCU.adm), " (",
+                        round(sum(SCU.adm)/length(EncID.new)*100, 1),
+                        ")", sep = ""),
+    ALC.days.mean = round(mean(Number.of.ALC.Days, na.rm = T), 1), 
+    ALC.days.sd = round(sd(Number.of.ALC.Days, na.rm = T), 1),
+    ALC.days.median = round(median(Number.of.ALC.Days, na.rm = T), 1)
+  )],
+  ddply(df, ~Diagnosis, summarize,
+        "N(%)" = paste(length(EncID.new), " (",
+                       round(length(EncID.new)/nr*100, 1), ")", sep = ""),
+        cost.mean = round(mean(Cost), 1), 
+        cost.sd = round(sd(Cost), 1),
+        cost.median = round(median(Cost), 1),
+        cost.range = paste("(", round(min(Cost), 1),",",
+                           round(max(Cost), 1), ")", sep = ""),
+        cost.total = sum(Cost),
+        length.of.stay.mean = round(mean(LoS), 1),
+        length.of.stay.sd = round(sd(LoS), 1),
+        length.of.stay.median = round(median(LoS), 1),
+        "mortality(N(%))" = paste(sum(Discharge.Disposition=="7"), " (",
+                                  round(sum(Discharge.Disposition=="7")/length(EncID.new)*100, 1),
+                                  ")", sep = ""),
+        "ICU(N(%))" = paste(sum(SCU.adm), " (",
+                            round(sum(SCU.adm)/length(EncID.new)*100, 1),
+                            ")", sep = ""),
+        ALC.days.mean = round(mean(Number.of.ALC.Days, na.rm = T), 1), 
+        ALC.days.sd = round(sd(Number.of.ALC.Days, na.rm = T), 1),
+        ALC.days.median = round(median(Number.of.ALC.Days, na.rm = T), 1)
+        ))
+}
+nr = 138432
+all <- tab1(dad, 138432) 
+fwrite(all, "H:/GEMINI/Results/Diabetes/table1.new.all.csv")
+
+dad.diabetic <- dad[diabetic==T]
+nr = 38515
+dia <- tab1(dad.diabetic, 38515)
+fwrite(dia, "H:/GEMINI/Results/Diabetes/table1.new.diabetic.csv")
+  
+  
+dad.non.diabetic <- dad[diabetic==F]
+nr = 99917
+non.dia <- tab1(dad.non.diabetic, 99917)
+fwrite(non.dia, "H:/GEMINI/Results/Diabetes/table1.new.non.diabetic.csv")
