@@ -216,7 +216,17 @@ er.diag <- readg(gim, er_diag)
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 dad <- dad[, .(EncID.new, Age, Gender, Discharge.Disposition, Number.of.ALC.Days,
                Institution.Number, LoS, SCU.adm, Cost)]
-dbt.code <- c("E11", "E10")
+dbt.code <- c("E11", "E10")#, "E12", "E13", "E14")
+dbt.e10 <- union(ip.diag[startwith.any(Diagnosis.Code, "E10"), EncID.new],
+                 er.diag[startwith.any(ER.Diagnosis.Code, "E10"), EncID.new])
+dbt.e11 <- union(ip.diag[startwith.any(Diagnosis.Code, "E11"), EncID.new],
+                 er.diag[startwith.any(ER.Diagnosis.Code, "E11"), EncID.new])
+
+
+sum(dbt.e11%in%dad$EncID.new)
+sum(dbt.e10%in%dad$EncID.new&!dbt.e10%in%dbt.e11)
+sum(dbt.e10%in%dbt.e11&dbt.e10%in%dad$EncID.new)
+
 dbt <- union(ip.diag[startwith.any(Diagnosis.Code, dbt.code), EncID.new],
              er.diag[startwith.any(ER.Diagnosis.Code, dbt.code), EncID.new])
 dad$diabetic <- dad$EncID.new%in%dbt
@@ -237,11 +247,12 @@ names(icd10) <- c("Code", "Diagnosis")
 mrd <- merge(mrd, icd10, by.x = "Diagnosis.Code", by.y = "Code",
                   all.x = T, all.y = F)
 
-dad <- merge(dad, mrd[,.(Diagnosis, EncID.new)], by = "EncID.new")
+dad <- merge(dad, mrd[,.(Diagnosis.Code, Diagnosis, EncID.new)], by = "EncID.new")
 dad <- dad[!is.na(Cost)]
 
 tab1 <- function(df, nr){
   rbind(df[, .(
+    Diag.Code = "all",
     Diagnosis = "all",
     "N(%)" = paste(length(EncID.new), " (",
                    round(length(EncID.new)/nr*100, 1), ")", sep = ""),
@@ -265,6 +276,7 @@ tab1 <- function(df, nr){
     ALC.days.median = round(median(Number.of.ALC.Days, na.rm = T), 1)
   )],
   ddply(df, ~Diagnosis, summarize,
+        Diag.Code = Diagnosis.Code[1],
         "N(%)" = paste(length(EncID.new), " (",
                        round(length(EncID.new)/nr*100, 1), ")", sep = ""),
         cost.mean = round(mean(Cost), 1), 
@@ -301,3 +313,86 @@ dad.non.diabetic <- dad[diabetic==F]
 nr = 99917
 non.dia <- tab1(dad.non.diabetic, 99917)
 fwrite(non.dia, "H:/GEMINI/Results/Diabetes/table1.new.non.diabetic.csv")
+
+
+er5 <- er.diag[startwith.any(ER.Diagnosis.Code, c("E105", "E115"))] 
+ip5 <- ip.diag[startwith.any(Diagnosis.Code, c("E105", "E115"))]
+table(str_sub(er5$ER.Diagnosis.Code, 1, 4), er5$ER.Diagnosis.Type)
+table(str_sub(ip5$Diagnosis.Code, 1, 4), ip5$Diagnosis.Type)
+
+
+
+
+
+
+# ----------------------- add soft tissues and bone infections -----------------
+dad <- merge(dad, ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code, EncID.new)])
+dad.in <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==T]
+dad.out <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==F]
+
+
+dad.in[,
+       .("N(%)" = paste(length(EncID.new), " (",
+                      round(length(EncID.new)/38515*100, 1), ")", sep = ""),
+       cost.mean = round(mean(Cost), 1), 
+       cost.sd = round(sd(Cost), 1),
+       cost.median = round(median(Cost), 1),
+       cost.range = paste("(", round(min(Cost), 1),",",
+                          round(max(Cost), 1), ")", sep = ""),
+       cost.total = sum(Cost),
+       length.of.stay.mean = round(mean(LoS), 1),
+       length.of.stay.sd = round(sd(LoS), 1),
+       length.of.stay.median = round(median(LoS), 1),
+       "mortality(N(%))" = paste(sum(Discharge.Disposition=="7"), " (",
+                                 round(sum(Discharge.Disposition=="7")/length(EncID.new)*100, 1),
+                                 ")", sep = ""),
+       "ICU(N(%))" = paste(sum(SCU.adm), " (",
+                           round(sum(SCU.adm)/length(EncID.new)*100, 1),
+                           ")", sep = ""),
+       ALC.days.mean = round(mean(Number.of.ALC.Days, na.rm = T), 1), 
+       ALC.days.sd = round(sd(Number.of.ALC.Days, na.rm = T), 1),
+       ALC.days.median = round(median(Number.of.ALC.Days, na.rm = T), 1)
+       )]
+
+
+dad.out[,
+       .("N(%)" = paste(length(EncID.new), " (",
+                        round(length(EncID.new)/99917*100, 1), ")", sep = ""),
+         cost.mean = round(mean(Cost), 1), 
+         cost.sd = round(sd(Cost), 1),
+         cost.median = round(median(Cost), 1),
+         cost.range = paste("(", round(min(Cost), 1),",",
+                            round(max(Cost), 1), ")", sep = ""),
+         cost.total = sum(Cost),
+         length.of.stay.mean = round(mean(LoS), 1),
+         length.of.stay.sd = round(sd(LoS), 1),
+         length.of.stay.median = round(median(LoS), 1),
+         "mortality(N(%))" = paste(sum(Discharge.Disposition=="7"), " (",
+                                   round(sum(Discharge.Disposition=="7")/length(EncID.new)*100, 1),
+                                   ")", sep = ""),
+         "ICU(N(%))" = paste(sum(SCU.adm), " (",
+                             round(sum(SCU.adm)/length(EncID.new)*100, 1),
+                             ")", sep = ""),
+         ALC.days.mean = round(mean(Number.of.ALC.Days, na.rm = T), 1), 
+         ALC.days.sd = round(sd(Number.of.ALC.Days, na.rm = T), 1),
+         ALC.days.median = round(median(Number.of.ALC.Days, na.rm = T), 1)
+       )]
+
+
+dbt.diag <- dad.in
+nondbt.diag <- dad.out
+prop.p <- prop.test(c(nrow(dbt.diag), nrow(nondbt.diag)),
+                    c(nrow(dad), nrow(dad)))$p.value
+mort.p <- prop.test(c(sum(dbt.diag$Discharge.Disposition==4),
+                      sum(nondbt.diag$Discharge.Disposition==4)),
+                    c(nrow(dbt.diag), 
+                      nrow(nondbt.diag)))$p.value
+icu.p <- prop.test(c(sum(dbt.diag$SCU.adm==T),
+                     sum(nondbt.diag$SCU.adm==T)),
+                   c(nrow(dbt.diag), 
+                     nrow(nondbt.diag)))$p.value
+los.p <- t.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
+cost.p <- t.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
+alc.days.p <- t.test(dbt.diag$Number.of.ALC.Days, 
+                     nondbt.diag$Number.of.ALC.Days)$p.value
+c(prop.p, mort.p, icu.p, los.p, cost.p, alc.days.p)

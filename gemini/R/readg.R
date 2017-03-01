@@ -20,10 +20,10 @@ readg <- function(site = site, data_name = data_name, dt = FALSE, colClasses = N
                  colClasses = colClasses, showProgress = T,...)
     dat$EncID.new <- as.character(dat$EncID.new)
     dadpath <- files[grepl(site, files)&grepl("dad", files)]
-    dad <- fread(dadpath, na.strings = c(NA,NULL,"", "NA", " "),
-                 colClasses = colClasses, showProgress = T,...)[
-                   ,.(Admit.Date, Admit.Time, Discharge.Date, 
-                               Discharge.Time, EncID.new)]
+    col.name <- c("Admit.Date", "Admit.Time", "Discharge.Date", 
+                 "Discharge.Time", "EncID.new")
+    dad <- fread(dadpath, na.strings = c(NA,NULL,"", "NA", " "), select = col.name,
+                 colClasses = colClasses, showProgress = T,...)
     dad$EncID.new <- as.character(dad$EncID.new)
     return(merge(dat, dad, by = "EncID.new"))
   }

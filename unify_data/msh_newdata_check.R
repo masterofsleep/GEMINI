@@ -114,3 +114,20 @@ gim.rm.extra <- function(){
 }
 
 gim.rm.extra()
+
+# ---------------------------- Feb 28 2017 -------------------------------------
+# -------------------- further check discordant patients -----------------------
+
+rm(list = ls())
+library(gemini)
+lib.pa()
+msh <- fread("R:/GEMINI/_RESTORE/MSH/CIHI/msh.adm.nophi.csv")
+# compare with dad
+dad <- fread("H:/GEMINI/DataBackup/Data170214/MSH/CIHI/msh.ip_dad.nophi.csv")
+ggplot(dad[!EncID.new%in%msh$EncID.new],
+       aes(x = ymd(Discharge.Date))) + geom_histogram(binwidth = 10)
+ggplot(dad[!EncID.new%in%msh$EncID.new],
+       aes(x = ymd(Admit.Date))) + geom_histogram(binwidth = 10)
+ggplot(msh[!EncID.new%in%dad$EncID.new],
+       aes(x = ymd(ADMIT_DATE))) + geom_histogram(binwidth = 10)
+

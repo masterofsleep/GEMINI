@@ -113,3 +113,58 @@ uhn.vq <- uhn.rad[ProcedureName%in%uhn.vq.names&EncID.new%in%watson.enc.uhn,
 fwrite(uhn.ctpa, "H:/GEMINI/Results/WATSON/uhn.ctpa.csv")
 fwrite(uhn.du, "H:/GEMINI/Results/WATSON/uhn.du.csv")
 fwrite(uhn.vq, "H:/GEMINI/Results/WATSON/uhn.vq.csv")
+
+
+
+
+# -------------------------- SBK -----------------------------------------------
+sbk.ctpe.names <- c("CT Angio chest for pulmonary emboli",
+                    "CT Angiogram chest",
+                    "CT Angiogram chest, abdomen, pelvis",
+                    "CT Chest",
+                    "CT chest",
+                    "CT chest, abdomen, pelvis")
+sbk.vq.names <- c("Emerg-Lung Scan V/Q(Aero+PERF",
+                  "Lung Perfusion Scan",
+                  "Lung Scan Vent / Perf")
+sbk.du.names <- c("Abdomen Ltd.+Bil leg doppler",
+                  "Abdomen Ltd.+LT leg doppler",
+                  "Abdomen Ltd.+RT leg doppler",
+                  "Abdomen US + Right Leg Doppler",
+                  "Abdomen US + Left Leg Doppler",
+                  "Abdomen+Leg Doppler: Bil US",
+                  "Arm Venous C Doppler Bil US",
+                  "Arm Venous C Doppler Left US",
+                  "Arm Venous C Doppler Right US",
+                  "Leg Doppler Bilateral",
+                  "Leg Doppler Left",
+                  "Leg Doppler Right",
+                  "Subclavian/Jug Doppler US: RT",
+                  "Subclavian/Jug Doppler US:Left",
+                  "Subclavian/Jug Doppler US:BIL",
+                  "Venous Doppler & US:  Left leg",
+                  "Venous Doppler & US: Bil leg",
+                  "Venous Doppler & US: Right leg",
+                  "WB: Arm Venous C Doppler Left US",
+                  "WB: Leg Venous C Doppler Bilateral US",
+                  "WB: Leg Venous C Doppler Left US",
+                  "WB: Leg Venous C Doppler Right US",
+                  "Abdomen + pelvic + leg: bil US",
+                  "Groin doppler Bil: US")
+sbk.enc <- fread("R:/GEMINI/Sub-study Cohort 1/SBK.csv")
+sbk.enc$EncID.new <- paste("12", sbk.enc$EncID.new, sep = "")
+set.seed(1200)
+watson.enc.sbk <- sbk.enc$EncID.new[sample(nrow(sbk.enc), 1000)]
+
+sbk.rad <- readg(sbk, rad.csv)
+
+sbk.ctpa <- sbk.rad[Test.Name%in%sbk.ctpe.names&EncID.new%in%watson.enc.sbk,
+                    .(EncID.new, Test.Name, Results)]
+sbk.du <- sbk.rad[Test.Name%in%sbk.du.names&EncID.new%in%watson.enc.sbk,
+                  .(EncID.new, Test.Name, Results)]
+sbk.vq <- sbk.rad[Test.Name%in%sbk.vq.names&EncID.new%in%watson.enc.sbk,
+                  .(EncID.new, Test.Name, Results)]
+fwrite(sbk.ctpa, "H:/GEMINI/Results/WATSON/sbk.ctpa.csv")
+fwrite(sbk.du, "H:/GEMINI/Results/WATSON/sbk.du.csv")
+fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")
+

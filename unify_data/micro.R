@@ -166,3 +166,62 @@ sbk.pos <- fread("R:/GEMINI/_RESTORE/SBK/Micro/sbk.micro_pos.nophi-2.csv")
 warnings()
 sbk.pos$EncID.new <- paste("12", sbk.pos$EncID.new, sep = "")
 fwrite(sbk.pos, "H:/GEMINI/Data/SBK/Micro/sbk.micro_pos.csv")
+
+
+
+
+
+# ---------------------- feb 28 2017 -------------------------------------------
+# ---------------------- UHN Micro clean ---------------------------------------
+er <- readg(uhn, uhn.er.nophi)
+dad <- readg(uhn, dad)
+uhntime <- merge(er[,.(Triage.Date, Triage.Time, EncID.new)],
+                 dad[,.(Admit.Date, Admit.Time, Discharge.Date,
+                        Discharge.Time, EncID.new)], 
+                 by = "EncID.new", all.y = T)
+sum(duplicated(er))
+sum(duplicated(uhntime))
+er[EncID.new%in%er$EncID.new[duplicated(er$EncID.new)]]
+uhntime[EncID.new%in%uhntime$EncID.new[duplicated(uhntime$EncID.new)]]
+# duplicated encounter id in uhn er is caused by different blood transfer component
+
+uhntime <- unique(uhntime)
+uhntime[is.na(Triage.Date), ':='(
+  Triage.Date = Admit.Date,
+  Triage.Time = Admit.Time
+)]
+uhntime$EncID.new <- as.character(uhntime$EncID.new)
+setwd("R:/GEMINI/_RESTORE/UHN/Micro/TW")
+files <- list.files()
+for(i in files){
+  dat <- fread(i)
+  print(nrow(dat))
+  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
+  dat <- merge(dat, uhntime, by = "EncID.new", all.x = T)
+  dat <-dat[ymd(CDATE)>=ymd(Triage.Date)&
+            ymd(CDATE)<=ymd(Discharge.Date)]
+  print(nrow(dat))
+  #fwrite(dat, paste("H:/GEMINI/Data/UHN/Micro/TW/", i, sep = ""))
+}
+
+dat[,.(CDATE, CTIME, Triage.Date, Triage.Time, Discharge.Date,
+       Discharge.Time, EncID.new)] -> check
+
+
+
+setwd("R:/GEMINI/_RESTORE/UHN/Micro/TGH")
+files <- list.files()
+for(i in files){
+  print(i)
+  dat <- fread(i)
+  print(nrow(dat))
+  names(dat)[1:12] <- c("ORDER", "Sex", "BIL", "WARD",
+                        "ROOM", "BED","ADMDATE", "DISDATE",
+                        "CDATE", "CTIME", "AREA", "CurLoc")
+  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
+  dat <- merge(dat, uhntime, by = "EncID.new", all.x = T)
+  dat <-dat[ymd(CDATE)>=ymd(Triage.Date)&
+              ymd(CDATE)<=ymd(Discharge.Date)]
+  print(nrow(dat))
+  fwrite(dat, paste("H:/GEMINI/Data/UHN/Micro/TGH/", i, sep = ""))
+}

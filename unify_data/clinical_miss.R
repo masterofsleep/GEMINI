@@ -36,6 +36,8 @@ missing.cluster(sbk, micro_neg)
 missing.cluster(sbk, micro_pos.csv)
 missing.cluster(sbk, phar)
 missing.cluster(sbk, rad.csv)
+missing.cluster(sbk, rad_ip)
+missing.cluster(sbk, rad_er)
 
 # -------------------------------- UHN -----------------------------------------
 missing.cluster(uhn, echo) # missing last two years
@@ -53,3 +55,26 @@ missing.cluster(msh, phar)
 missing.cluster(msh, rad_ip)
 missing.cluster(msh, rad_er)
 missing.cluster(msh, trans)
+
+
+
+
+# -------- feb 27 2017 see if missing sbk lab er are in lab ip -----------------
+sbk.laber <- readg(sbk, labs_er, dt = TRUE)
+sbk.labip <- readg(sbk, labs_ip, dt = TRUE)
+check <- sbk.labip[EncID.new%in%sbk.labip[!EncID.new%in%sbk.laber$EncID.new, EncID.new]]
+check1 <- check[ymd_hms(Collection.DtTm)<ymd_hm(paste(Admit.Date, Admit.Time))]
+
+
+
+
+
+# --------------- feb 29 check all sbk clinical variables ----------------------
+dat <- readg(sbk, echo)
+dat <- readg(sbk, phar)
+dat <- readg(sbk, labs_er)
+dat <- readg(sbk, labs_ip)
+dat <- readg(sbk, micro_neg)
+dat <- readg(sbk, micro_pos.csv)
+dat <- readg(sbk, phar)
+dat <- readg(sbk, rad.csv)

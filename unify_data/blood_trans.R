@@ -50,6 +50,9 @@ sum(duplicated(rbind(sbk, sbk.dob)))
 sbk.dob$EncID.new <- paste("12", sbk.dob$EncID.new, sep = "")
 sbk$EncID.new <- paste("12", sbk$EncID.new, sep = "")
 
+
+fwrite(sbk, "H:/GEMINI/Data/SBK/Transfusion/sbk.trans.csv")
+fwrite(sbk.dob, "H:/GEMINI/Data/SBK/Transfusion/sbk.trans.dob.csv")
 dad <- readg(sbk, dad)
 dad$trans <- dad$EncID.new%in%sbk.dob$EncID.new
 

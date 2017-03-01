@@ -137,3 +137,14 @@ ddply(dad, ~Institution.Number, summarize,
 
 ddply(dad, ~Institution.Number, summarize, 
       picc.int = sum(picc.int==TRUE&picc.rad==FALSE))
+
+
+
+
+# ------------------------- Feb 27 2017 ----------------------------------------
+# --------------- MRN for records with PICC in rad or intervention only --------
+
+dad[picc.rad == T&picc.int == F&Institution.Number=="smh", .(EncID.new, Institution.Number)] %>% 
+  fwrite("H:/GEMINI/Results/PICC/smh.picc.rad.only.csv")
+dad[picc.int ==T&picc.rad ==F&Institution.Number=="smh", .(EncID.new, Institution.Number)] %>% 
+  fwrite("H:/GEMINI/Results/PICC/smh.picc.int.only.csv")

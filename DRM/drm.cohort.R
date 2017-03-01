@@ -72,7 +72,8 @@ names(smh.mic)[3] <- "Specimen_Collection_Date/Time"
 cul.ns.smh <- smh.mic[paste(Test_ID, Source, sep = "")%in%cul.ns.paste&
                       !is.na(Isolate_num)]
 cul.ns.smh <- cul.ns.smh[mdy_hm(`Specimen_Collection_Date/Time`)>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                      mdy_hm(`Specimen_Collection_Date/Time`)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+                      mdy_hm(`Specimen_Collection_Date/Time`)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
+                      EncID.new]
 
 #sbk 
 culture.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9.xlsx",
@@ -85,46 +86,64 @@ cul.ns.paste <- paste(cul.ns$culture_test_cd, cul.ns$description, cul.ns$specime
 cul.ns.sbk <- sbk.mic[paste(culture_test_cd, description, specimen_source, sep = "")%in%
                         cul.ns.paste&
                       mdy_hm(specimen_collection_datetime)>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                      mdy_hm(specimen_collection_datetime)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+                      mdy_hm(specimen_collection_datetime)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
+                      EncID.new]
 
 
+
+# UHN
+# Check the concordance bewteen the two marked files 
+uhn.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/UHN_Source Setup.xls",
+                                                                   sheet = 1)%>%data.table
 tgh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
                                   sheet = 3)%>%data.table
+tgh.marked[,':='(TEST = trimws(TEST),
+                 SRC = trimws(SRC),
+                 SITE = trimws(SITE))]
 tgh.ns <- tgh.marked[NonScreening==1]
-tgh.ns[,':='(TEST = trimws(TEST),
-             SRC = trimws(SRC),
-             SITE = trimws(SITE))]
-tgh.paste <- paste(tgh.ns$TEST, tgh.ns$SRC, tgh.ns$SITE, sep = "")
+
+# tgh.ns[!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
+#   fwrite("H:/GEMINI/Results/DRM/tgh.discrepancy1.csv")
+# tgh.marked[is.na(NonScreening)&!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
+#   fwrite("H:/GEMINI/Results/DRM/tgh.discrepancy2.csv")
+#   
+
+twh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
+                                  sheet = 4)%>%data.table
+twh.marked[,':='(TEST = trimws(TEST),
+                 SRC = trimws(SRC),
+                 SITE = trimws(SITE))]
+twh.ns <- tgh.marked[NonScreening==1]
+
+# twh.ns[!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
+#   fwrite("H:/GEMINI/Results/DRM/twh.discrepancy1.csv")
+# twh.marked[is.na(NonScreening)&!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
+#   fwrite("H:/GEMINI/Results/DRM/twh.discrepancy2.csv")
+
+
+twh.paste <- paste(twh.ns$TEST, twh.ns$SRC, twh.ns$SITE)
+tgh.paste <- paste(tgh.ns$TEST, tgh.ns$SRC, tgh.ns$SITE)
+
 uhn.dad <- readg(uhn, dad)
-uhn.dad$EncID.new <- as.character(uhn.dad$EncID.new)
-setwd("R:/GEMINI/_RESTORE/UHN/Micro/TGH")
+setwd("H:/GEMINI/Data/UHN/Micro/TGH")
 files <- list.files()
 tgh.ns.inc <- NULL
 for(i in 1:length(files)){
   dat <- fread(files[i])
-  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
-  dat <- merge(dat, uhn.dad[,.(Admit.Date, Admit.Time, EncID.new)], by = "EncID.new")
-  dat$DIS.DT <- dat$X.DIS.DT.
-  if(!"SRC"%in%names(dat)){
-    dat$SRC <- dat$X.SRC..
-  }
-  if(!"SITE"%in%names(dat)){
-    dat$SITE <- dat$X..SITE..........................
-  }
-  if(!"TEST"%in%names(dat)){
-    dat$TEST <- dat$X..TEST.
-  }
-  if(!"CDATE"%in%names(dat)){
-    dat$CDATE <- dat$X.CDATE..
-  }
-  if(!"CTIME"%in%names(dat)){
-    dat$CTIME <- dat$X.CTIME..
-  }
+    if(!"SRC"%in%names(dat)){
+      dat$SRC <- dat$X.SRC..
+    }
+    if(!"SITE"%in%names(dat)){
+      dat$SITE <- dat$X..SITE..........................
+    }
+    if(!"TEST"%in%names(dat)){
+      dat$TEST <- dat$X..TEST.
+    }
   dat[,':='(TEST = trimws(TEST),
             SRC = trimws(SRC),
             SITE = trimws(SITE))]
   ns <- paste(dat$TEST, dat$SRC, dat$SITE, sep = "")
-  dat.ns <- dat[ns%in%tgh.paste&
+  dat.ns <- dat[(ns%in%tgh.paste|SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])&
                 ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
                 ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
   print(files[i])
@@ -133,38 +152,29 @@ for(i in 1:length(files)){
 }
 
 
-twh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
-                                  sheet = 4)%>%data.table
-twh.ns <- tgh.marked[NonScreening==1]
-twh.ns[,':='(TEST = trimws(TEST),
-             SRC = trimws(SRC),
-             SITE = trimws(SITE))]
-twh.paste <- paste(tgh.ns$TEST, tgh.ns$SRC, tgh.ns$SITE, sep = "")
-                
-setwd("R:/GEMINI/_RESTORE/UHN/Micro/TW")
+setwd("H:/GEMINI/Data/UHN/Micro/TW")
 files <- list.files()
 twh.ns.inc <- NULL
 for(i in 1:length(files)){
   dat <- fread(files[i])
-  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
-  dat <- merge(dat, uhn.dad[,.(Admit.Date, Admit.Time, EncID.new)], by = "EncID.new")
   dat[,':='(TEST = trimws(TEST),
             SRC = trimws(SRC),
             SITE = trimws(SITE))]
   ns <- paste(dat$TEST, dat$SRC, dat$SITE, sep = "")
-  dat.ns <- dat[ns%in%tgh.paste&
+  dat.ns <- dat[(ns%in%twh.paste|SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])&
                   ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
                   ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
   print(files[i])
   print(nrow(dat.ns))
-  twh.ns.inc <- c(twh.ns.inc, dat.ns$EncID.new)
+  twh.ns.inc <- c(tgh.ns.inc, dat.ns$EncID.new)
 }
 
 
-cul.inc <- c(cul.ns.smh$EncID.new,
-             cul.ns.sbk$EncID.new,
+cul.inc <- c(cul.ns.smh,
+             cul.ns.sbk,
              twh.ns.inc,
              tgh.ns.inc)
+
 
 fwrite(data.table(cul.inc), "H:/GEMINI/Results/DRM/cul.ns.inc.csv")
 
@@ -172,3 +182,11 @@ rm(list = ls())
 antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
 cul.inc <- fread("H:/GEMINI/Results/DRM/cul.ns.inc.csv")
 drm.cohort <- intersect(antibio.inc$drm.antibio.inc, cul.inc$cul.inc)
+
+length(unique(antibio.inc$drm.antibio.inc))
+length(unique(cul.inc$cul.inc))
+
+
+
+er.diag <- readg(gim, er_diag)
+table(er.diag$ER.Diagnosis.Type, useNA = "ifany")
