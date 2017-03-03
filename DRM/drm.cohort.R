@@ -227,9 +227,12 @@ length(unique(cul.inc$cul.inc))
 #--------------------- freasibility table --------------------------------------
 rm(list = ls())
 antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
-cul.inc <- fread("H:/GEMINI/Results/DRM/cul.ns.inc.csv")
 ns.cul <- fread("H:/GEMINI/Results/DRM/drm.cul.ns.csv")
-drm.cohort <- intersect(antibio.inc$drm.antibio.inc, cul.inc$cul.inc)
+drm.cohort <- intersect(antibio.inc$drm.antibio.inc, ns.cul$EncID.new)
+all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+all.dad[EncID.new%in%antibio.inc$drm.antibio.inc, Institution.Number] %>% table
+all.dad[EncID.new%in%ns.cul$EncID.new, Institution.Number] %>% table
+all.dad[EncID.new%in%drm.cohort, Institution.Number] %>% table
 
 pneumonia <- "J18"
 uti <- "N39"
@@ -253,7 +256,6 @@ drm.cohort[,':='(Urine = EncID.new%in%ns.cul[Urine==1, EncID.new],
                  Other.non.sterile = EncID.new%in%ns.cul[
                    is.na(Urine)&is.na(Blood)&is.na(Resp)&is.na(NonBacterial), EncID.new])]
 
-all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 
 drm.cohort <- merge(drm.cohort, all.dad[,.(EncID.new, Age, Institution.Number, Gender)])
 
