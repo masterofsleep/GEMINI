@@ -55,6 +55,7 @@ missing.cluster(msh, phar)
 missing.cluster(msh, rad_ip)
 missing.cluster(msh, rad_er)
 missing.cluster(msh, trans)
+missing.cluster(msh, lab)
 
 
 

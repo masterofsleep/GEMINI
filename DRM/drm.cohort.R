@@ -65,42 +65,55 @@ library(gemini)
 lib.pa()
 rm(list = ls())
 smh.mic <- readg(smh, micro, dt = T)
-culture.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9.xlsx")
-cul.ns <- culture.marked[culture.marked$NonScreening==1, ]
-cul.ns.paste <- paste(cul.ns$Test_ID, cul.ns$Source, sep = "")
+smh.mic[, paste := paste(Test_ID, Source)]
+culture.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9.xlsx",
+                                     sheet = 1) %>% data.table
+culture.marked[,paste := paste(Test_ID, Source)]
+names(culture.marked)[6] <- "Urine"
 names(smh.mic)[3] <- "Specimen_Collection_Date/Time"
-cul.ns.smh <- smh.mic[paste(Test_ID, Source, sep = "")%in%cul.ns.paste&
+cul.ns.smh <- smh.mic[paste%in%culture.marked[NonScreening==1, paste]&
                       !is.na(Isolate_num)]
 cul.ns.smh <- cul.ns.smh[mdy_hm(`Specimen_Collection_Date/Time`)>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                      mdy_hm(`Specimen_Collection_Date/Time`)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
-                      EncID.new]
-
+                      mdy_hm(`Specimen_Collection_Date/Time`)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+smh.drm.cul <- merge(cul.ns.smh, 
+                     culture.marked[,.(paste, Urine , Blood, Resp, Screening, 
+                                       NonScreening, NonBacterial, unknown)], 
+                     by = "paste", all.x = T)
+smh.drm.cul <- smh.drm.cul[,.(EncID.new, Urine , Blood, Resp, Screening, 
+                              NonScreening, NonBacterial)]
 #sbk 
 culture.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9.xlsx",
                                      sheet = 2)%>% data.table
-sum(culture.marked$N[culture.marked$NonScreening==1], na.rm = T)
+names(culture.marked)[5] <- "Urine"
+culture.marked[, paste := paste(culture_test_cd, description, specimen_source)]
 cul.ns <- culture.marked[NonScreening==1]
 sbk.mic <- readg(sbk, micro_pos.csv, dt = T)
-cul.ns.paste <- paste(cul.ns$culture_test_cd, cul.ns$description, cul.ns$specimen_source,
-                      sep = "")
-cul.ns.sbk <- sbk.mic[paste(culture_test_cd, description, specimen_source, sep = "")%in%
-                        cul.ns.paste&
+sbk.mic[, paste:= paste(culture_test_cd, description, specimen_source)]
+cul.ns.sbk <- sbk.mic[paste%in%cul.ns$paste&
                       mdy_hm(specimen_collection_datetime)>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                      mdy_hm(specimen_collection_datetime)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
-                      EncID.new]
-
-
+                      mdy_hm(specimen_collection_datetime)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+sbk.drm.cul <- merge(cul.ns.sbk, 
+                     culture.marked[,.(paste, Urine, Blood, Resp, Screening, 
+                                       NonScreening, NonBacterial)],
+                     by = "paste", all.x = T)
+sbk.drm.cul <- sbk.drm.cul[,.(EncID.new, Urine, Blood, Resp, Screening, 
+                      NonScreening, NonBacterial)]
 
 # UHN
 # Check the concordance bewteen the two marked files 
 uhn.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/UHN_Source Setup.xls",
                                                                    sheet = 1)%>%data.table
+names(uhn.marked)[3] <- "Urine"
 tgh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
                                   sheet = 3)%>%data.table
+names(tgh.marked)[5] <- "Urine"
 tgh.marked[,':='(TEST = trimws(TEST),
                  SRC = trimws(SRC),
                  SITE = trimws(SITE))]
+tgh.marked[unknown==1, NonBacterial:=1]
+tgh.marked[, paste := paste(TEST, SRC, SITE)]
 tgh.ns <- tgh.marked[NonScreening==1]
+
 
 # tgh.ns[!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
 #   fwrite("H:/GEMINI/Results/DRM/tgh.discrepancy1.csv")
@@ -110,24 +123,23 @@ tgh.ns <- tgh.marked[NonScreening==1]
 
 twh.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9_DM.xlsx",
                                   sheet = 4)%>%data.table
+names(twh.marked)[5] <- "Urine"
 twh.marked[,':='(TEST = trimws(TEST),
                  SRC = trimws(SRC),
                  SITE = trimws(SITE))]
-twh.ns <- tgh.marked[NonScreening==1]
+twh.marked[unknown==1, NonBacterial:=1]
+twh.marked[, paste := paste(TEST, SRC, SITE)]
+twh.ns <- twh.marked[NonScreening==1]
 
 # twh.ns[!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
 #   fwrite("H:/GEMINI/Results/DRM/twh.discrepancy1.csv")
 # twh.marked[is.na(NonScreening)&!SRC%in%uhn.marked[NonScreening==1, SOURCE_ID]] %>% 
 #   fwrite("H:/GEMINI/Results/DRM/twh.discrepancy2.csv")
 
-
-twh.paste <- paste(twh.ns$TEST, twh.ns$SRC, twh.ns$SITE)
-tgh.paste <- paste(tgh.ns$TEST, tgh.ns$SRC, tgh.ns$SITE)
-
 uhn.dad <- readg(uhn, dad)
 setwd("H:/GEMINI/Data/UHN/Micro/TGH")
 files <- list.files()
-tgh.ns.inc <- NULL
+tgh.drm.cul <- NULL
 for(i in 1:length(files)){
   dat <- fread(files[i])
     if(!"SRC"%in%names(dat)){
@@ -142,51 +154,278 @@ for(i in 1:length(files)){
   dat[,':='(TEST = trimws(TEST),
             SRC = trimws(SRC),
             SITE = trimws(SITE))]
-  ns <- paste(dat$TEST, dat$SRC, dat$SITE, sep = "")
-  dat.ns <- dat[(ns%in%tgh.paste|SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])&
-                ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+  dat[,paste:= paste(TEST, SRC, SITE)]
+  dat.ns <- dat[(paste%in%tgh.ns$paste|
+                   SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])]
+  dat.ns <- dat.ns[ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
+                ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
+                .(EncID.new, TEST, SRC, SITE, paste)]
+  dat.ns1 <- merge(dat.ns, tgh.ns[,.(paste, Urine , Blood, Resp, 
+                                     Screening, NonScreening, NonBacterial)],
+                   by = "paste", all.x = T)
+  dat.ns2 <- merge(dat.ns, 
+                   uhn.marked[NonScreening==1,
+                              .(SOURCE_ID, Urine, Blood, Resp, Screening, 
+                                NonScreening, NonBacterial)], 
+                   by.x = "SRC", by.y = "SOURCE_ID", all.x = T, all.y = F)
+  dat.ns.all <- rbind(dat.ns1, dat.ns2, fill = T) %>% filter(NonScreening==1)%>%unique
   print(files[i])
   print(nrow(dat.ns))
-  tgh.ns.inc <- c(tgh.ns.inc, dat.ns$EncID.new)
+  tgh.drm.cul <- rbind(tgh.drm.cul, dat.ns.all)
 }
 
 
 setwd("H:/GEMINI/Data/UHN/Micro/TW")
 files <- list.files()
-twh.ns.inc <- NULL
+twh.drm.cul <- NULL
 for(i in 1:length(files)){
   dat <- fread(files[i])
   dat[,':='(TEST = trimws(TEST),
             SRC = trimws(SRC),
             SITE = trimws(SITE))]
-  ns <- paste(dat$TEST, dat$SRC, dat$SITE, sep = "")
-  dat.ns <- dat[(ns%in%twh.paste|SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])&
-                  ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
-                  ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
+  dat[,paste:= paste(TEST, SRC, SITE)]
+  dat.ns <- dat[(paste%in%twh.ns$paste|
+                   SRC%in%uhn.marked[NonScreening==1, SOURCE_ID])]
+  dat.ns <- dat.ns[ymd_hm(paste(CDATE, CTIME))>=ymd_hm(paste(Admit.Date, Admit.Time))&
+                     ymd_hm(paste(CDATE, CTIME))<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48)),
+                   .(EncID.new, TEST, SRC, SITE, paste)]
+  dat.ns1 <- merge(dat.ns, twh.ns[,.(paste, Urine , Blood, Resp, 
+                                     Screening, NonScreening, NonBacterial)],
+                   by = "paste", all.x = T)
+  dat.ns2 <- merge(dat.ns, 
+                   uhn.marked[NonScreening==1,
+                              .(SOURCE_ID, Urine, Blood, Resp, Screening, 
+                                NonScreening, NonBacterial)], 
+                   by.x = "SRC", by.y = "SOURCE_ID", all.x = T, all.y = F)
+  dat.ns.all <- rbind(dat.ns1, dat.ns2, fill = T) %>% filter(NonScreening==1)%>%unique
   print(files[i])
-  print(nrow(dat.ns))
-  twh.ns.inc <- c(tgh.ns.inc, dat.ns$EncID.new)
+  print(dim(twh.drm.cul))
+  twh.drm.cul <- rbind(twh.drm.cul, dat.ns.all)
 }
 
-
-cul.inc <- c(cul.ns.smh,
-             cul.ns.sbk,
-             twh.ns.inc,
-             tgh.ns.inc)
-
+tgh.drm.cul <- data.table(tgh.drm.cul)
+twh.drm.cul <- data.table(twh.drm.cul)
+ns.cul <- rbind(cbind(smh.drm.cul, site = "smh"),
+                cbind(sbk.drm.cul, site = "sbk"),
+                cbind(tgh.drm.cul[,.(EncID.new, Urine, Blood,
+                                     Resp, Screening, NonScreening,
+                                     NonBacterial)], site = "tgh"),
+                cbind(twh.drm.cul[,.(EncID.new, Urine, Blood,
+                                     Resp, Screening, NonScreening,
+                                     NonBacterial)], site = "twh"))
+fwrite(ns.cul, "H:/GEMINI/Results/DRM/drm.cul.ns.csv")                
 
 fwrite(data.table(cul.inc), "H:/GEMINI/Results/DRM/cul.ns.inc.csv")
 
-rm(list = ls())
-antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
-cul.inc <- fread("H:/GEMINI/Results/DRM/cul.ns.inc.csv")
-drm.cohort <- intersect(antibio.inc$drm.antibio.inc, cul.inc$cul.inc)
 
 length(unique(antibio.inc$drm.antibio.inc))
 length(unique(cul.inc$cul.inc))
 
 
 
+
+#--------------------- freasibility table --------------------------------------
+rm(list = ls())
+antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
+cul.inc <- fread("H:/GEMINI/Results/DRM/cul.ns.inc.csv")
+ns.cul <- fread("H:/GEMINI/Results/DRM/drm.cul.ns.csv")
+drm.cohort <- intersect(antibio.inc$drm.antibio.inc, cul.inc$cul.inc)
+
+pneumonia <- "J18"
+uti <- "N39"
+sepsis <- "A41"
+fever <- "R50"
+
+ip.diag <- readg(gim, ip_diag)
 er.diag <- readg(gim, er_diag)
-table(er.diag$ER.Diagnosis.Type, useNA = "ifany")
+
+drm.ip.diag <- ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code = str_sub(Diagnosis.Code, 1, 3), EncID.new)]
+drm.er.diag <- er.diag[ER.Diagnosis.Type=="M", 
+                       .(ER.Diagnosis.Code = str_sub(ER.Diagnosis.Code, 1, 3), EncID.new)]
+drm.cohort <- merge(drm.ip.diag[EncID.new%in%drm.cohort],
+                    drm.er.diag[EncID.new%in%drm.cohort],
+                    by = "EncID.new", all.x = T, all.y = T)
+drm.cohort[,':='(Urine = EncID.new%in%ns.cul[Urine==1, EncID.new],
+                 Blood = EncID.new%in%ns.cul[Blood==1, EncID.new],
+                 Resp = EncID.new%in%ns.cul[Resp==1, EncID.new],
+                 Other.sterile = EncID.new%in%ns.cul[
+                   is.na(Urine)&is.na(Blood)&is.na(Resp)&NonBacterial==1, EncID.new],
+                 Other.non.sterile = EncID.new%in%ns.cul[
+                   is.na(Urine)&is.na(Blood)&is.na(Resp)&is.na(NonBacterial), EncID.new])]
+
+all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+
+drm.cohort <- merge(drm.cohort, all.dad[,.(EncID.new, Age, Institution.Number, Gender)])
+
+dad <- readg(smh, dad)
+mrp <- rbind(readg(smh, dad, select = c("MostResponsible.DocterCode", "EncID.new")),
+             readg(sbk, dad, select = c("MostResponsible.DocterCode", "EncID.new")),
+             readg(uhn, dad, select = c("MostResponsible.DocterCode", "EncID.new")))
+hcn <- rbind(readg(smh, adm, select = c("Hash", "EncID.new")),
+             readg(sbk, adm, select = c("Hash", "EncID.new")),
+             readg(uhn, adm, select = c("Hash", "EncID.new")))
+drm.cohort$EncID.new <- as.character(drm.cohort$EncID.new)
+drm.cohort <- merge(drm.cohort, mrp, by = "EncID.new")
+drm.cohort <- merge(drm.cohort, hcn, by = "EncID.new")
+drm.cohort[Institution.Number=="uhn-general", Institution.Number:="tgh"]
+drm.cohort[Institution.Number=="uhn-western", Institution.Number:="twh"]
+fwrite(drm.cohort, "H:/GEMINI/Results/DRM/drm.cohort.csv")
+
+drm.feasi <- function(x, er.diag = NULL, ip.diag = NULL){
+  part1 <- data.table(n.patient = length(unique(x$Hash)),
+        n.admission = length(unique(x$EncID.new)),
+        smh = paste(sum(x$Institution.Number=="smh"), " (",
+                    round(sum(x$Institution.Number=="smh")/nrow(x)*100, 1), ")",
+                    sep = ""),
+        tgh = paste(sum(x$Institution.Number=="tgh"), " (",
+                    round(sum(x$Institution.Number=="tgh")/nrow(x)*100, 1), ")",
+                    sep = ""),
+        twh = paste(sum(x$Institution.Number=="twh"), " (",
+                    round(sum(x$Institution.Number=="twh")/nrow(x)*100, 1), ")",
+                    sep = ""),
+        sbk = paste(sum(x$Institution.Number=="sbk"), " (",
+                    round(sum(x$Institution.Number=="sbk")/nrow(x)*100, 1), ")",
+                    sep = ""),
+        age = paste(round(mean(x$Age), 1), " (", round(sd(x$Age),1),
+                    ")", sep = ""),
+        sex = paste(sum(x$Gender=="F"), " (",
+                  round(sum(x$Gender=="F")/nrow(x)*100, 1), ")", sep = ""),
+        urine = paste(sum(x$Urine==1), " (",
+                      round(sum(x$Urine==1)/nrow(x)*100, 1), ")",
+                      sep = ""), 
+        respiratory = paste(sum(x$Resp==1), " (",
+                      round(sum(x$Resp==1)/nrow(x)*100, 1), ")",
+                      sep = ""),
+        blood = paste(sum(x$Blood==1), " (",
+                      round(sum(x$Blood==1)/nrow(x)*100, 1), ")",
+                      sep = ""),
+        other.sterile = paste(sum(x$Other.sterile==1), " (",
+                      round(sum(x$Other.sterile==1)/nrow(x)*100, 1), ")",
+                      sep = ""),
+        other.non.sterile = paste(sum(x$Other.non.sterile==1), " (",
+                      round(sum(x$Other.non.sterile==1)/nrow(x)*100, 1), ")",
+                      sep = "")
+        )
+  if(is.null(er.diag)&is.null(ip.diag)) return(part1)
+  if(!is.null(er.diag)){
+    smh.phy.n <- x[ER.Diagnosis.Code==er.diag&Institution.Number=="smh", 
+                   .N, by = MostResponsible.DocterCode]
+    sbk.phy.n <- x[ER.Diagnosis.Code==er.diag&Institution.Number=="sbk", 
+                   .N, by = MostResponsible.DocterCode]
+    tgh.phy.n <- x[ER.Diagnosis.Code==er.diag&Institution.Number=="tgh", 
+                   .N, by = MostResponsible.DocterCode]
+    twh.phy.n <- x[ER.Diagnosis.Code==er.diag&Institution.Number=="twh", 
+                   .N, by = MostResponsible.DocterCode]
+    provider <- data.table(
+      provider.5 = " ",
+      smh.5 = paste(sum(smh.phy.n$N>5), " (", 
+                    round(sum(smh.phy.n$N>5)/nrow(smh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      tgh.5 = paste(sum(tgh.phy.n$N>5), " (", 
+                    round(sum(tgh.phy.n$N>5)/nrow(tgh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      twh.5 = paste(sum(twh.phy.n$N>5), " (", 
+                    round(sum(twh.phy.n$N>5)/nrow(twh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      sbk.5 = paste(sum(sbk.phy.n$N>5), " (", 
+                    round(sum(sbk.phy.n$N>5)/nrow(sbk.phy.n)*100, 1), ")", 
+                    sep = ""),
+      
+      provider.10 = " ",
+      smh.10 = paste(sum(smh.phy.n$N>10), " (", 
+                     round(sum(smh.phy.n$N>10)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.10 = paste(sum(tgh.phy.n$N>10), " (", 
+                     round(sum(tgh.phy.n$N>10)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.10 = paste(sum(twh.phy.n$N>10), " (", 
+                     round(sum(twh.phy.n$N>10)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.10 = paste(sum(sbk.phy.n$N>10), " (", 
+                     round(sum(sbk.phy.n$N>10)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = ""),
+      provider.15 = " ",
+      smh.15 = paste(sum(smh.phy.n$N>15), " (", 
+                     round(sum(smh.phy.n$N>15)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.15 = paste(sum(tgh.phy.n$N>15), " (", 
+                     round(sum(tgh.phy.n$N>15)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.15 = paste(sum(twh.phy.n$N>15), " (", 
+                     round(sum(twh.phy.n$N>15)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.15 = paste(sum(sbk.phy.n$N>15), " (", 
+                     round(sum(sbk.phy.n$N>15)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = "")
+    )
+    return(cbind(part1, provider))
+  }
+  if(!is.null(ip.diag)){
+    smh.phy.n <- x[Diagnosis.Code==ip.diag&Institution.Number=="smh", 
+                   .N, by = MostResponsible.DocterCode]
+    sbk.phy.n <- x[Diagnosis.Code==ip.diag&Institution.Number=="sbk", 
+                   .N, by = MostResponsible.DocterCode]
+    tgh.phy.n <- x[Diagnosis.Code==ip.diag&Institution.Number=="tgh", 
+                   .N, by = MostResponsible.DocterCode]
+    twh.phy.n <- x[Diagnosis.Code==ip.diag&Institution.Number=="twh", 
+                   .N, by = MostResponsible.DocterCode]
+    provider <- data.table(
+      provider.5 = " ",
+      smh.5 = paste(sum(smh.phy.n$N>5), " (", 
+                    round(sum(smh.phy.n$N>5)/nrow(smh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      tgh.5 = paste(sum(tgh.phy.n$N>5), " (", 
+                    round(sum(tgh.phy.n$N>5)/nrow(tgh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      twh.5 = paste(sum(twh.phy.n$N>5), " (", 
+                    round(sum(twh.phy.n$N>5)/nrow(twh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      sbk.5 = paste(sum(sbk.phy.n$N>5), " (", 
+                    round(sum(sbk.phy.n$N>5)/nrow(sbk.phy.n)*100, 1), ")", 
+                    sep = ""),
+      
+      provider.10 = " ",
+      smh.10 = paste(sum(smh.phy.n$N>10), " (", 
+                     round(sum(smh.phy.n$N>10)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.10 = paste(sum(tgh.phy.n$N>10), " (", 
+                     round(sum(tgh.phy.n$N>10)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.10 = paste(sum(twh.phy.n$N>10), " (", 
+                     round(sum(twh.phy.n$N>10)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.10 = paste(sum(sbk.phy.n$N>10), " (", 
+                     round(sum(sbk.phy.n$N>10)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = ""),
+      provider.15 = " ",
+      smh.15 = paste(sum(smh.phy.n$N>15), " (", 
+                     round(sum(smh.phy.n$N>15)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.15 = paste(sum(tgh.phy.n$N>15), " (", 
+                     round(sum(tgh.phy.n$N>15)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.15 = paste(sum(twh.phy.n$N>15), " (", 
+                     round(sum(twh.phy.n$N>15)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.15 = paste(sum(sbk.phy.n$N>15), " (", 
+                     round(sum(sbk.phy.n$N>15)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = "")
+    )
+    return(cbind(part1, provider))
+  }
+}
+
+
+feasi.table <- rbind(drm.feasi(drm.cohort), 
+                     drm.feasi(drm.cohort[ER.Diagnosis.Code==sepsis], er.diag = sepsis),
+                     drm.feasi(drm.cohort[ER.Diagnosis.Code==fever], er.diag = fever),
+                     drm.feasi(drm.cohort[ER.Diagnosis.Code==uti], er.diag = uti),
+                     drm.feasi(drm.cohort[ER.Diagnosis.Code==pneumonia], er.diag = pneumonia),
+                     drm.feasi(drm.cohort), 
+                     drm.feasi(drm.cohort[Diagnosis.Code==sepsis], ip.diag = sepsis),
+                     drm.feasi(drm.cohort[Diagnosis.Code==fever], ip.diag = fever),
+                     drm.feasi(drm.cohort[Diagnosis.Code==uti], ip.diag = uti),
+                     drm.feasi(drm.cohort[Diagnosis.Code==pneumonia], ip.diag = pneumonia),
+                     fill = T)
+
+write.csv(t(feasi.table), "H:/GEMINI/Results/DRM/feasi.table.csv")

@@ -61,3 +61,12 @@ ggplot(dad, aes(ymd(Discharge.Date), fill = trans)) +
 
 all <- rbind(sbk, sbk.dob)
 all[!EncID.new%in%all[duplicated(all), EncID.new]] -> check
+
+
+
+# ------------------------- sinai data -----------------------------------------
+setwd("R:/GEMINI/_RESTORE/MSH/BB")
+msh.bb <- fread("msh.bb.nophi.csv")
+msh.bb$EncID.new <- paste("14", msh.bb$EncID.new, sep = "")
+msh.bb[, V1 := NULL]
+fwrite(msh.bb, "H:/GEMINI/Data/MSH/BB/msh.bb.nophi.csv")

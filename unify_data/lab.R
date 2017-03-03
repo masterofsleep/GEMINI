@@ -240,3 +240,14 @@ fwrite(smh, "H:/GEMINI/Data/SMH/Lab/smh.corelabs-linked.csv", row.names = F,
        na = "")
 
 
+
+# ------------------------- move sinai lab data to local H ---------------------
+setwd("R:/GEMINI/_RESTORE/MSH/Labs")
+msh.lab <- fread("msh.labs_dad.nophi.csv")
+msh.lab$EncID.new <- paste("14", msh.lab$EncID.new, sep = "")
+msh.lab[, V1:=NULL]
+msh.lab[, X:= NULL]
+head(msh.lab, 100)
+sum(is.na(msh.lab$REFERANCE_LAB))
+fwrite(msh.lab, "H:/GEMINI/Data/MSH/Lab/msh.lab.nophi.csv")
+
