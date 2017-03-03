@@ -9,8 +9,8 @@
 
 lib.pa <- function(){
   library(data.table)
-  library(dplyr)
   library(plyr)
+  library(dplyr)
   library(ggplot2)
   library(stringr)
   library(xtable)
