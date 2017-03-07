@@ -29,3 +29,19 @@ fwrite(mrp.freq, "H:/GEMINI/Results/DataSummary/physician_names/smh.mrp.csv")
 smh.phy <- c(adm.names$Admit.Physician.Name, dis.names$Discharge.Physician.Name,
              paste(mrp.freq$MostResponsiblePhysicianFirstName, mrp.freq$MostResponsiblePhysicianLastName)) %>% unique
 write.csv(smh.phy, "H:/GEMINI/Results/DataSummary/physician_names/smh.physician.names.csv")
+
+
+
+# ---------------------------- march 7 -----------------------------------------
+# ------------------------ check by coded names --------------------------------
+names.coded <- readxl::read_excel("R:/GEMINI/Check/physician_names/smh.physician.names.coded.all.xlsx")
+smh.link <- fread("R:/GEMINI/_RESTORE/SMH/CIHI/SMH.LINKLIST_NEWHASH.csv")
+table(names.coded$GIM, useNA = "ifany")
+smh.link <- smh.link[,.(EncID.new, AdmittingPhysicianFirstName, ADMITTINGPRACTITIONERLASTNAME,
+                        DischargingPhysicianFirstName, DischargingPhysicianLastName)]
+smh.link[,':='(admit.phy.name = paste(AdmittingPhysicianFirstName, ADMITTINGPRACTITIONERLASTNAME),
+               dis.phy.name = paste(DischargingPhysicianFirstName, DischargingPhysicianLastName))]
+
+smh.link[, GIM:= admit.phy.name%in%names.coded$Name[names.coded$GIM==1]|
+           dis.phy.name%in%names.coded$Name[names.coded$GIM==1]]
+smh.link$GIM %>% table

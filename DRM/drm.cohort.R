@@ -6,6 +6,9 @@ rm(list = ls())
 smh.phar <- readg(smh, phar)
 sbk.phar <- readg(sbk, phar)
 sbk.phar$EncID.new <- as.character(sbk.phar$EncID.new)
+sbk.phar$ndc_din[!is.na(sbk.phar$ndc_din)&str_detect(sbk.phar$ndc_din, "-")] <-
+  str_split(sbk.phar$ndc_din[!is.na(sbk.phar$ndc_din)&str_detect(sbk.phar$ndc_din, "-")], "-") %>% 
+  unlist %>% matrix(ncol = 2, byrow = T) %>% `[`(,1) 
 uhn.phar <- readg(uhn, phar.nophi)
 drm.din <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/FINALDINLIST.xlsx")
 drm.din2 <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/FINALDINLIST2.xls")
@@ -13,12 +16,17 @@ drm.din2$din <- gsub("(?<![0-9])0+", "", drm.din2$din, perl = TRUE)
 drm.din2 <- drm.din2[!is.na(drm.din2$din),]
 din.drm <- union(drm.din$`FINAL DINS`, drm.din2$din)
 
-smh.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=1) %>% data.table
-sbk.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=2) %>% data.table
-uhn.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=3) %>% data.table
+sum(din.drm%in%smh.phar$din)
+sum(din.drm%in%sbk.phar$ndc_din)
+sum(din.drm%in%uhn.phar$DIN)
+
+smh.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=1)%>%data.table
+sbk.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=2)%>%data.table
+uhn.route <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/antibio route code_nd.xlsx", sheet=3)%>%data.table
+smh.route$`Route Code`[smh.route$include==1&!is.na(smh.route$include)]
 
 smh.inc <- smh.phar[din%in%din.drm&
-                      route%in%smh.route$`Route Code`[smh.route$include==1]&
+                      route%in%smh.route$`Route Code`[smh.route$include==1&!is.na(smh.route$include)]&
                       ymd_hm(paste(start_date, start_time))>=mdy_hms(paste(ADMITDATE, ADMIT.TIME))&
                       ymd_hm(paste(start_date, start_time))<=mdy_hms(paste(ADMITDATE, ADMIT.TIME)) + hours(24)]
 
@@ -28,7 +36,7 @@ sbk.phar <- merge(sbk.phar, sbk.dad[,.(EncID.new, Admit.Date, Admit.Time)],
                   all.x = T)
 sbk.phar$ndc_din <- gsub("(?<![0-9])0+", "", sbk.phar$ndc_din, perl = TRUE)
 sbk.inc <- sbk.phar[ndc_din%in%din.drm&
-                      route%in%sbk.route$`Route Code`[sbk.route$include==1]&
+                      route%in%sbk.route$`Route Code`[sbk.route$include==1&!is.na(sbk.route$include)]&
                       mdy_hms(paste(start_date, start_time))>=ymd_hm(paste(Admit.Date, Admit.Time))&
                       mdy_hms(paste(start_date, start_time))<=ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)]
 
@@ -46,21 +54,73 @@ uhn.phar[,`:=`(Order_Start_Time = time.convert(Order_St),
                Order_Stop_Time = time.convert(Order_St.1))]
 uhn.phar <- merge(uhn.phar, uhn.dad[,.(EncID.new, Admit.Date, Admit.Time)])
 uhn.phar$DIN <- gsub("(?<![0-9])0+", "", uhn.phar$DIN, perl = TRUE)
+sum(uhn.phar$DIN%in%din.drm)
+sum(uhn.phar$Route_Code%in%uhn.route$`Route Code`[uhn.route$include==1&!is.na(uhn.route$include)]&uhn.phar$DIN%in%din.drm)
+dim(uhn.phar[dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))>=
+      ymd_hm(paste(Admit.Date, Admit.Time))&
+      dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))<=
+      ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)])
+sum(uhn.phar$Route_Code%in%uhn.route[include==1, 'Route Code'])
 uhn.inc <- uhn.phar[DIN%in%din.drm&
-                      Route_Code%in%uhn.route$`Route Code`[uhn.route$include==1]&
+                      Route_Code%in%uhn.route$`Route Code`[uhn.route$include==1&!is.na(uhn.route$include)]&
                       dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))>=
                       ymd_hm(paste(Admit.Date, Admit.Time))&
                       dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))<=
                       ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)]
-
+uh
+#Route_Code%in%uhn.route$`Route Code`[uhn.route$include==1&!is.na(uhn.route$include)]&
 uhn.phar[is.na(dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time)))]
+table(uhn.phar$DIN, useNA = "ifany") %>% data.table -> missingdin
 
 
+length(unique(smh.inc$EncID.new))
+length(unique(sbk.inc$EncID.new))
+length(unique(uhn.inc$EncID.new))
 drm.antibio.inc <- c(smh.inc$EncID.new, sbk.inc$EncID.new, uhn.inc$EncID.new)
 fwrite(data.table(drm.antibio.inc), "H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
 
+# table to check quality
+with.route <- c(round(sum(smh.phar$route%in%
+                      smh.route$`Route Code`[smh.route$include==1&!is.na(smh.route$include)])/
+                  nrow(smh.phar)*100, 1), 
+                round(sum(sbk.phar$route%in%
+                            sbk.route$`Route Code`[sbk.route$include==1&!is.na(sbk.route$include)])/
+                        nrow(sbk.phar)*100, 1),
+                round(sum(uhn.phar$Route_Code%in%
+                            uhn.route$`Route Code`[uhn.route$include==1&!is.na(uhn.route$include)])/
+                        nrow(uhn.phar)*100, 1))
+with.din <- c(round(sum(smh.phar$din%in%din.drm)/
+                      nrow(smh.phar)*100, 1), 
+              round(sum(sbk.phar$ndc_din%in%din.drm)/
+                      nrow(sbk.phar)*100, 1),
+              round(sum(uhn.phar$DIN%in%din.drm)/
+                      nrow(uhn.phar)*100, 1))
+within.24h <- c(round(nrow(smh.phar[ymd_hm(paste(start_date, start_time))>=
+                                      mdy_hms(paste(ADMITDATE, ADMIT.TIME))&
+                             ymd_hm(paste(start_date, start_time))<=
+                               mdy_hms(paste(ADMITDATE, ADMIT.TIME)) + hours(24)])/
+                        nrow(smh.phar)*100, 1), 
+                round(nrow(sbk.phar[mdy_hms(paste(start_date, start_time))>=
+                                      ymd_hm(paste(Admit.Date, Admit.Time))&
+                                      mdy_hms(paste(start_date, start_time))<=
+                                      ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)])/
+                        nrow(sbk.phar)*100, 1),
+                round(nrow(uhn.phar[dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))>=
+                                      ymd_hm(paste(Admit.Date, Admit.Time))&
+                                      dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))<=
+                                      ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)])/
+                        nrow(uhn.phar)*100, 1))
+drm.cohort <- c(round(nrow(smh.inc)/nrow(smh.phar)*100, 1),
+                round(nrow(sbk.inc)/nrow(sbk.phar)*100, 1),
+                round(nrow(uhn.inc)/nrow(uhn.phar)*100, 1))
 
+match.din <- uhn.phar[DIN %in% din.drm]
+tab <- table(match.din$DIN, match.din$Route_Code) %>% data.table %>%
+  filter(N!=0) %>% arrange(V1)
 
+prop <- data.frame(rbind(with.route, with.din, within.24h, drm.cohort))
+names(prop) <- c("smh", "sbk", "uhn")
+prop
 library(gemini)
 lib.pa()
 rm(list = ls())
@@ -73,6 +133,7 @@ names(culture.marked)[6] <- "Urine"
 names(smh.mic)[3] <- "Specimen_Collection_Date/Time"
 cul.ns.smh <- smh.mic[paste%in%culture.marked[NonScreening==1, paste]&
                       !is.na(Isolate_num)]
+smh.mic[is.na(Isolate_num)] %>% dim
 cul.ns.smh <- cul.ns.smh[mdy_hm(`Specimen_Collection_Date/Time`)>=ymd_hm(paste(Admit.Date, Admit.Time))&
                       mdy_hm(`Specimen_Collection_Date/Time`)<=(ymd_hm(paste(Admit.Date, Admit.Time))+hours(48))]
 smh.drm.cul <- merge(cul.ns.smh, 
@@ -81,6 +142,12 @@ smh.drm.cul <- merge(cul.ns.smh,
                      by = "paste", all.x = T)
 smh.drm.cul <- smh.drm.cul[,.(EncID.new, Urine , Blood, Resp, Screening, 
                               NonScreening, NonBacterial)]
+
+
+smh.mic[!is.na(Isolate_num)] -> pos
+length(unique(pos$Order_Number))/length(unique(smh.mic$Order_Number))
+length(pos$Order_Number)/length(smh.mic$Order_Number)
+
 #sbk 
 culture.marked <- readxl::read_excel("H:/GEMINI/Feasibility/DRM/CultureClassification_Feb9.xlsx",
                                      sheet = 2)%>% data.table
@@ -88,6 +155,10 @@ names(culture.marked)[5] <- "Urine"
 culture.marked[, paste := paste(culture_test_cd, description, specimen_source)]
 cul.ns <- culture.marked[NonScreening==1]
 sbk.mic <- readg(sbk, micro_pos.csv, dt = T)
+sbk.mic.neg <- readg(sbk, micro_neg)
+12315/(115887+12315
+      )
+
 sbk.mic[, paste:= paste(culture_test_cd, description, specimen_source)]
 cul.ns.sbk <- sbk.mic[paste%in%cul.ns$paste&
                       mdy_hm(specimen_collection_datetime)>=ymd_hm(paste(Admit.Date, Admit.Time))&

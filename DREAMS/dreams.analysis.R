@@ -100,4 +100,67 @@ sbk.echo[,':='(LALVTHROMBY = ifelse(LALVthromb==1, 1,
 fwrite(sbk.echo, "H:/GEMINI/Results/DREAM/201703/variable_created//SBK ECHO COMBINED_processed NG_newvar.csv")
 
 # subset part 
-smh.sub <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET.xlsx")
+smh.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 1)
+smh.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 2)
+smh.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 3)
+smh.echo <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SMH ECHO COMBINED_processed_newvar NG.csv")
+intersect(smh.echo$EncID.new, smh.sub.thrombus$EncID.new)
+intersect(smh.echo$EncID.new, smh.sub.pfo$EncID.new)
+intersect(smh.echo$EncID.new, smh.sub.veg$EncID.new)
+
+intersect(smh.sub.thrombus$EncID.new, smh.sub.pfo$EncID.new)
+intersect(smh.sub.thrombus$EncID.new, smh.sub.veg$EncID.new)
+intersect(smh.sub.pfo$EncID.new, smh.sub.veg$EncID.new)
+
+
+
+
+
+
+
+
+
+# ----------------------- variables to pull ------------------------------------
+
+er.diag <- readg(gim, er_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+ip.diag <- readg(gim, ip_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+er.diag$Diagnosis.Code <- er.diag$ER.Diagnosis.Code
+diag<- rbind(er.diag[,.(Diagnosis.Code, EncID.new)],
+             ip.diag[,.(Diagnosis.Code, EncID.new)])
+hypertension <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I10", "I11", "I12", 
+                                                               "I13", "I15"))]
+hyperlipidemia <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("E78"))]
+hemorrhagic.stroke <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I60", "I61", "I62"))]
+diabetes <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("E10", "E11", "E13", "E14"))]
+coronary.artery.disease <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I121", "I122", 
+                                                                          "I125", "I123", 
+                                                                          "I124"))]
+congestive.heart.failure <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("L50", "L110", 
+                                                                           "L130", "I132"))]
+# ----------------------- los and time to TTE ----------------------------------
+smh.echo <- readg(smh, echo, dt = T)
+smh.timeTTE0 <- smh.echo[dmy(ADMITDATE) == dmy(StudyStartDateTime)]
+smh.timeTTE1 <- smh.echo[dmy(ADMITDATE) < dmy(StudyStartDateTime)&
+                           !EncID.new%in%timeTTE0$EncID.new]
+sbk.echo <- readg(sbk, echo, dt = T)
+sbk.timeTTE0 <- sbk.echo[mdy(str_sub(`Test Performed Date/time`, 1, 11))==
+                           ymd(Admit.Date)]
+sbk.timeTTE1 <- sbk.echo[mdy(str_sub(`Test Performed Date/time`, 1, 11))>
+                           ymd(Admit.Date)&!EncID.new%in%sbk.timeTTE0$EncID.new]
+timeTTE0 <- c(smh.timeTTE0$EncID.new, sbk.timeTTE0$EncID.new)
+timeTTE1 <- c(smh.timeTTE1$EncID.new, sbk.timeTTE1$EncID.new)
+timeTTE <- rbind(data.table(EncID.new = timeTTE0, timeTTE = 0),
+                 data.table(EncID.new = timeTTE1, timeTTE = 1))
+demo.var <-  fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv", 
+              select = c("EncID.new", "LoS", "Age", "Gender"))[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+
+demo.var[,':='(hypertension = as.numeric(EncID.new%in%hypertension),
+               hyperlipidemia = as.numeric(EncID.new%in%hyperlipidemia),
+               hemorrhagic.stroke = as.numeric(EncID.new%in%hemorrhagic.stroke),
+               coronary.artery.disease = as.numeric(EncID.new%in%coronary.artery.disease),
+               congestive.heart.failure = as.numeric(EncID.new%in%congestive.heart.failure))]
+demo.var$EncID.new <- as.character(demo.var$EncID.new)
+
+dream.vars <- merge(demo.var, timeTTE, by = "EncID.new")
+
+fwrite(dream.vars, "H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")

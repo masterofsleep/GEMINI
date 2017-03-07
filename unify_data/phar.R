@@ -259,3 +259,22 @@ uhn.phar[,`:=`(Order_Start_Time = time.convert(Order_St),
 uhn.phar$DIN <- gsub("(?<![0-9])0+", "", uhn.phar$DIN, perl = TRUE)
 fwrite(uhn.phar, "H:/GEMINI/Data/UHN/Pharmacy/uhn.phar.nophi.csv", na = "")
 
+
+
+
+# -------------------- march 7 2017 --------------------------------------------
+# --- fill in the missing route in new uhn phar data with old uhn phar data ----
+library(gemini)
+lib.pa()
+uhn.old <- fread("R:/GEMINI/_RESTORE/UHN/Pharmacy/uhn.phar.nophi.csv")
+apply(uhn.old, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+apply(uhn, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+old.route.freq <- data.table(table(uhn.old$Route_Code, useNA = "ifany"))
+new.route.freq <- data.table(table(uhn$Route_Code, useNA = "ifany"))
+uhn <- readg(uhn, phar)
+uhn <- uhn[order(Order_No)]
+
+nrow(unique(uhn.old[,.(Order_No, Generic_Name ,AHFS)]))
+nrow(unique(uhn.old[,.(Order_No, AHFS, Route_Code)]))
+unique(uhn.old[,.(Order_No, AHFS, Route_Code)]) -> check
+## result: approach not plausible, old data contains

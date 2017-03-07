@@ -33,7 +33,8 @@ cci.echo <- c(ip.int[startwith.any(Intervention.Code, c("3IP30", "3HZ30")), EncI
 smh.cci.echo <- cci.echo[startsWith(cci.echo, "11")] %>% unique
 sbk.cci.echo <- cci.echo[startsWith(cci.echo, "12")] %>% unique
 
-smh.echo <- readg(smh, echo) 
+smh.echo <- readg(smh, echo)
+smh.echo$EncID.new <- as.character(smh.echo$EncID.new)
 sbk.echo <- readg(sbk, echo)
 
 intersect(smh.echo$EncID.new, smh.cci.echo) %>% length
@@ -43,3 +44,25 @@ setdiff(sbk.echo$EncID.new, sbk.cci.echo) %>% unique %>% length
 compare.sets(smh.cci.echo, smh.echo$EncID.new)
 compare.sets(sbk.cci.echo, sbk.echo$EncID.new)
 
+# --------------------- march 06 find other possible echo cci ------------------
+cci.names <- fread("H:/GEMINI/Coding/CCI_Code_Eng_Desc_2014_V1_0.csv")
+er.int$Intervention.Code <- er.int$Occurrence.Type
+int.all <- rbind(er.int[,.(Intervention.Code, EncID.new)],
+                 ip.int[,.(Intervention.Code, EncID.new)])
+smh.int.freq <- int.all[EncID.new%in%smh.echo$EncID.new, .N, by = Intervention.Code] %>%
+  arrange(desc(N)) %>% data.table
+smh.int.freq[!Intervention.Code%in%cci.names$code, ]
+smh.int.freq <- merge(smh.int.freq, cci.names,
+                      by.x = "Intervention.Code", by.y = "code",
+                      all.x = T, sort = F)
+
+sbk.int.freq <- int.all[EncID.new%in%sbk.echo$EncID.new, .N, by = Intervention.Code] %>%
+  arrange(desc(N)) %>% data.table
+sbk.int.freq[!Intervention.Code%in%cci.names$code, ]
+sbk.int.freq <- merge(sbk.int.freq, cci.names,
+                      by.x = "Intervention.Code", by.y = "code",
+                      all.x = T, sort = F)
+
+
+fwrite(smh.int.freq, "H:/GEMINI/Results/Check/echo/smh.echo.cci.freq.csv")
+fwrite(sbk.int.freq, "H:/GEMINI/Results/Check/echo/sbk.echo.cci.freq.csv")

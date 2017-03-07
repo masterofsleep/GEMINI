@@ -79,3 +79,53 @@ dat <- readg(sbk, micro_neg)
 dat <- readg(sbk, micro_pos.csv)
 dat <- readg(sbk, phar)
 dat <- readg(sbk, rad.csv)
+
+
+
+# ------------------- march 6 list of encounters of missing er lab -------------
+sbk.laber <- readg(sbk, labs_er)
+sbk.dad <- readg(sbk, dad)
+sbk.no.laber <- sbk.dad[!EncID.new%in%sbk.laber$EncID.new, .(Admit.Date, Discharge.Date, EncID.new)] %>% 
+  arrange(ymd(Discharge.Date)) %>% data.table
+sbk.no.laber$EncID.new <- str_sub(sbk.no.laber$EncID.new, 3, 8)
+fwrite(sbk.no.laber, "H:/GEMINI/Results/Ad Hoc/sbk.nolaber.csv")
+
+
+# ------------------- check missingness in uhn micro ---------------------------
+setwd("H:/GEMINI/Data/UHN/Micro/TW")
+files <- list.files()
+tw.micro <- NULL
+for(i in files){
+  dat <- fread(i)
+  tw.micro <- c(tw.micro, dat$EncID.new)
+}
+
+
+setwd("H:/GEMINI/Data/UHN/Micro/TGH")
+files <- list.files()
+tg.micro <- NULL
+for(i in files){
+  dat <- fread(i)
+  tg.micro <- c(tg.micro, dat$EncID.new)
+}
+uhn.adm <- readg(uhn, adm)
+uhn.dad <- readg(uhn, dad)
+uhn.dad <- merge(uhn.dad, uhn.adm[,.(EncID.new, Institution.Number)])
+uhn.dad$micro <- uhn.dad$EncID.new%in%c(tw.micro, tg.micro)
+ggplot(uhn.dad[Institution.Number=="54265"], aes(x = ymd(Discharge.Date), fill = micro)) + 
+  geom_histogram(binwidth = 5)
+
+ggplot(uhn.dad[Institution.Number=="54266"], aes(x = ymd(Discharge.Date), fill = micro)) + 
+  geom_histogram(binwidth = 5)
+
+
+# ------------------------ check new sbk lab er --------------------------------
+sbk.lab.er1 <- fread("R:/GEMINI/_RESTORE/SBK/Lab/sbk.labs_er1.csv")
+sbk.lab.er2 <- fread("R:/GEMINI/_RESTORE/SBK/Lab/sbk.labs_er2.csv")
+sbk.lab.er1$EncID.new <- paste("12", sbk.lab.er1$EncID.new, sep = "")
+sbk.lab.er2$EncID.new <- paste("12", sbk.lab.er2$EncID.new, sep = "")
+sbk.dad <- readg(sbk, dad)
+
+sbk.dad$laber <- ifelse(sbk.dad$EncID.new%in%sbk.lab.er1$EncID.new, "sbk.lab.er1",
+                        ifelse(sbk.dad$EncID.new%in%sbk.lab.er2$EncID.new, "sbk.lab.er2", "no.lab.er"))
+ggplot(sbk.dad, aes(ymd(Discharge.Date), fill = laber)) + geom_histogram(binwidth = 5, alpha = 0.6)

@@ -251,3 +251,25 @@ head(msh.lab, 100)
 sum(is.na(msh.lab$REFERANCE_LAB))
 fwrite(msh.lab, "H:/GEMINI/Data/MSH/Lab/msh.lab.nophi.csv")
 
+
+
+# ----------- march 7 new sbk lab er -------------------------------------------
+sbk.lab.er1 <- fread("R:/GEMINI/_RESTORE/SBK/Lab/sbk.labs_er1.csv")
+sbk.lab.er2 <- fread("R:/GEMINI/_RESTORE/SBK/Lab/sbk.labs_er2.csv")
+sbk.lab.er1$EncID.new <- paste("12", sbk.lab.er1$EncID.new, sep = "")
+sbk.lab.er2$EncID.new <- paste("12", sbk.lab.er2$EncID.new, sep = "")
+
+sbk.lab.er <- rbind(sbk.lab.er1, sbk.lab.er2, fill = T)
+names(sbk.lab.er) <- c("PID","SID","Test.Name", "Test.ID","Collection.Date",
+                  "Result.Value", "Result.Unit","Reference.Range", 
+                  "EncID.new")
+
+sbk.lab.er[str_sub(Collection.Date, -2, -1)=="PM"&str_sub(Collection.Date, -14, -13)<12, 
+      Collection.DtTm:= (mdy_hms(str_sub(Collection.Date, 1, 20)) + hours(12))]
+sbk.lab.er[str_sub(Collection.Date, -2, -1)=="PM"&str_sub(Collection.Date, -14, -13)==12, 
+      Collection.DtTm:= (mdy_hms(str_sub(Collection.Date, 1, 20)))]
+sbk.lab.er[str_sub(Collection.Date, -2, -1)=="AM"&str_sub(Collection.Date, -14, -13)<12, 
+      Collection.DtTm:= mdy_hms(str_sub(Collection.Date, 1, 20))]
+sbk.lab.er[str_sub(Collection.Date, -2, -1)=="AM"&str_sub(Collection.Date, -14, -13)==12, 
+      Collection.DtTm:= mdy_hms(str_sub(Collection.Date, 1, 20))-hours(12)]
+fwrite(sbk.lab.er, "H:/GEMINI/Data/SBK/Lab/sbk.labs_er.csv")

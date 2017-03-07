@@ -1,7 +1,8 @@
 # ================= Create training data for WATSON ============================
 # ======================= Feb 15 2017 ==========================================
 rm(list = ls())
-
+library(gemini)
+lib.pa()
 # ------------------- St.Michael's ---------------------------------------------
 setwd("R:/GEMINI-DREAM/DELIRIUM Charts")
 EncID.new <- NULL

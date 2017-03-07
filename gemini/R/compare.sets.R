@@ -13,5 +13,5 @@ compare.sets <- function(x, y){
   in.both <- length(intersect(x, y))
   x.only <- length(unique(setdiff(x, y)))
   y.only <- length(unique(setdiff(y, x)))
-  data.table(inboth, xonly, yonly)
+  data.table(in.both, x.only, y.only)
 }

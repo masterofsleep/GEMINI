@@ -93,26 +93,24 @@ rm(list = ls())
 library(gemini)
 lib.pa()
 micro <- NULL
-setwd("R:/GEMINI/_RESTORE/UHN/Micro/TW")
+setwd("H:/GEMINI/Data/UHN/Micro/TW")
 files <- list.files()
 for(i in 1:length(files)){
   dat <- fread(files[i])
-  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
   print(c(files[i], "EncID.new"%in%names(dat), "admdate"%in%names(dat)))
   micro <- rbind(micro, dat[,.(EncID.new, admdate, DIS.DT, CDATE, CTIME)])
 }
-setwd("R:/GEMINI/_RESTORE/UHN/Micro/TGH")
+setwd("H:/GEMINI/Data/UHN/Micro/TGH")
 files <- list.files()
-
-dat <- fread(files[1])
+tg.micro <- NULL
 for(i in 1:length(files)){
   dat <- fread(files[i])
-  dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
-  dat$DIS.DT <- dat$X.DIS.DT.
-  print(c(files[i], "EncID.new"%in%names(dat), "admdate"%in%names(dat)))
-  micro <- rbind(micro, dat[,.(EncID.new, admdate, DIS.DT)])
+  tg.micro <- c(tg.micro, dat$EncID.new)
 }
 length(unique(micro$EncID.new))
+
+adm <- readg(uhn, adm)
+table(adm$Institution.Number)
 
 dad <- readg(uhn, dad)
 micro <- merge(micro, dad[,.(EncID.new, Admit.Date, Discharge.Date)], by = "EncID.new", 
