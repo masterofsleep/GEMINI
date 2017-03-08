@@ -404,7 +404,7 @@ smh.ir <- smh.rad[proc_desc_long%in%smh.ir[Interventional==1, Test.Name], EncID.
 
 
 
-map.sbk <- read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 1)
+map.sbk <- readxl::read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 1)
 sbk.rad <- readg(sbk.rad, rad.csv)
 
 sum(sbk.rad$Test.Name%in%map.sbk$Test.Name)
@@ -423,7 +423,7 @@ uhn.radip <- readg(uhn, rad_ip)
 uhn.rader <- readg(uhn, rad_er)
 uhn.rad <- rbind(uhn.radip, uhn.rader)
 map.uhn <- 
-  read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 2)%>%
+  readxl::read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 2)%>%
   data.table
 uhn.ir.names <- map.uhn[Interventional==1,Test.Name]
 
@@ -707,3 +707,174 @@ discor <- unique(c(enc.new, enc.old))
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 dad <- dad[!EncID.new%in%discor]
 fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+
+
+
+
+
+
+
+# ---------------------- march 8 create table by fiscal year -------------------
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+dad[ymd(Discharge.Date)>=ymd("2010-04-01")&ymd(Discharge.Date)<ymd("2011-04-01"),
+    fiscal.year := "2010"]
+dad[ymd(Discharge.Date)>=ymd("2011-04-01")&ymd(Discharge.Date)<ymd("2012-04-01"),
+    fiscal.year := "2011"]
+dad[ymd(Discharge.Date)>=ymd("2012-04-01")&ymd(Discharge.Date)<ymd("2013-04-01"),
+    fiscal.year := "2012"]
+dad[ymd(Discharge.Date)>=ymd("2013-04-01")&ymd(Discharge.Date)<ymd("2014-04-01"),
+    fiscal.year := "2013"]
+dad[ymd(Discharge.Date)>=ymd("2014-04-01")&ymd(Discharge.Date)<ymd("2015-04-01"),
+    fiscal.year := "2014"]
+dad[ymd(Discharge.Date)>=ymd("2015-04-01")&ymd(Discharge.Date)<ymd("2016-04-01"),
+    fiscal.year := "2015"]
+table(dad$fiscal.year, useNA = "ifany")
+smh.adm <- readg(smh, adm)
+sbk.adm <- readg(sbk, adm)
+uhn.adm <- readg(uhn, adm)
+msh.adm <- readg(msh, adm)
+thp.adm <- readg(thp, adm)
+hcn <- unique(rbind(smh.adm[, .(Hash, EncID.new)],
+             sbk.adm[, .(Hash, EncID.new)],
+             uhn.adm[, .(Hash, EncID.new)],
+             msh.adm[,.(Hash = newHash, EncID.new)],
+             thp.adm[,.(Hash, EncID.new)]))
+hcn[EncID.new%in%hcn[duplicated(EncID.new), EncID.new]]
+dad$EncID.new <- as.character(dad$EncID.new)
+dad <- merge(dad, hcn, by = "EncID.new")
+
+dad[,":="(ct = EncID.new%in%ct.enc,
+           mri = EncID.new%in%mri.enc,
+           us = EncID.new%in%us.enc,
+          endo = EncID.new%in%endo.enc,
+          crmrius = ct|mri|us)]
+
+
+dad <- dad %>% arrange(Hash, ymd_hm(paste(Discharge.Date, Discharge.Time)))
+dad <- data.table(dad)
+time.since.last.admission<- c(NA, as.numeric(dad[2:138485, ymd_hm(paste(Admit.Date, Admit.Time))]-
+  dad[1:138484, ymd_hm(paste(Discharge.Date, Discharge.Time))])/(3600*24))
+dad$time.since.last.admission <- time.since.last.admission
+
+dad[!duplicated(Hash), time.since.last.admission :=NA]
+
+
+apply(dad, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+
+ddply(dad, ~fiscal.year, summarize,
+      number.of.hospitalization = length(unique(EncID.new)),
+      length.of.stay = paste(round(quantile(LoS)[2:4], 1), collapse = ", "),
+      age = paste(round(quantile(Age)[2:4], 1), collapse = ", "),
+      number.of.comorbidity = paste(round(quantile(n.comorb)[2:4]), collapse = ", "),
+      transfer.to.ICU = paste(sum(SCU.adm==1), ", ", 
+                  round(sum(SCU.adm==1)/length(SCU.adm)*100, 1),
+                  sep = ""),
+      death.in.hospital = paste(sum(Discharge.Disposition==7), ", ", 
+                                round(sum(Discharge.Disposition==1)/
+                                        length(Discharge.Disposition)*100, 1),
+                                sep = ""),
+      readmission.within.30.days = paste(sum(time.since.last.admission<=30, na.rm = T), ", ", 
+                                         round(sum(time.since.last.admission<=30, na.rm = T)/
+                                                 length(time.since.last.admission<=30)*100, 1),
+                                         sep = ""),
+      ALC = paste(sum(Number.of.ALC.Days>0), ", ", 
+                  round(sum(Number.of.ALC.Days>0)/length(Number.of.ALC.Days)*100, 1),
+                  sep = ""),
+      Cost = paste(round(quantile(Cost, na.rm = T)[2:4], 1), collapse = ", "),
+      US.CT.MRI = paste(sum(crmrius), ", ", 
+                        round(sum(crmrius)/length(crmrius)*100, 1),
+                        sep = ""),
+      endo.bron = paste(sum(endo), ", ", 
+                        round(sum(endo)/length(endo)*100, 1),
+                        sep = "")
+      ) -> table2
+table2 <- data.frame(t(table2))
+fwrite(table2, "H:/GEMINI/Results/DesignPaper/table2.new.march8.csv", row.names = T)
+
+
+
+
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+diag.freq <- table(dad$Diag.Code) %>% data.table %>% arrange(desc(N))
+diag.names <- readxl::read_excel("H:/GEMINI/Results/Diabetes/MRD.freqtable.xlsx") %>% data.table
+dad <- merge(dad, diag.names[,.(Diagnosis.Code, Diagnosis)],by.x = "Diag.Code",
+             by.y = "Diagnosis.Code")
+dad[, top10.diag := ifelse(Diag.Code%in%diag.freq$V1[1:10], Diagnosis, "Other")]
+dad[, top20.diag := ifelse(Diag.Code%in%diag.freq$V1[1:20], Diagnosis, "Other")]
+
+
+library(devtools)
+library(treemapify)
+top20diag  <- ddply(dad, ~top20.diag, summarize,
+      N = length(EncID.new),
+      Cost = median(Cost, na.rm = T)) %>% arrange(desc(N))
+names(top20diag)[1] <- "Diagnosis"
+top20diag$ID <-c(21, 1:20)
+top10diag <- ddply(dad, ~top10.diag, summarize,
+      N = length(EncID.new),
+      Cost = median(Cost, na.rm = T)) %>% arrange(desc(N))
+names(top10diag)[1] <- "Diagnosis"
+top10diag$ID <- c(11,1:10)
+
+
+
+library(treemap)
+RColorBrewer::display.brewer.all()
+reds <- c(rgb(255/255, 255/255, 255/255, 1),
+          rgb(255/255, 204/255, 204/255, 1),
+          rgb(255/255, 153/255, 153/255, 1),
+          rgb(255/255, 102/255, 102/255, 1),
+          rgb(255/255, 51/255, 51/255, 1),
+          rgb(255/255, 0/255, 0/255, 1),
+          rgb(204/255, 0/255, 0/255, 1),
+          rgb(153/255, 0/255, 0/255, 1))
+treemap(top20diag,
+        algorithm = "pivotSize",
+        index = c("Diagnosis"),
+        vSize = "N",
+        vColor = "Cost",
+        sortID = "ID",
+        type = "value",
+        palette = reds,
+        title = "Top 20 Diagnosis",
+        force.print.labels = T,
+        mapping = c(2000, 6000, 10000)
+)
+treemap(top10diag,
+        index = c("Diagnosis"),
+        vSize = "N",
+        vColor = "Cost",
+        type = "value",
+        sortID = "ID",
+        palette = reds,
+        title = "Top 10 Diagnosis",
+        force.print.labels = T,
+        mapping = c(2000, 6000, 10000)
+)
+
+ggplot(top10diag, aes(Diagnosis, y = Cost, 
+                      fill = Diagnosis)) + 
+  geom_bar(stat = "identity", width = top10diag$N/sum(top10diag$N)) + 
+  coord_polar("x")
+
+
+ggplot(top10diag, aes(x = "", y =  ,fill = Diagnosis)) +
+  geom_bar(stat = "identity") + 
+  coord_polar("x")
+
+
+
+library(plotrix)
+radial.pie(top10diag$Cost, labels = top10diag$Diagnosis,radlab = TRUE)
+
+pie1<-c(3,6,5,4,7,8,9,1,4)
+pie2<-list(0:3,1:6,2:5,1:4,0:7,4:8,2:9,0:1,0:4)
+pie3<-sample(10:60,36)
+pie4<-list(sort(sample(1:60,8)))
+for(sector in 2:36) pie4[[sector]]<-sort(sample(1:60,8))
+oldpar<-radial.pie(pie1,labels=LETTERS[1:9])
+radial.pie(pie2,labels=letters[2:10])
+radial.pie(pie3,labels=1:36)
+radial.pie(pie4,labels=1:36)
+# restore the par values
+par(oldpar)

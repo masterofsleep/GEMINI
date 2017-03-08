@@ -66,3 +66,32 @@ sbk.int.freq <- merge(sbk.int.freq, cci.names,
 
 fwrite(smh.int.freq, "H:/GEMINI/Results/Check/echo/smh.echo.cci.freq.csv")
 fwrite(sbk.int.freq, "H:/GEMINI/Results/Check/echo/sbk.echo.cci.freq.csv")
+
+
+
+
+# --------------- march 8 2017 new uhn echo data -------------------------------
+uhn.echo <- fread("R:/GEMINI/_RESTORE/UHN/Echo/uhn.echo.version2.csv")
+uhn.echo$EncID.new <- paste("13", uhn.echo$EncID.new, sep = "")
+uhn.echo[,.N, by = Procedure] %>% fwrite("H:/GEMINI/Results/Check/uhn.echo.freq.csv")
+fwrite(uhn.echo, "H:/GEMINI/Data/UHN/Echo/uhn.echo.csv")
+
+uhn.echo.old <- fread("R:/GEMINI/_RESTORE/UHN/Echo/old/uhn.echo.csv") %>% unique
+uhn.echo.old$EncID.new <- paste("13", uhn.echo.old$EncID.new, sep = "")
+setdiff(uhn.echo.old$EncID.new, uhn.echo$EncID.new)
+
+table(uhn.echo.old$Test_Name)
+sum(duplicated(uhn.echo))
+
+dad <- readg(uhn, dad)
+
+dat <- str_split(uhn.echo$Discharge_Date_Time, " ") %>% unlist %>% matrix(ncol = 2, byrow = T)
+uhn.echo$discharge.date <- dat
+
+ggplot(uhn.echo[Procedure=="2D Echocardiogram"], 
+       aes(mdy(discharge.date))) + 
+  geom_histogram(binwidth = 5) + ggtitle("2D Echocardiogram")
+
+ggplot(uhn.echo[Procedure=="TEE Echocardiogram"], 
+       aes(mdy(discharge.date))) + 
+  geom_histogram(binwidth = 10) + ggtitle("TEE Echocardiogram")

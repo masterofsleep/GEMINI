@@ -216,3 +216,5 @@ apply(cohort[ddm==T&ddm.abn==T, c(13:22), with = F], MARGIN = 2, FUN = sum)
 
 apply(cohort[dvt.pos==T|pe.pos==T, c(13:20), with = F], MARGIN = 2, FUN = sum)
 cohort[dvt.pos==T|pe.pos==T, c(13:22), with = F] -> check
+
+sum(cohort$ctpa|cohort$du|cohort$vq)

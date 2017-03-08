@@ -164,3 +164,22 @@ demo.var$EncID.new <- as.character(demo.var$EncID.new)
 dream.vars <- merge(demo.var, timeTTE, by = "EncID.new")
 
 fwrite(dream.vars, "H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")
+
+
+
+
+# merge subset to chart pull 
+smh.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 1)
+smh.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 2)
+smh.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 3)
+smh.echo <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SMH ECHO COMBINED_processed_newvar NG.csv")
+intersect(smh.echo$EncID.new, smh.sub.thrombus$EncID.new)
+intersect(smh.echo$EncID.new, smh.sub.pfo$EncID.new)
+intersect(smh.echo$EncID.new, smh.sub.veg$EncID.new)
+
+intersect(smh.sub.thrombus$EncID.new, smh.sub.pfo$EncID.new)
+intersect(smh.sub.thrombus$EncID.new, smh.sub.veg$EncID.new)
+intersect(smh.sub.pfo$EncID.new, smh.sub.veg$EncID.new)
+
+
+

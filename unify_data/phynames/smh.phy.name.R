@@ -45,3 +45,5 @@ smh.link[,':='(admit.phy.name = paste(AdmittingPhysicianFirstName, ADMITTINGPRAC
 smh.link[, GIM:= admit.phy.name%in%names.coded$Name[names.coded$GIM==1]|
            dis.phy.name%in%names.coded$Name[names.coded$GIM==1]]
 smh.link$GIM %>% table
+
+smh.link[GIM==F] %>% fwrite("H:/GEMINI/Results/Check/phynames/smh.notgim.csv")
