@@ -746,9 +746,14 @@ dad <- merge(dad, hcn, by = "EncID.new")
 dad[,":="(ct = EncID.new%in%ct.enc,
            mri = EncID.new%in%mri.enc,
            us = EncID.new%in%us.enc,
-          endo = EncID.new%in%endo.enc,
-          crmrius = ct|mri|us)]
+          endo = EncID.new%in%endo.enc)]
+dad[, ctmrius := ct|mri|us]
 
+rad <- c("ct", "mri", "us")
+dad[str_sub(EncID.new, 1, 2)=="15", ':='(ct = NA,
+                                         mri = NA,
+                                         us = NA,
+                                         ctmrius = NA)]
 
 dad <- dad %>% arrange(Hash, ymd_hm(paste(Discharge.Date, Discharge.Time)))
 dad <- data.table(dad)
@@ -760,12 +765,19 @@ dad[!duplicated(Hash), time.since.last.admission :=NA]
 
 
 apply(dad, MARGIN = 2, FUN = function(x) sum(is.na(x)))
-
+ddply(dad, ~fiscal.year, summarize,
+      readmission.within.30.days = paste(sum(time.since.last.admission<=30, na.rm = T), ", ", 
+                                         round(sum(time.since.last.admission<=30, na.rm = T)/
+                                                 length(time.since.last.admission<=30)*100, 1),
+                                         sep = ""))
 ddply(dad, ~fiscal.year, summarize,
       number.of.hospitalization = length(unique(EncID.new)),
       length.of.stay = paste(round(quantile(LoS)[2:4], 1), collapse = ", "),
       age = paste(round(quantile(Age)[2:4], 1), collapse = ", "),
       number.of.comorbidity = paste(round(quantile(n.comorb)[2:4]), collapse = ", "),
+      chars2 = paste(sum(Charlson.Comorbidity.Index%in%c("2", "3+")),
+                     round(sum(Charlson.Comorbidity.Index%in%c("2", "3+"))/
+                       length(Charlson.Comorbidity.Index)*100, 1), sep = ", "),
       transfer.to.ICU = paste(sum(SCU.adm==1), ", ", 
                   round(sum(SCU.adm==1)/length(SCU.adm)*100, 1),
                   sep = ""),
@@ -775,21 +787,31 @@ ddply(dad, ~fiscal.year, summarize,
                                 sep = ""),
       readmission.within.30.days = paste(sum(time.since.last.admission<=30, na.rm = T), ", ", 
                                          round(sum(time.since.last.admission<=30, na.rm = T)/
-                                                 length(time.since.last.admission<=30)*100, 1),
+                                                 length(time.since.last.admission[
+                                                   ymd(Admit.Date)>=ymd("2010-05-01")]<=30)*100, 1),
                                          sep = ""),
       ALC = paste(sum(Number.of.ALC.Days>0), ", ", 
                   round(sum(Number.of.ALC.Days>0)/length(Number.of.ALC.Days)*100, 1),
                   sep = ""),
       Cost = paste(round(quantile(Cost, na.rm = T)[2:4], 1), collapse = ", "),
-      US.CT.MRI = paste(sum(crmrius), ", ", 
-                        round(sum(crmrius)/length(crmrius)*100, 1),
+      US.CT.MRI = paste(sum(ctmrius, na.rm = T), ", ", 
+                        round(sum(ctmrius, na.rm = T)/sum(!is.na(ctmrius))*100, 1),
                         sep = ""),
+      US = paste(sum(us, na.rm = T), ", ", 
+                 round(sum(us, na.rm = T)/sum(!is.na(us))*100, 1),
+                 sep = ""),
+      CT = paste(sum(ct, na.rm = T), ", ", 
+                 round(sum(ct, na.rm = T)/sum(!is.na(ct))*100, 1),
+                 sep = ""),
+      MRI = paste(sum(mri, na.rm = T), ", ", 
+                 round(sum(mri, na.rm = T)/sum(!is.na(mri))*100, 1),
+                 sep = ""),
       endo.bron = paste(sum(endo), ", ", 
                         round(sum(endo)/length(endo)*100, 1),
                         sep = "")
       ) -> table2
 table2 <- data.frame(t(table2))
-fwrite(table2, "H:/GEMINI/Results/DesignPaper/table2.new.march8.csv", row.names = T)
+fwrite(table2, "H:/GEMINI/Results/DesignPaper/table2.new.march9.csv", row.names = T)
 
 
 

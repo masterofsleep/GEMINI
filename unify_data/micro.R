@@ -223,3 +223,29 @@ for(i in files){
   print(nrow(dat))
   fwrite(dat, paste("H:/GEMINI/Data/UHN/Micro/TGH/", i, sep = ""))
 }
+
+# -------- march 9 further clean uhn micro data -------------------------------
+setwd("H:/GEMINI/Data/UHN/Micro/TGH")
+files <- list.files()
+tgh.micro <- NULL
+for(i in files){
+  dat <- fread(i)
+  names(dat)[16:19] <- c("SRC", "SITE", "TEST", "ORG")
+  tgh.micro <- rbind(tgh.micro, dat[, c(1:19), with = F])
+  fwrite(dat, i)
+}
+
+
+setwd("H:/GEMINI/Data/UHN/Micro/TW")
+files <- list.files()
+twh.micro <- NULL
+for(i in files){
+  dat <- fread(i)
+  print(names(dat)[1:18])
+  twh.micro <- rbind(twh.micro, dat[, c(1:18), with = F])
+  fwrite(dat, i)
+}
+
+fwrite(tgh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.tgh.micro.csv")
+fwrite(twh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.twh.micro.csv")
+

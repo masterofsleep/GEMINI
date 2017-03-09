@@ -156,3 +156,16 @@ n.unknown
 i = 1
 dat[, cul:= paste(TEST, SRC, SITE, collapse = "")]
 dat$cul
+
+
+
+# ------------------------------ march 9 ---------------------------------------
+# --------------------  table for all "SRC == NONE" ----------------------------
+rm(list = ls())
+tgh.micro <- readg(uhn.tgh, micro)
+twh.micro <- readg(uhn.twh, micro)
+
+src.none <- rbind(tgh.micro[SRC =="NONE", .(TEST, SITE, ORG)],
+                  twh.micro[SRC =="NONE", .(TEST, SITE, ORG)])
+
+fwrite(src.none, "H:/GEMINI/Results/DRM/cul.src.none.csv")

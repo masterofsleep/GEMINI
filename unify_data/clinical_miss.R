@@ -47,6 +47,7 @@ missing.cluster(uhn, rad_er)
 missing.cluster(uhn, rad_ip)
 missing.cluster(uhn, txm_er)
 missing.cluster(uhn, txm_ip)
+missing.cluster(uhn, echo)
 
 # ----------------------------- Mount Sinai ------------------------------------
 missing.cluster(msh, diet)

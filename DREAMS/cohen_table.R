@@ -225,3 +225,52 @@ df4 <- df4 %>% filter(EncID.new%in%overlap) %>%
 kappa.table.narm(df3, df4, index = c(6:20), 500)%>%
   write.csv("H:/GEMINI/Results/DREAM/sbk.echo.kappa.csv")
   
+
+
+# ------------------------------------------------------------------------------
+# --------------------------------- new kappas --------------------------------- 
+# --------------------------------- 2017-03-09 ---------------------------------
+setwd("H:/GEMINI/Results/DREAM/201703/kappa")
+files <- list.files()
+ismail <- read_excel(files[1]) %>% unique %>% filter(!is.na(Afib))
+nikki  <- read_excel(files[2]) %>% unique %>% filter(!is.na(afib))
+shahina <- read_excel(files[4])%>% unique %>% filter(!is.na(Afib))
+
+intersect(ismail$EncID.new, nikki$`encoutner ID`)
+intersect(shahina$EncID.new, nikki$`encoutner ID`)
+intersect(ismail$EncID.new, shahina$EncID.new)
+
+kappa.table <- function(df1, df2, index){
+  kappa <- NULL
+  varname <- names(df1)[index]
+  weighted.kappa <- NULL
+  for(i in index){
+    co.ka <- cohen.kappa(cbind(df1[,i], df2[,i]))
+    kappa <- c(kappa, co.ka$kappa)
+    weighted.kappa <- c(weighted.kappa, co.ka$weighted.kappa)
+  }
+  ka.table <- data.frame(rbind(kappa))
+  names(ka.table) <- varname
+  return(t(ka.table))
+}
+
+overlap1 <- intersect(ismail$EncID.new, nikki$`encoutner ID`)
+ismail1 <- ismail[ismail$EncID.new%in%overlap1, ]
+nikki1 <- nikki[nikki$`encoutner ID`%in%overlap1, ]
+
+overlap2 <- intersect(shahina$EncID.new, nikki$`encoutner ID`)
+shahina2 <- shahina[shahina$EncID.new%in%overlap2, ] %>% arrange(EncID.new)
+nikki2 <- nikki[nikki$`encoutner ID`%in%overlap2, ] %>% arrange(`encoutner ID`)
+with500 <- kappa.table(shahina2[1:17, ], nikki2[1:17, ], c(4:10))
+without500 <- kappa.table(shahina2[c(1:3, 5:17), ], nikki2[c(1:3, 5:17), ], c(4:10))
+data.frame(with500, without500)%>% fwrite("H:/GEMINI/Results/DREAM/201703/kappa/result/shahina.ng.csv")
+
+
+overlap3 <- intersect(ismail$EncID.new, shahina$EncID.new)
+ismail3 <- ismail[ismail$EncID.new%in%overlap3, ] %>% arrange(EncID.new)
+shahina3 <- shahina[shahina$EncID.new%in%overlap3, ] %>% arrange(EncID.new)
+ismail3$EncID.new == shahina3$EncID.new
+
+with500 <- kappa.table(ismail3, shahina3, c(4:10))
+without500 <- kappa.table(ismail3[c(-16, -22), ], shahina3[c(-16, -22), ], c(4:10))
+data.frame(with500, without500)%>% fwrite("H:/GEMINI/Results/DREAM/201703/kappa/result/ismail.shahina.csv")

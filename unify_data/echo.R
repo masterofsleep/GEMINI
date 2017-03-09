@@ -86,12 +86,19 @@ sum(duplicated(uhn.echo))
 dad <- readg(uhn, dad)
 
 dat <- str_split(uhn.echo$Discharge_Date_Time, " ") %>% unlist %>% matrix(ncol = 2, byrow = T)
-uhn.echo$discharge.date <- dat
+uhn.echo$discharge.date <- dat[, 1]
 
-ggplot(uhn.echo[Procedure=="2D Echocardiogram"], 
+ggplot(uhn.echo.only, 
        aes(mdy(discharge.date))) + 
-  geom_histogram(binwidth = 5) + ggtitle("2D Echocardiogram")
+  geom_histogram(binwidth = 5) + ggtitle("echo")
 
-ggplot(uhn.echo[Procedure=="TEE Echocardiogram"], 
+ggplot(uhn.ecg, 
        aes(mdy(discharge.date))) + 
-  geom_histogram(binwidth = 10) + ggtitle("TEE Echocardiogram")
+  geom_histogram(binwidth = 10) + ggtitle("ecg")
+
+
+name <- unique(uhn.echo$Procedure)
+uhn.echo.only <- uhn.echo[Procedure%in%name[c(2,3,6,7)]]
+fwrite(uhn.echo.only, "H:/GEMINI/Data/UHN/Echo/uhn.echo.csv")
+uhn.ecg <- uhn.echo[Procedure%in%name[c(1,4,5)]]
+fwrite(uhn.ecg, "H:/GEMINI/Data/UHN/Echo/uhn.ecg.csv")

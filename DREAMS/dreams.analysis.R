@@ -182,4 +182,19 @@ intersect(smh.sub.thrombus$EncID.new, smh.sub.veg$EncID.new)
 intersect(smh.sub.pfo$EncID.new, smh.sub.veg$EncID.new)
 
 
+sbk.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 2)
+sbk.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 1)
+sbk.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 3)
+sbk.echo.combined <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SBK ECHO COMBINED_processed NG_newvar NG.csv")
 
+sbk.echo.combined[EncID.new%in%sbk.sub.thrombus$EncID.new, EncID.new] %>%
+  duplicated %>% sum
+sbk.sub.thrombus$EncID.new %>% duplicated %>% sum
+
+sbk.echo.combined[EncID.new%in%sbk.sub.pfo$EncID.new, EncID.new] %>%
+  duplicated %>% sum
+sbk.sub.pfo$EncID.new %>% duplicated %>% sum
+
+sbk.echo.combined[EncID.new%in%sbk.sub.veg$EncID.new, EncID.new] %>%
+  duplicated %>% sum
+sbk.sub.veg$EncID.new %>% duplicated %>% sum
