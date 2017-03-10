@@ -488,16 +488,19 @@ rm(list = ls())
 smh.phar <- readg(smh, phar)
 sbk.phar <- readg(sbk, phar)
 uhn.phar <- readg(uhn.phar, phar.nophi)
+msh.phar <- readg(msh, phar)
 
 smh.phar <- smh.phar[!duplicated(paste(din, EncID.new, sep = ""))]
 sbk.phar <- sbk.phar[!duplicated(paste(ndc_din, EncID.new, sep = ""))]
 uhn.phar <- uhn.phar[!duplicated(paste(DIN, EncID.new, sep = ""))]
-
-lab.table <- table(c(smh.phar $EncID.new, sbk.phar $EncID.new, uhn.phar $EncID.new)) %>%
+msh.phar <- msh.phar[!duplicated(paste(DIN, EncID.new, sep = ""))]
+lab.table <- table(c(smh.phar$EncID.new, sbk.phar $EncID.new, uhn.phar$EncID.new,
+                     msh.phar$EncID.new)) %>%
   data.table
 names(lab.table) <- c("EncID.new", "nmed")
 dad <- merge(dad, lab.table, by = "EncID.new", all.x = T)
 dad$nmed[is.na(dad$nmed)] <- 0
+dad[str_sub(EncID.new,1, 2) =="15", nmed:= NA]
 fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 dim(lab.table);dim(lab.table)/86033
 lab.table <- c(lab.table, rep(0, 86033-length(lab.table)))
@@ -763,6 +766,7 @@ dad$time.since.last.admission <- time.since.last.admission
 
 dad[!duplicated(Hash), time.since.last.admission :=NA]
 
+names(dad)
 
 apply(dad, MARGIN = 2, FUN = function(x) sum(is.na(x)))
 ddply(dad, ~fiscal.year, summarize,

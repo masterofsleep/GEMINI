@@ -87,3 +87,12 @@ write.csv(sbk, "H:/GEMINI/Data/SBK/CIHI/sbk.ip_xfer.nophi.csv",
           row.names = F, na = "")
 write.csv(uhn, "H:/GEMINI/Data/UHN/CIHI/uhn.ip_xfer.nophi.csv",
           row.names = F, na = "")
+
+
+
+## ------------------- march 10 new msh xfer data ------------------------------
+library(gemini)
+lib.pa()
+msh <- fread("R:/GEMINI/_RESTORE/MSH/Transfers/msh.transfers.nophi.csv")
+msh[, EncID.new := paste("14", EncID.new, sep = "")]
+fwrite(msh, "H:/GEMINI/Data/MSH/CIHI/msh.xfer.csv")

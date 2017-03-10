@@ -1,4 +1,4 @@
-#' A title function
+#' A code.title function
 #' 
 #' this function allows you to create title for codes with date
 #' @param what content you want to put in the title
@@ -6,7 +6,7 @@
 #' examples
 #' title("nice") 
 
-title <- function(what){
+code.title <- function(what){
   len <- nchar(what)
   cat("# ------------------------------------------------------------------------------\n",
       paste(c(c("# -"), rep("-", (80 - 5 - len)/2), " ",what, " ", 

@@ -36,6 +36,9 @@ write.csv(vq, "H:/GEMINI/Results/Syncope/imaging/vq.csv", row.names = F,
 du.smh <- fread("H:/GEMINI/Results/Syncope/imaging/du.smh.csv")
 du.sbk <- fread("H:/GEMINI/Results/Syncope/imaging/du.sbk.final.csv")
 du.uhn <- fread("H:/GEMINI/Results/Syncope/imaging/du.uhn.csv")
+du.uhn <- du.uhn[EncID.new%in%cohort$EncID.new]
+du.sbk <- du.sbk[EncID.new%in%cohort$EncID.new]
+du.smh <- du.smh[EncID.new%in%cohort$EncID.new]
 
 names(du.smh)
 names(du.sbk)
@@ -61,6 +64,8 @@ ctpa <- fread("H:/GEMINI/Results/Syncope/imaging/ctpa.csv")
 vq <- fread("H:/GEMINI/Results/Syncope/imaging/vq.csv")
 du <- fread("H:/GEMINI/Results/Syncope/imaging/du.csv")
 ddm <- fread("H:/GEMINI/Results/Syncope/ddm.csv")
+
+
 
 # categorize ddm results by hospital reference ranges
 ddm[str_sub(EncID.new,1,2)%in%c("11","12"),abnormal:= as.numeric(Result.Value)>=230|Result.Value==">5000"]

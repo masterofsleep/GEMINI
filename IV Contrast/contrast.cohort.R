@@ -141,16 +141,16 @@ sbk.labip <- readg(sbk, labs_ip)
 sbk.lab <- rbind(sbk.laber, sbk.labip)
 uhn.lab <- readg(uhn, labs)
 smh.lab[Test.Name=="Creatinine", 
-        .(EncID.new, Test.Name, Result.Value, Result.Unit, Reference.Range)] %>% 
+        .(EncID.new, Test.Name, Result.Value, Result.Unit, Reference.Range, Collection.DtTm)] %>% 
   fwrite("smh.creatinine.csv")
 sbk.lab[Test.Name=="Creatinine (renal)", 
-        .(EncID.new, Test.Name, Result.Value, Result.Unit, Reference.Range)] %>% 
+        .(EncID.new, Test.Name, Result.Value, Result.Unit, Reference.Range, Collection.DtTm)] %>% 
   fwrite("sbk.creatinine.csv")
 uhn.lab[Test.Item=="Creatinine"&
           Test.Name%in%c("Creatinine, Plasma",
                          "Electrolytes, Creatinine, Glucose Profile",
                          "Electrolytes, Creatinine, Profile"), 
-        .(EncID.new, Test.Name, Test.Item, Result.Value, Result.Units)] %>% 
+        .(EncID.new, Test.Name, Test.Item, Result.Value, Result.Units, Collection.DtTm = paste(Test.Date, Test.Time))] %>% 
   fwrite("uhn.creatinine.csv")
 creatinine.smh <- smh.lab[Test.Name=="Creatinine"&EncID.new%in%cohort$EncID.new]
 creatinine.sbk <- sbk.lab[Test.Name=="Creatinine (renal)"&EncID.new%in%cohort$EncID.new]
@@ -201,3 +201,26 @@ lab.desc(crea.uhn$Result.Value)
 
 x <- crea.smh$Result.Value
 a<- (data.table(table(x[is.na(as.numeric(x))])))
+
+
+# ------------------------------------------------------------------------------
+# --------------------- check non numeric creatinine value --------------------- 
+# --------------------------------- 2017-03-10 --------------------------------- 
+# descriptive for creatinine
+crea.smh <- fread("H:/GEMINI/Results/Contrast/smh.creatinine.csv")
+crea.smh$Result.Value <- str_replace_all(crea.smh$Result.Value, "[@A-z]","")
+crea.sbk <- fread("H:/GEMINI/Results/Contrast/sbk.creatinine.csv")
+crea.uhn <- fread("H:/GEMINI/Results/Contrast/uhn.creatinine.csv")
+
+crea <- rbind(crea.smh[, .(EncID.new, Test.Name, Result.Value, Result.Unit, Collection.DtTm)],
+               crea.sbk[, .(EncID.new, Test.Name, Result.Value, Result.Unit, Collection.DtTm)],
+               crea.uhn[, .(EncID.new, Test.Name, Result.Value, Result.Unit = Result.Units, Collection.DtTm)])
+
+check <- rbind(crea.smh[is.na(as.numeric(Result.Value)), .(Result.Value, EncID.new)],
+               crea.sbk[is.na(as.numeric(Result.Value)), .(Result.Value, EncID.new)],
+               crea.uhn[is.na(as.numeric(Result.Value)), .(Result.Value, EncID.new)])
+nonumeric.values <- unique(check$Result.Value)
+enc.with.nonum <- crea[EncID.new%in%check[Result.Value%in%nonumeric.values[c(1,2,10,11,17, 20)], EncID.new]]
+enc.with.nonum <- enc.with.nonum[order(EncID.new)]
+
+fwrite(enc.with.nonum, "H:/GEMINI/Results/Contrast/crea.all.with.non.num.csv")
