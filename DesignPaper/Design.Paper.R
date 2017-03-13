@@ -95,10 +95,11 @@ dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 ip.diag <- readg(gim, ip_diag, 
                  colClasses = list(character = c("EncID.new")))
 #fwrite(ip.diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
-n.comorb <- table(ip.diag$EncID.new)-1                                          # number of comorbidities
+n.comorb <- table(ip.diag$EncID.new)                                          # number of comorbidities
 n.comorb <- data.table(n.comorb)
+dad[, n.comorb:=NULL]
 names(n.comorb) <- c("EncID.new", "n.comorb")
-median(n.comorb);IQR(n.comorb)
+median(n.comorb$n.comorb);IQR(n.comorb$n.comorb)
 dad$EncID.new <- as.character(dad$EncID.new)
 dad <- merge(dad, n.comorb, by = "EncID.new")
 
