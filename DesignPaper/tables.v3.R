@@ -233,5 +233,11 @@ uhn <- readg(uhn.er, .er.nophi,
 msh <- readg(msh, .er.nophi)
 thp <- readg(thp, .er.nophi)
 
-
-
+er <- c(smh$EncID.new, sbk$EncID.new, uhn$EncID.new, msh$EncID.new, thp$EncID.new)
+dad$er.adm <- dad$EncID.new%in%er
+ddply(dad, ~str_sub(EncID.new, 1, 2), summarize,
+      N.hos = length(unique(EncID.new)),
+      n.er = sum(er.adm),
+      total.bed.days = sum(LoS)) -> table6
+table6 <- table6[c(3,1,2,4,5),]
+fwrite(table6, "H:/GEMINI/Results/DesignPaper/table6.new.march10.csv")
