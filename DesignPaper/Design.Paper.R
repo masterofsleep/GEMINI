@@ -863,7 +863,8 @@ treemap(top20diag,
         sortID = "ID",
         type = "value",
         palette = reds,
-        title = "Top 20 Diagnosis",
+        title = "",
+        title.legend = "Median Cost per Hospitalization",
         force.print.labels = T,
         mapping = c(2000, 6000, 10000)
 )

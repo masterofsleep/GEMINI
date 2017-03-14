@@ -126,7 +126,7 @@ tab3 <- function(x){
     Age = me.iqr0(x$Age),
     Comorb = me.iqr(x$n.comorb),
     ICU = cat1.prop(x$SCU.adm, 1),
-    death = cat1.prop(x$Discharge.Disposition, 4),
+    death = cat1.prop(x$Discharge.Disposition, 7),
     readmission.within.30.days = paste(sum(x$time.since.last.admission<=30, na.rm = T), " (", 
                                        round1(sum(x$time.since.last.admission<=30, na.rm = T)/
                                                 length(x$time.since.last.admission[
@@ -181,8 +181,8 @@ tab4 <- function(x){
     total.alc = paste(sum(x$Number.of.ALC.Days, na.rm = T), " (", 
                        round1(sum(x$Number.of.ALC.Days, na.rm = T)/289713*100), ")", sep = ""),
     total.los = me.iqr(x$LoS),
-    totl.beddays = paste(sum(x$Number.of.ALC.Days, na.rm = T), " (", 
-                         round1(sum(x$Number.of.ALC.Days, na.rm = T)/1335075*100), ")", sep = ""),
+    totl.beddays = paste(round1(sum(x$LoS, na.rm = T)), " (", 
+                         round1(sum(x$LoS, na.rm = T)/1335075*100), ")", sep = ""),
     cost = me.iqr(x$Cost[!is.na(x$Cost)])
   )
 }
@@ -389,11 +389,11 @@ dad[, read.in.30 := ifelse(ymd(Discharge.Date)<ymd("2010-05-01"), NA,
 
 
 df <- ddply(dad, ~fiscal.year, summarize,
-      number.of.admission = length(EncID.new),
-      median.length.of.stay = median(LoS),
-      rate.of.readmission.in.30days = sum(read.in.30==T, na.rm = T)/sum(!is.na(read.in.30))*100,
-      median.cost = median(Cost, na.rm = T),
-      rate.of.radiology = sum(ctmrius==1, na.rm = T)/sum(!is.na(ctmrius))*100)
+      Number.of.Hospitalization = length(EncID.new),
+      Median.Length.of.Stay = median(LoS),
+      Rate.of.Readmission.in.30.Days = sum(read.in.30==T, na.rm = T)/sum(!is.na(read.in.30))*100,
+      Median.Cost = median(Cost, na.rm = T),
+      "Rate.of.Radiology.Test.\n(CT/MRI/Ultrasound)" = sum(ctmrius==1, na.rm = T)/sum(!is.na(ctmrius))*100)
 
 df[2, 2:6] <- (df[2, 2:6] - df[1, 2:6])/df[1, 2:6] * 100
 df[3, 2:6] <- (df[3, 2:6] - df[1, 2:6])/df[1, 2:6] * 100
@@ -403,23 +403,25 @@ df[1, 2:6] <- 0
 
 library(reshape2)
 df <- melt(df, id.var = "fiscal.year")
-df$significant.level <- ifelse(df$variable%in%c("rate.of.readmission.in.30days", "median.cost",
-                                  "rate.of.radiology"), "significant", "not significant")
+# df$significant.level <- ifelse(df$variable%in%c("rate.of.readmission.in.30days", "median.cost",
+#                                   "rate.of.radiology"), "significant", "not significant")
+names(df)[2] <- " "
+df$` ` <- str_replace_all(df$` `, "[.]", " ")
 
-ggplot(df, aes(fiscal.year, value, group = variable,
-               color = variable, shape = significant.level)) + 
-  geom_point(size = 3) + geom_line(size = 1, alpha = 0.5) + 
+ggplot(df, aes(fiscal.year, value, group = ` `,
+               color = ` `)) + 
+  geom_point(size = 3, shape = 16) + geom_line(size = 1, alpha = 0.5) + 
   ylim(-10, 35) + 
   geom_abline(aes(slope = 0, intercept = 0), linetype = 2, alpha = 0.5) +
   theme_bw() +
-  ylab("Change compared to baseline (%)") +
-  scale_shape_manual(values = c(16, 8)) +
+  ylab("Change From Baseline (%)") +
   xlab("Fiscal Year")
 
 
 
 # ------------------------ treemap ---------------------------------------------
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+length(unique(dad$Hash))
 diag.freq <- table(dad$Diag.Code) %>% data.table %>% arrange(desc(N))
 dad[, top20.diag := ifelse(Diag.Code%in%diag.freq$V1[1:20], Diagnosis, "Other")]
 
@@ -431,9 +433,52 @@ top20diag  <- ddply(dad, ~top20.diag, summarize,
                     Cost = median(Cost, na.rm = T)) %>% arrange(desc(N))
 names(top20diag)[1] <- "Diagnosis"
 top20diag$ID <-c(21, 1:20)
+cbind(top20diag$Diagnosis, c("Other", 
+                             "Heart Faliure",
+                             "Pneumonia",
+                             "COPD", 
+                             "UTI",
+                             "Stroke",
+                             "Sepsis",
+                             "Electrolyte Abnormality",
+                             "Acute Kidney Injury",
+                             "GI Bleed",
+                             "Delirium",
+                             "T2DM",
+                             "Aspiration Pneumonitis",
+                             "Cellulitis",
+                             "Syncope",
+                             "Palliative Care",
+                             "Alcohol-Related",
+                             "Falls",
+                             "Chest Pain",
+                             "Gastroenteritis",
+                             "C. difficile"))
+top20diag$Diagnosis <- c("Other", 
+                         "Heart Faliure",
+                         "Pneumonia",
+                         "COPD", 
+                         "UTI",
+                         "Stroke",
+                         "Sepsis",
+                         "Electrolyte Abnormality",
+                         "Acute Kidney Injury",
+                         "GI Bleed",
+                         "Delirium",
+                         "T2DM",
+                         "Aspiration Pneumonitis",
+                         "Cellulitis",
+                         "Syncope",
+                         "Palliative Care",
+                         "Alcohol-Related",
+                         "Falls",
+                         "Chest Pain",
+                         "Gastroenteritis",
+                         "C. difficile")
+                         
+                         
 
 library(treemap)
-RColorBrewer::display.brewer.all()
 reds <- c(rgb(255/255, 255/255, 255/255, 1),
           rgb(255/255, 204/255, 204/255, 1),
           rgb(255/255, 153/255, 153/255, 1),
@@ -442,12 +487,7 @@ reds <- c(rgb(255/255, 255/255, 255/255, 1),
           rgb(255/255, 0/255, 0/255, 1),
           rgb(204/255, 0/255, 0/255, 1),
           rgb(153/255, 0/255, 0/255, 1))
-greenred <- c(rgb(153/255, 255/255, 51/255, 1),
-              rgb(178/255, 255/255, 102/255, 1),
-              rgb(255/255, 255/255, 102/255, 1),
-              rgb(255/255, 102/255, 102/255, 1),
-              rgb(255/255, 51/255, 51/255, 1),
-              rgb(255/255, 0/255, 0/255, 1))
+
 treemap(top20diag,
         algorithm = "pivotSize",
         index = c("Diagnosis"),
@@ -455,10 +495,11 @@ treemap(top20diag,
         vColor = "Cost",
         sortID = "ID",
         type = "value",
-        palette = greenred,
-        title = "Top 20 Diagnosis",
+        palette = reds,
+        title = "",
+        title.legend = "Median Cost per Hospitalization",
         force.print.labels = T,
-        mapping = c(1000, 6000, 10000)
+        mapping = c(2000, 6000, 10000)
 )
 
 
@@ -468,7 +509,7 @@ p1 <-ggplot(dad, aes(Age)) +
                  color = "black", fill = "white") + 
   geom_density(fill = "#FF6666", alpha = 0.2) +
   theme_bw() +
-  xlab("Age")
+  xlab("Age") + ylab(NULL)
 
 p2 <- ggplot(dad, aes(n.comorb)) +
   geom_histogram(aes(y = ..density..),
@@ -476,24 +517,47 @@ p2 <- ggplot(dad, aes(n.comorb)) +
                  color = "black", fill = "white") + 
   geom_density(fill = "#FF6666", alpha = 0.2, adjust = 2) +
   theme_bw() +
-  xlab("Number of Comorbidities")
+  xlab("Number of Comorbidities")+ ylab(NULL)
 
 p3 <- ggplot(dad, aes(LoS)) +
   geom_histogram(aes(y = ..density..),
-                 binwidth = 5, alpha= 0.5,
+                 binwidth = 2, alpha= 0.5,
                  color = "black", fill = "white") + 
   geom_density(fill = "#FF6666", alpha = 0.2) +
   theme_bw() +
-  xlab("Length of Stay")
+  xlab("Length of Stay")+ ylab(NULL) +
+  xlim(0, 100)
+p3
+
 
 p4 <- ggplot(dad, aes(Cost)) +
   geom_histogram(aes(y = ..density..),
-                 binwidth = 500, alpha= 0.5,
+                 binwidth = 2000, alpha= 0.5,
                  color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2) +
-  theme_bw() +
-  xlab("Cost")
+  geom_density(fill = "#FF6666", alpha = 0.2, adjust =1) +
+  theme_bw() + 
+  xlab("Cost")+ ylab(NULL) + xlim(0, 100000)
+
+p4 <- ggplot(dad, aes(logcost)) +
+  geom_histogram(aes(y = ..density..),
+                 binwidth = 0.05, alpha= 0.5,
+                 color = "black", fill = "white") + 
+  geom_density(fill = "#FF6666", alpha = 0.2, adjust =1.5) +
+  theme_bw() + scale_x_continuous(labels = trans_format("identity", math_format(10^.x))) +
+  xlab("log10(Cost)")+ ylab(NULL)# + xlim(0, 100000) 
+
+p4
+
+
 library(gridExtra)
 library(grid)
 
-grid.arrange(p1, p2, p3, p4, nrow = 4)
+grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2,
+             left = "Proportion of Population")
+
+
+
+dad$age.65 <- ifelse(dad$Age<65, "<65", ">=65")
+ddply(dad, ~age.65, summarize,
+      number.of.hospitalization = length(unique(EncID.new)),
+      readmission.within.30.days = cat1.prop(read.in.30[!is.na(read.in.30)], TRUE))

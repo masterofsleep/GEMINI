@@ -169,32 +169,89 @@ fwrite(dream.vars, "H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.c
 
 
 # merge subset to chart pull 
-smh.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 1)
-smh.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 2)
-smh.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 3)
-smh.echo <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SMH ECHO COMBINED_processed_newvar NG.csv")
-intersect(smh.echo$EncID.new, smh.sub.thrombus$EncID.new)
-intersect(smh.echo$EncID.new, smh.sub.pfo$EncID.new)
-intersect(smh.echo$EncID.new, smh.sub.veg$EncID.new)
+sbk.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 2)%>% data.table
+sbk.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 1)%>%data.table
+sbk.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 3)%>%data.table
+sbk.echo.combined <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SBK ECHO COMBINED_processed NG_newvar NG.csv")%>%data.table
 
-intersect(smh.sub.thrombus$EncID.new, smh.sub.pfo$EncID.new)
-intersect(smh.sub.thrombus$EncID.new, smh.sub.veg$EncID.new)
-intersect(smh.sub.pfo$EncID.new, smh.sub.veg$EncID.new)
+apply(sbk.echo.combined, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+
+## names to combine
+# thrombus: ACchange, 
+# pfo: NewAC, repair, doppdone, DVTdop, 
+# veg: IVAB
+
+# merge thrombus
+names(sbk.echo.combined)
+names(sbk.sub.thrombus)
+names(sbk.sub.pfo)
+names(sbk.sub.veg)
+
+sbk.echo.combined[, ":="(IVAB = NULL,
+                         repair = NULL,
+                         doppdone = NULL,
+                         DVTdop = NULL)]
+sbk.echo.combined <- merge(sbk.echo.combined, sbk.sub.thrombus[,.(EncID.new, Acchange)], 
+                           by = "EncID.new", all.x = T)
+sbk.echo.combined <- merge(sbk.echo.combined, 
+                           sbk.sub.pfo[,.(EncID.new, NewAC, repair, 
+                                          doppdone, DVTdop)], 
+                           by = "EncID.new", all.x = T)
+sbk.echo.combined <- merge(sbk.echo.combined, sbk.sub.veg[,.(EncID.new, IVAB)], 
+                           by = "EncID.new", all.x = T)
+
+sbk.echo.combined[,':='(LALVTHROMBY = ifelse(LALVthromb==1, 1,
+                                    ifelse(LALVthromb%in%c(2, 3, 4), 2, 100)),
+               VegY = ifelse(VEG==1, 1, ifelse(VEG==100, 100, 2)),
+               PFOy = ifelse(PFO==1, 1, ifelse(PFO==100, 100, 2)))]
+
+fwrite(sbk.echo.combined, "H:/GEMINI/Results/DREAM/201703/variable_created/SBK ECHO COMBINED_YG_march14.csv")
 
 
-sbk.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 2)
-sbk.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 1)
-sbk.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SBK Subset Deidentified March 3.xlsx", sheet = 3)
-sbk.echo.combined <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SBK ECHO COMBINED_processed NG_newvar NG.csv")
 
-sbk.echo.combined[EncID.new%in%sbk.sub.thrombus$EncID.new, EncID.new] %>%
-  duplicated %>% sum
-sbk.sub.thrombus$EncID.new %>% duplicated %>% sum
 
-sbk.echo.combined[EncID.new%in%sbk.sub.pfo$EncID.new, EncID.new] %>%
-  duplicated %>% sum
-sbk.sub.pfo$EncID.new %>% duplicated %>% sum
 
-sbk.echo.combined[EncID.new%in%sbk.sub.veg$EncID.new, EncID.new] %>%
-  duplicated %>% sum
-sbk.sub.veg$EncID.new %>% duplicated %>% sum
+smh.sub.thrombus <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET.xlsx", sheet = 1) %>% data.table
+smh.sub.pfo <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET.xlsx", sheet = 2) %>% data.table
+smh.sub.veg <- readxl::read_excel("H:/GEMINI/Results/DREAM/201703/SMH SUBSET March 3.xlsx", sheet = 3) %>% data.table
+smh.echo <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/SMH ECHO COMBINED_processed_newvar NG.csv") %>% data.table
+apply(smh.echo, MARGIN = 2, FUN = function(x) sum(is.na(x)))
+sum(duplicated(smh.sub.thrombus$EncID.new))
+sum(duplicated(smh.sub.pfo$EncID.new))
+sum(duplicated(smh.sub.veg$EncID.new))
+
+smh.echo[, ':='(repair = NULL,
+                doppdone = NULL,
+                DVTdop = NULL)]
+## names to combine
+# thrombus: ACchange, 
+# pfo: NewAC, repair, doppdone, DVTdop, 
+# veg: IVAB
+
+smh.echo <- merge(smh.echo, unique(smh.sub.thrombus[3:7, .(EncID.new, Acchange)]), 
+                  by = "EncID.new", all.x = T)
+smh.echo <- merge(smh.echo, unique(smh.sub.pfo[,.(EncID.new, repair, doppdone, DVTdop, newAC)]),
+                  by = "EncID.new", all.x = T)
+smh.echo <- merge(smh.echo, smh.sub.veg[,.(EncID.new, IVAB = DCIVAB)],
+                  by = "EncID.new", all.x = T)
+fwrite(smh.echo, "H:/GEMINI/Results/DREAM/201703/variable_created/SMH ECHO COMBINED_YG_march14.csv")
+
+table(smh.echo$LALVthromb)
+table(sbk.echo.combined$LALVthromb)
+table(c(smh.echo$LALVthromb, sbk.echo.combined$LALVthromb))
+
+table(smh.echo$PFO)
+table(sbk.echo.combined$PFO)
+table(c(smh.echo$PFO, sbk.echo.combined$PFO))
+
+table(smh.echo$VEG)
+table(sbk.echo.combined$VEG)
+table(c(smh.echo$VEG, sbk.echo.combined$VEG))
+
+table(smh.echo$Mvsten)
+table(sbk.echo.combined$Mvsten)
+table(c(smh.echo$Mvsten, sbk.echo.combined$Mvsten))
+
+
+
+fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")
