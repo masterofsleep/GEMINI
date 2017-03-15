@@ -168,4 +168,7 @@ sbk.vq <- sbk.rad[Test.Name%in%sbk.vq.names&EncID.new%in%watson.enc.sbk,
 fwrite(sbk.ctpa, "H:/GEMINI/Results/WATSON/sbk.ctpa.csv")
 fwrite(sbk.du, "H:/GEMINI/Results/WATSON/sbk.du.csv")
 fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")
+write.csv(c(watson.enc.sbk, watson.enc.smh, watson.enc.uhn), 
+          "H:/GEMINI/Results/WATSON/watson.enc.csv")
+
 

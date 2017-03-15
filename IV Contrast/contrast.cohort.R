@@ -89,6 +89,11 @@ cohort <- fread("H:/GEMINI/Results/Contrast/cohort.csv")
 ip.int <- readg(gim, ip.int, 
                 colClasses = list(character = "EncID.new"))[
                   startwith.any(EncID.new, c("11", "12", "13"))]
+ip.int[str_sub(EncID.new,1,2)=="13", Intervention.Start.Date := 
+         ymd(Intervention.Episode.Start.Date)]
+ip.int[str_sub(EncID.new,1,2)%in%c("11", "12"), Intervention.Start.Date := 
+         mdy(Intervention.Episode.Start.Date)]
+
 er.int <- readg(gim, er.int, 
                 colClasses = list(character = "EncID.new"))[
                   startwith.any(EncID.new, c("11", "12", "13"))]
@@ -100,7 +105,7 @@ ip.cec <- ip.int %>%
   filter(EncID.new%in%cohort$EncID.new&Intervention.Code%in%cci.code$`CCI Code`) %>%
   merge(cci.code, by.x = "Intervention.Code", by.y = "CCI Code",
         all.x = T, all.y = F) %>% 
-  select(EncID.new, Intervention.Code, Description, `Body Site`) %>% 
+  select(EncID.new, Intervention.Code, Description, `Body Site`, Intervention.Start.Date) %>% 
   data.table
 er.cec <- er.int %>% 
   filter(EncID.new%in%cohort$EncID.new&Occurrence.Type%in%cci.code$`CCI Code`) %>%
@@ -108,9 +113,10 @@ er.cec <- er.int %>%
         all.x = T, all.y = F) %>% 
   select("Intervention.Code" = Occurrence.Type, EncID.new, Description, `Body Site`) %>%
   data.table
-contrast.enhanced <- rbind(ip.cec, er.cec)
+contrast.enhanced <- rbind(ip.cec, er.cec, fill = T)
 contrast.enhanced[,.N, by = "Body Site"]
 
+table(contrast.enhanced[is.na(Intervention.Start.Date), str_sub(EncID.new,1,2)])
 
 smh.ct <- readg(smh, ct)
 sbk.rad <- readg(sbk, rad.csv)

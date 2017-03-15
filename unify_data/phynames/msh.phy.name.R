@@ -98,3 +98,64 @@ table(dad.only.mrp$`GIM?`)
 
 
 fwrite(msh.all.phy[order(Last)], "H:/GEMINI/Results/DataSummary/physician_names/msh.phy.names.marked.csv")
+
+
+
+
+
+
+# --------------------------- list of unknown/not gim --------------------------
+adm.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/adm.full.csv")
+dad.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/dad.full.csv")
+overlap <- adm.full[EncID.new%in%dad.full$EncID.new, -"V1"]
+
+msh.phy.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names.code.link.csv")
+msh.phy.marked <- msh.phy.marked[!duplicated(msh.phy.marked$code)]
+overlap <- merge(overlap, msh.phy.marked[,.(adm.phy.name = full.name, `GIM.`, code)],
+                  by.x = "adm.code", by.y = "code", all.x = T, all.y = F)
+overlap <- merge(overlap, msh.phy.marked[,.(dis.phy.name = full.name, `GIM.`, code)],
+                 by.x = "dis.code", by.y = "code", all.x = T, all.y = F)
+table(overlap$GIM..x, useNA = "ifany")
+table(overlap$GIM..y, useNA = "ifany")
+overlap$GIM..y[overlap$GIM..y=="maybe"] <- "don't know"
+
+overlap[, GIM := ifelse(GIM..x=="y"|GIM..y=="y", "y", 
+                        ifelse(GIM..x=="n"&GIM..y=="n", "n", "u"))]
+overlap[GIM=="u"]
+names(overlap)[c(5, 7)] <- c("adm.phy.gim", "dis.phy.gim")
+fwrite(overlap[GIM=="u", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
+                           GIM)],
+       "R:/GEMINI/_RESTORE/MSH/Physician Names/overlap.unknown.csv")
+
+fwrite(overlap[GIM=="n", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
+                           GIM)],
+       "R:/GEMINI/_RESTORE/MSH/Physician Names/overlap.notgim.csv")
+
+
+adm.only <- adm.full[!EncID.new%in%dad.full$EncID.new, -"V1"]
+adm.only <- merge(adm.only, msh.phy.marked[,.(adm.phy.name = full.name,GIM. ,code)],
+                 by.x = "adm.code", by.y = "code", all.x = T, all.y = F)
+adm.only <- merge(adm.only, msh.phy.marked[,.(dis.phy.name = full.name, GIM.,code)],
+                 by.x = "dis.code", by.y = "code", all.x = T, all.y = F)
+table(adm.only $GIM..x, useNA = "ifany")
+table(adm.only $GIM..y, useNA = "ifany")
+adm.only $GIM..y[adm.only $GIM..y=="maybe"] <- "don't know"
+
+adm.only [, GIM := ifelse(GIM..x=="y"|GIM..y=="y", "y", 
+                        ifelse(GIM..x=="n"&GIM..y=="n", "n", "u"))]
+adm.only [GIM=="u"]
+names(adm.only)[c(5, 7)] <- c("adm.phy.gim", "dis.phy.gim")
+fwrite(adm.only[GIM=="u", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
+                           GIM)],
+       "R:/GEMINI/_RESTORE/MSH/Physician Names/adm.only.unknown.csv")
+
+fwrite(adm.only[GIM=="y", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
+                           GIM)],
+       "R:/GEMINI/_RESTORE/MSH/Physician Names/adm.only.gim.csv")
+
+dad.only <- dad.full[!EncID.new%in%adm.full$EncID.new, -"V1"]
+table(dad.only$GIM.)
+dad.only <- merge(dad.only, msh.phy.marked[,.(mrp = full.name,GIM. ,code)],
+                  by.x = "mrp.code", by.y = "code", all.x = T, all.y = F)
+fwrite(dad.only[GIM.=="y"], "R:/GEMINI/_RESTORE/MSH/Physician Names/dad.only.gim.csv")
+fwrite(dad.only[!GIM.%in%c("y", "n")], "R:/GEMINI/_RESTORE/MSH/Physician Names/dad.only.unknown.csv")
