@@ -5,7 +5,6 @@ library(gemini)
 lib.pa()
 
 cohort <- fread("H:/GEMINI/Results/Shortadm/cohort.csv")
-cohort <- cohort[ymd(Discharge.Date)>ymd("2011-03-31")]
 
 # charlson comorbidity index 
 smh.ip <- readg(smh, ip_diag)
@@ -34,7 +33,7 @@ cohort$Admit.Time.Cat <- ifelse(hm(cohort$Admit.Time)>=hm("8:00")&hm(cohort$Admi
                                 ifelse(hm(cohort$Admit.Time)>=hm("17:00")&hm(cohort$Admit.Time)<hm("24:00"),
                                        2, 3))
 
-write.csv(cohort, "H:/GEMINI/Results/Shortadm/cohort1.csv", row.names = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort1.csv", row.names = F)
 
 
 
@@ -103,6 +102,7 @@ er1$ER.LOS <- as.numeric(ymd_hm(paste(er1$Disposition.Date,
 er1$Physical.Time.in.ER <- as.numeric(ymd_hm(paste(er1$Date.Left.ER, er1$Time.Left.ER, sep = " ")) - 
                                         ymd_hm(paste(er1$Triage.Date, er1$Triage.Time, sep = " ")))/3600
 sum(duplicated(er1))
+cohort$EncID.new <- as.character(cohort$EncID.new)
 
 
 
@@ -115,25 +115,30 @@ cohort <- merge(cohort, er1[,.(EncID.new, Admit.via.Ambulance,Triage.Level,
 cohort$Institution.Number[is.na(cohort$Institution.Number)] <- "53985"
 
 cohort$Admit.via.Ambulance[cohort$Admit.via.Ambulance%in%c("A","C","G")] <- "Y"
-write.csv(cohort, "H:/GEMINI/Results/Shortadm/cohort2.csv", row.names = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort2.csv")
 
 
 
 
 cohort <- fread("H:/GEMINI/Results/Shortadm/cohort2.csv")
 
-apply(cohort2, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(cohort, MARGIN = 2, FUN = function(x)sum(is.na(x)))
 cohort$Short.Admission <- as.numeric(cohort$Short.Admission)
+cci <- readg(gim, cci)
+cohort[, Charlson.Comorbidity.Index:=NULL]
+cohort <- merge(cohort, cci, by = "EncID.new", all.x =T, all.y = F)
+cohort$Charlson.Comorbidity.Index[cohort$Charlson.Comorbidity.Index>=3] <- "3+"
+
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort2.csv")
 fit <- glm(Short.Admission ~ Age + Gender + Charlson.Comorbidity.Index + 
              Admit.Day + Admit.Time.Cat + Admit.via.Ambulance + factor(Triage.Level) + 
              Institution.Number + ER.LOS + Physical.Time.in.ER + 
              Blood.Transfusion.in.ED, data = cohort, family = binomial)
 
 summary(fit)
+sum(cohort$Short.Admission)
 
-
-
-
+table(cohort$Charlson.Comorbidity.Index)
 
 ## =========== Institution From ================================================
 cohort <- fread("H:/GEMINI/Results/Shortadm/cohort2.csv")
@@ -171,21 +176,24 @@ sbk.gim <- sbk.dad[EncID.new%in%
 uhn.gim <- uhn.dad[EncID.new%in%
                      uhn.adm[startsWith(Admitting.Service, "GIM"), EncID.new],
                    .(EncID.new, Admit.Date, Admit.Time)]
-instnum.uhn <- fread("H:/GEMINI/Data/UHN/CIHI/missing ED info with Visit Facility_processed.csv",
-                     colClasses = list(character = c("Visit Number","EncID.new")))
-uhn.er <- readg(uhn.er, .er.nophi,
-                colClasses = list(character = c("NACRSRegistrationNumber",
-                                                "EncID.new")))
-instnum.uhn$Institution.Number <- ifelse(instnum.uhn$`Visit Facility`==
-                                           "TORONTO GENERAL & PRINCESS MARGARET HOSPITALS PROD",
-                                         "54265", "54266")
-instnum.uhn$EncID.new <- paste("13", instnum.uhn$EncID.new, sep = "")
-uhn.all.inst.num <- rbind(uhn.er[,.(EncID.new, Institution.Number)],
-                          instnum.uhn[,.(EncID.new, Institution.Number)])
+# instnum.uhn <- fread("H:/GEMINI/Data/UHN/CIHI/missing ED info with Visit Facility_processed.csv",
+#                      colClasses = list(character = c("Visit Number","EncID.new")))
+# uhn.er <- readg(uhn.er, .er.nophi,
+#                 colClasses = list(character = c("NACRSRegistrationNumber",
+#                                                 "EncID.new")))
+# instnum.uhn$Institution.Number <- ifelse(instnum.uhn$`Visit Facility`==
+#                                            "TORONTO GENERAL & PRINCESS MARGARET HOSPITALS PROD",
+#                                          "54265", "54266")
+# instnum.uhn$EncID.new <- paste("13", instnum.uhn$EncID.new, sep = "")
+# uhn.all.inst.num <- rbind(uhn.er[,.(EncID.new, Institution.Number)],
+#                           instnum.uhn[,.(EncID.new, Institution.Number)])
+# 
+# uhn.all.inst.num <- uhn.all.inst.num[!duplicated(uhn.all.inst.num)]
 
-uhn.all.inst.num <- uhn.all.inst.num[!duplicated(uhn.all.inst.num)]
-tgh.gim <- uhn.gim[EncID.new%in%uhn.all.inst.num[Institution.Number=="54265", EncID.new]]
-twh.gim <- uhn.gim[EncID.new%in%uhn.all.inst.num[Institution.Number=="54266", EncID.new]]
+institution <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv",
+                     select = c("EncID.new", "Institution.Number"))
+tgh.gim <- uhn.gim[EncID.new%in%institution[Institution.Number=="uhn-general", EncID.new]]
+twh.gim <- uhn.gim[EncID.new%in%institution[Institution.Number=="uhn-western", EncID.new]]
 
 GIM.adm.in12 <- function(x, y = smh.gim){
   x.dttm <- ymd_hm(x)
@@ -210,25 +218,8 @@ cohort[Institution.Number=="54266",
 
 
 
-write.csv(cohort, "H:/GEMINI/Results/Shortadm/cohort3.csv", row.names = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort3.csv", row.names = F)
 cohort <- fread("H:/GEMINI/Results/Shortadm/cohort3.csv")
-
-
-
-# ----------- Replace Institution From with Institution From Type --------------
-cohort3 <- fread("H:/GEMINI/Results/Shortadm/cohort4.csv")
-sum(cohort3$EncID.new==cohort$EncID.new)
-cohort <- cohort %>% arrange(EncID.new) %>% data.table
-sum(cohort3$EncID.new==cohort$EncID.new)
-cohort3$InstitutionFrom.Type <- cohort$InstitutionFrom.Type
-write.csv(cohort3, "H:/GEMINI/Results/Shortadm/cohort4.csv", row.names = F)
-
-
-
-
-
-
-
 
 
 
@@ -268,7 +259,6 @@ smh.mri.in48 <- smh.mri[dmy_hm(paste(ADMITDATE, ADMITTIME))<=ymd_h(ord_for_dtime
 
 
 #sbk
-cohort <- fread("H:/GEMINI/Results/Shortadm/cohort4.csv")
 sbk.rad <- readg(sbk, rad.csv)
 map.sbk <- read_excel("H:/GEMINI/mapping/rad.freq.table_AV.xlsx", sheet = 1)
 sum(sbk.rad$Test.Name%in%map.sbk$Test.Name)
@@ -342,46 +332,88 @@ cohort[,':='(ct.er = EncID.new%in%ct.er,
              xray.in48 = EncID.new%in%xray.in48,
              mri.in48 = EncID.new%in%mri.in48)]
 
-write.csv(cohort, "H:/GEMINI/Results/Shortadm/cohort5.csv", row.names = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort5.csv")
 
 
 # ----------------------- Pharmacy variables -----------------------------------
 
-smh.phar <- readg(smh, phar)
-sbk.phar <- readg(sbk, phar)
-uhn.phar <- readg(uhn, uhn.phar)
+smh.phar <- readg(smh, phar ,dt = T)
+sbk.phar <- readg(sbk, phar, dt = T)
+uhn.phar <- readg(uhn, uhn.phar, dt = T)
 table(smh.phar$route[str_detect(smh.phar$route, "IV")])
 table(smh.phar$ord_frequency[str_detect(smh.phar$ord_frequency, "IV")])
 table(sbk.phar$route)
 
 
-#phar.freq.tables 
-smh.route <- table(smh.phar$route) %>% data.table %>% 
-  fwrite("H:/GEMINI/Results/Shortadm/route.smh.csv")
-sbk.route <- table(sbk.phar$route) %>% data.table %>%
-  fwrite("H:/GEMINI/Results/Shortadm/route.sbk.csv")
-uhn.route <- table(uhn.phar$Route_Code) %>% data.table %>%
-  fwrite("H:/GEMINI/Results/Shortadm/route.uhn.csv")
-smh.phar <- merge(smh.phar,  cohort[,.(EncID.new, Admit.Date, Admit.Time)], 
-                  by = "EncID.new")
+# #phar.freq.tables 
+# smh.route <- table(smh.phar$route) %>% data.table %>% 
+#   fwrite("H:/GEMINI/Results/Shortadm/route.smh.csv")
+# sbk.route <- table(sbk.phar$route) %>% data.table %>%
+#   fwrite("H:/GEMINI/Results/Shortadm/route.sbk.csv")
+# uhn.route <- table(uhn.phar$Route_Code) %>% data.table %>%
+#   fwrite("H:/GEMINI/Results/Shortadm/route.uhn.csv")
+# smh.phar <- merge(smh.phar,  cohort[,.(EncID.new, Admit.Date, Admit.Time)], 
+#                   by = "EncID.new")
 
 smh.ivmed.in48 <- smh.phar[
   ymd_hm(paste(start_date, start_time))>=
     ymd_hm(paste(Admit.Date, Admit.Time))&
   ymd_hm(paste(start_date, start_time))<=
     ymd_hm(paste(Admit.Date, Admit.Time))+ hours(48)&
-    (str_detect(route, "IV")|str_detect(ord_frequency, "IV"))&
-    ord_frequency!="NEURO TO GIVE", EncID.new]
+    route%in%c("IV", "IV/IM", "IV/SC/IM", "SUBCUT/IV")]
 
 
-table(sbk.phar$route)
+sbk.ivmed.in48 <- sbk.phar[
+  route%in%c("IV", "INTRAVEN")&
+    mdy_hms(paste(start_date, start_time))>=
+    ymd_hm(paste(Admit.Date, Admit.Time))&
+    mdy_hms(paste(start_date, start_time))<=
+    ymd_hm(paste(Admit.Date, Admit.Time)) + hours(48)]
 
+uhn.ivmed.in48 <- uhn.phar[
+    Route_Code%in%c("IV", "IVMED", "IM/IV", "SC/IV")&
+    dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))>=
+    ymd_hm(paste(Admit.Date, Admit.Time))&
+    dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))<=
+    ymd_hm(paste(Admit.Date, Admit.Time)) + hours(48)
+]
+table(smh.ivmed.in48$route)
+table(sbk.ivmed.in48$route)
+table(uhn.ivmed.in48$Route_Code)
 
+cohort <- fread("H:/GEMINI/Results/Shortadm/cohort5.csv")
+cohort[, ivmed.in.48 := EncID.new%in%
+         c(smh.ivmed.in48$EncID.new, 
+           sbk.ivmed.in48$EncID.new, 
+           uhn.ivmed.in48$EncID.new)]
 
+din.shortadm <- readxl::read_excel("H:/GEMINI/Protocols/shortadmission/ID_DIN_LIST_1.xls", sheet = 2)
+din.shortadm$din <- gsub("(?<![0-9])0+", "", din.shortadm$din, perl = TRUE)
+smh.inc <- smh.phar[din%in% din.shortadm$din &
+                    ymd_hm(paste(start_date, start_time))>=
+                    mdy_hms(paste(ADMITDATE, ADMIT.TIME))&
+                    ymd_hm(paste(start_date, start_time))<=
+                    mdy_hms(paste(ADMITDATE, ADMIT.TIME)) + hours(48)]
+sbk.inc <- sbk.phar[ndc_din%in%din.shortadm$din&
+                    mdy_hms(paste(start_date, start_time))>=
+                    ymd_hm(paste(Admit.Date, Admit.Time))&
+                    mdy_hms(paste(start_date, start_time))<=
+                    ymd_hm(paste(Admit.Date, Admit.Time)) + hours(48)]
+uhn.inc <- uhn.phar[DIN%in%din.shortadm$din&
+                    dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))>=
+                    ymd_hm(paste(Admit.Date, Admit.Time))&
+                    dmy_hm(paste(str_sub(Order_Sta, 1, 10), Order_Start_Time))<=
+                    ymd_hm(paste(Admit.Date, Admit.Time)) + hours(24)]
+cohort[, iv.med.could.be.sub.for.oral := 
+         EncID.new%in%c(smh.inc$EncID.new,
+                        sbk.inc$EncID.new,
+                        uhn.inc$EncID.new)]
+
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort6.csv")
 
 
 # ----------------------------- diag variables ---------------------------------
-
+cohort <- fread("H:/GEMINI/Results/Shortadm/cohort6.csv")
 ip.diag <- readg(gim, ip_diag, key = "EncID.new")
 er.diag <- readg(gim, er_diag, key = "EncID.new")
 
@@ -396,7 +428,8 @@ mrd <- merge(ip.mrd, er.mrd, all.x = T)
 mrd <- unique(mrd)
 mrd[EncID.new%in%mrd[duplicated(EncID.new), EncID.new]]
 
-
+cohort <- merge(cohort, mrd, by = "EncID.new", all.x = T, all.y = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort7.csv")
 
 
 #---------------------------- Intervention variables ---------------------------

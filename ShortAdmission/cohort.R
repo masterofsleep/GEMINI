@@ -128,15 +128,18 @@ shortadm <- shortadm[!EncID.new%in%To.Palli.within.48.xfer$EncID.new]
 
 cohort <- rbind(smh.dad[EncID.new%in%cohort.enc, InstitutionFrom.Type, 
                         .(EncID.new, Age, Gender,InstitutionFrom, Admit.Date, 
-                          Admit.Time, MostResponsible.DocterCode, los)],
+                          Admit.Time, Discharge.Date, Discharge.Time, 
+                          MostResponsible.DocterCode, los)],
                 sbk.dad[EncID.new%in%cohort.enc, InstitutionFrom.Type, 
                         .(EncID.new, Age, Gender,InstitutionFrom, Admit.Date, 
-                          Admit.Time, MostResponsible.DocterCode, los)],
+                          Admit.Time, Discharge.Date, Discharge.Time, 
+                          MostResponsible.DocterCode, los)],
                 uhn.dad[EncID.new%in%cohort.enc, InstitutionFrom.Type, 
                         .(EncID.new, Age, Gender,InstitutionFrom, Admit.Date, 
-                          Admit.Time, MostResponsible.DocterCode, los)])
+                          Admit.Time, Discharge.Date, Discharge.Time, 
+                          MostResponsible.DocterCode, los)])
 cohort$Short.Admission <- cohort$EncID.new%in%shortadm$EncID.new
-write.csv(cohort, "H:/GEMINI/Results/Shortadm/cohort.csv", row.names = F)
+fwrite(cohort, "H:/GEMINI/Results/Shortadm/cohort.csv")
 
 
 

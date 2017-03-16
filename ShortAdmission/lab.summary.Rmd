@@ -1,0 +1,43 @@
+---
+title: "Summary of Lab Results"
+author: "Yishan Guo"
+date: "March 16, 2017"
+output: html_document
+---
+
+
+```{r, message=F, echo =  F}
+library(gemini)
+lib.pa()
+rm(list = ls())
+
+smh.lab <- readg(smh, corelabs, dt = T)
+sbk.lab <- rbind(readg(sbk, labs_er, dt = T), readg(sbk, labs_ip, dt = T))
+uhn.lab <- readg(uhn, labs, dt = T)
+msh.lab <- readg(msh, lab, dt= T)
+lab.desc <- function(x){
+  cat("Number(%) of numeric value is ",
+      sum(!is.na(suppressWarnings(as.numeric(x)))),
+      "(", round(sum(!is.na(suppressWarnings(as.numeric(x))))/length(x)*100, 2), ")\n")
+  cat("Number(%) of non numeric value is ",
+      sum(suppressWarnings(is.na(suppressWarnings(as.numeric(x))))),
+      "(", round(sum(is.na(suppressWarnings(as.numeric(x))))/length(x)*100,2), ")\nSummary of numeric values:\n")
+  print(summary(as.numeric(x[!is.na(suppressWarnings(as.numeric(x)))])))
+  cat("Freq table of non numeric values:\n")
+  freq.table <- data.table(table(x[is.na(suppressWarnings(as.numeric(x)))]))
+  names(freq.table) <- c("Result.Value", "Frequency")
+  knitr::kable(freq.table)
+}
+```
+\section{Hemoglobin}
+```{r pressure, echo=FALSE}
+hgb.smh <- smh.lab[Test.Name=="HGB"] %>% filter(!duplicated(EncID.new)) %>% data.table
+hgb.smh$Result.Value <- str_replace_all(hgb.smh$Result.Value, "[@A-z]","")
+
+hgb.sbk <- sbk.lab[Test.Name=="Hemoglobin"] %>% filter(!duplicated(EncID.new)) %>%data.table
+hgb.uhn <- uhn.lab[Test.Item=="Hb"&Test.Name=="CBC"] %>% filter(!duplicated(EncID.new)) %>%data.table
+hgb.msh <- msh.lab
+lab.desc(hgb.smh$Result.Value)
+lab.desc(hgb.sbk$Result.Value)
+lab.desc(hgb.uhn$Result.Value)
+```

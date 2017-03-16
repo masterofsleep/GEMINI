@@ -2,7 +2,7 @@ library(gemini)
 lib.pa()
 
 ## ----------------  find variables in lab data --------------------------------
-cohort <- fread("H:/GEMINI/Results/Shortadm/cohort5.csv")
+cohort <- fread("H:/GEMINI/Results/Shortadm/cohort7.csv")
 #
 smh.lab <- readg(smh, corelabs)
 smh.lab <- smh.lab[smh.lab$EncID.new%in%cohort$EncID.new]
@@ -61,7 +61,6 @@ glucose.smh <- smh.lab[Test.Name=="Glucose Random"] %>% filter(!duplicated(EncID
 hgb.smh <- merge(hgb.smh, cohort[,.(EncID.new, Gender)], by = "EncID.new", 
                  all.x = T, all.y = F) %>% data.table
 hgb.smh[is.na(as.numeric(Result.Value))]
-hgb.smh$Result.Value <- str_replace_all(hgb.smh$Result.Value, "[@A-z]","")
 
 
 hgb.smh[Gender=="F", Hgb:= ifelse(as.numeric(Result.Value)<120, "low",
