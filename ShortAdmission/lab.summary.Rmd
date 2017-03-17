@@ -1,43 +1,938 @@
 ---
-title: "Summary of Lab Results"
+title: "Summary of Lab Values"
 author: "Yishan Guo"
-date: "March 16, 2017"
-output: html_document
+date: "March 17, 2017"
+output:
+  word_document:
+    toc: yes
+    toc_depth: '3'
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  html_document:
+    toc: yes
+    toc_depth: 3
 ---
+Note: For all values in SMH lab data with a format like "5 \@RC" or "<5 @ RC", the "\@RC" part
+has been removed.
 
 
-```{r, message=F, echo =  F}
-library(gemini)
-lib.pa()
-rm(list = ls())
+# Hemoglobin
+### Summary of numbers
 
-smh.lab <- readg(smh, corelabs, dt = T)
-sbk.lab <- rbind(readg(sbk, labs_er, dt = T), readg(sbk, labs_ip, dt = T))
-uhn.lab <- readg(uhn, labs, dt = T)
-msh.lab <- readg(msh, lab, dt= T)
-lab.desc <- function(x){
-  cat("Number(%) of numeric value is ",
-      sum(!is.na(suppressWarnings(as.numeric(x)))),
-      "(", round(sum(!is.na(suppressWarnings(as.numeric(x))))/length(x)*100, 2), ")\n")
-  cat("Number(%) of non numeric value is ",
-      sum(suppressWarnings(is.na(suppressWarnings(as.numeric(x))))),
-      "(", round(sum(is.na(suppressWarnings(as.numeric(x))))/length(x)*100,2), ")\nSummary of numeric values:\n")
-  print(summary(as.numeric(x[!is.na(suppressWarnings(as.numeric(x)))])))
-  cat("Freq table of non numeric values:\n")
-  freq.table <- data.table(table(x[is.na(suppressWarnings(as.numeric(x)))]))
-  names(freq.table) <- c("Result.Value", "Frequency")
-  knitr::kable(freq.table)
-}
-```
-\section{Hemoglobin}
-```{r pressure, echo=FALSE}
-hgb.smh <- smh.lab[Test.Name=="HGB"] %>% filter(!duplicated(EncID.new)) %>% data.table
-hgb.smh$Result.Value <- str_replace_all(hgb.smh$Result.Value, "[@A-z]","")
 
-hgb.sbk <- sbk.lab[Test.Name=="Hemoglobin"] %>% filter(!duplicated(EncID.new)) %>%data.table
-hgb.uhn <- uhn.lab[Test.Item=="Hb"&Test.Name=="CBC"] %>% filter(!duplicated(EncID.new)) %>%data.table
-hgb.msh <- msh.lab
-lab.desc(hgb.smh$Result.Value)
-lab.desc(hgb.sbk$Result.Value)
-lab.desc(hgb.uhn$Result.Value)
-```
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 127987|127532 (99.64)        |455 (0.36)                |SMH  |
+| 207256|207174 (99.96)        |82 (0.04)                 |SBK  |
+| 295495|294180 (99.55)        |1315 (0.45)               |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |21   |88       |105    |106   |123      |221  |
+|SBK  |20   |89       |107    |107.7 |125      |216  |
+|UHN  |1    |89       |106    |107.2 |124      |244  |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                                                  |    N|site |
+|:----------------------------|----:|:----|
+|.                                                                                                         |   15|SMH  |
+|. OCANC                                                                                                   |   40|SMH  |
+|. SCANC                                                                                                   |    9|SMH  |
+|. TCANC1                                                                                                  |    7|SMH  |
+|. TCANC2                                                                                                  |    2|SMH  |
+|@                                                                                                         |   65|SMH  |
+|@ CLOT                                                                                                    |  152|SMH  |
+|@ IB                                                                                                      |   62|SMH  |
+|@ LYZ2                                                                                                    |    1|SMH  |
+|@ NSF                                                                                                     |    3|SMH  |
+|@ NSQ                                                                                                     |   91|SMH  |
+|@ SCR                                                                                                     |    2|SMH  |
+|@ WPDR                                                                                                    |    3|SMH  |
+|26 RC                                                                                                     |    1|SMH  |
+|69 !                                                                                                      |    1|SMH  |
+|83 RC                                                                                                     |    1|SMH  |
+|ANDRE IN C6                                                                                               |    1|SBK  |
+|BHEBE 0930                                                                                                |    1|SBK  |
+|CLOTTED                                                                                                   |   47|SBK  |
+|DIFF                                                                                                      |    1|SBK  |
+|DOREEN IN C4                                                                                              |    1|SBK  |
+|DUPL                                                                                                      |    1|SBK  |
+|JULIA IN ER.                                                                                              |    1|SBK  |
+|KAL AT 1800                                                                                               |    1|SBK  |
+|KEN IN ER                                                                                                 |    1|SBK  |
+|LBLM                                                                                                      |    2|SBK  |
+|N/A                                                                                                       |   16|SBK  |
+|NSQ                                                                                                       |    1|SBK  |
+|OEE BY FLOOR                                                                                              |    1|SBK  |
+|PHONED                                                                                                    |    1|SBK  |
+|RACHEL 1200                                                                                               |    1|SBK  |
+|ROSIE 1500                                                                                                |    1|SBK  |
+|TO DOREEN                                                                                                 |    1|SBK  |
+|TO ELLA IN                                                                                                |    1|SBK  |
+|TO JENNIFER                                                                                               |    1|SBK  |
+|TUBE EMPTY                                                                                                |    1|SBK  |
+|.                                                                                                         | 1057|UHN  |
+|70.0 g/L   specimen is hemolysed                                                                          |    1|UHN  |
+|Duplicate order.                                                                                          |    1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.                              |   12|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. informed Lourdes for redraw. |    1|UHN  |
+|Neutrophilia .                                                                                            |    1|UHN  |
+|Small clot in sample.                                                                                     |    1|UHN  |
+|Specimen clotted.                                                                                         |   47|UHN  |
+|Specimen clotted. Insufficient quantity for testing. Please re-order test and send new sample.            |    1|UHN  |
+|TOOBIG                                                                                                    |    1|UHN  |
+|Unable to perform                                                                                         |  169|UHN  |
+|Unable to perform platelet clumping only citrate tube was draw. new sample sent.                          |    1|UHN  |
+|Unable to perform Specimen clotted.                                                                       |   10|UHN  |
+|Unable to perform Specimen clotted. Results called to ward                                                |   10|UHN  |
+|Unable to perform Specimen clotted. Results called to ward Please repeat.                                 |    1|UHN  |
+|Unable to perform.                                                                                        |    1|UHN  |
+
+\newpage
+# White Blood Cell
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 127645|127535 (99.91)        |110 (0.09)                |SMH  |
+| 207249|207187 (99.97)        |62 (0.03)                 |SBK  |
+| 243719|242184 (99.37)        |1535 (0.63)               |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |0.08 |6.09     |8.35   |9.733 |11.46    |655.6 |
+|SBK  |0    |6.3      |8.5    |10.09 |11.7     |980   |
+|UHN  |0.1  |5.8      |8.1    |9.758 |11.4     |923   |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                     |    N|site |
+|:-----------------------------------|----:|:----|
+|.                                                                            |   17|SMH  |
+|. OCANC                                                                      |   38|SMH  |
+|. SCANC                                                                      |    9|SMH  |
+|. TCANC1                                                                     |    6|SMH  |
+|. TCANC2                                                                     |    1|SMH  |
+|@                                                                            |    3|SMH  |
+|@ CLOT                                                                       |   22|SMH  |
+|@ IB                                                                         |    1|SMH  |
+|@ NSQ                                                                        |   11|SMH  |
+|@ SCR                                                                        |    1|SMH  |
+|@ WPDR                                                                       |    1|SMH  |
+|CALLED SAMY                                                                  |    1|SBK  |
+|CLOTTED                                                                      |   48|SBK  |
+|DIFF                                                                         |    1|SBK  |
+|DUPL                                                                         |    1|SBK  |
+|LBLM                                                                         |    2|SBK  |
+|N/A                                                                          |    3|SBK  |
+|NSQ                                                                          |    1|SBK  |
+|OEE BY FLOOR                                                                 |    1|SBK  |
+|PHONED                                                                       |    3|SBK  |
+|TUBE EMPTY                                                                   |    1|SBK  |
+|.                                                                            | 1137|UHN  |
+|< 0.1                                                                        |  262|UHN  |
+|Duplicate order.                                                             |    1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. |    2|UHN  |
+|Specimen clotted.                                                            |    4|UHN  |
+|unable to perform                                                            |   74|UHN  |
+|Unable to perform                                                            |   53|UHN  |
+|Unable to perform Specimen clotted.                                          |    1|UHN  |
+|WBC to be verified.                                                          |    1|UHN  |
+
+\newpage
+# Platelet
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 127625|127098 (99.59)        |527 (0.41)                |SMH  |
+| 206001|205945 (99.97)        |56 (0.03)                 |SBK  |
+| 295524|292735 (99.06)        |2789 (0.94)               |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |3    |159      |222    |241.5 |302      |2174 |
+|SBK  |0    |166      |228    |247.2 |305      |1828 |
+|UHN  |0    |148      |223    |240.2 |310      |2695 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                                                  |    N|site |
+|:------------------------------|----:|:----|
+|.                                                                                                         |   18|SMH  |
+|. OCANC                                                                                                   |   38|SMH  |
+|. SCANC                                                                                                   |    9|SMH  |
+|. TCANC1                                                                                                  |    6|SMH  |
+|. TCANC2                                                                                                  |    1|SMH  |
+|@                                                                                                         |   39|SMH  |
+|@ BTOP                                                                                                    |   11|SMH  |
+|@ CLOT                                                                                                    |   10|SMH  |
+|@ ERR                                                                                                     |    1|SMH  |
+|@ NSQ                                                                                                     |   11|SMH  |
+|@ PC                                                                                                      |  228|SMH  |
+|@ PC  @                                                                                                   |    1|SMH  |
+|@ PC  @ BTOP                                                                                              |    3|SMH  |
+|@ PC @                                                                                                    |    4|SMH  |
+|@ PC @ BTOP                                                                                               |   66|SMH  |
+|@ PCBC                                                                                                    |    1|SMH  |
+|@ PCD                                                                                                     |   17|SMH  |
+|@ PCI                                                                                                     |    5|SMH  |
+|@ PCN                                                                                                     |   40|SMH  |
+|@ PCN @ BTOP                                                                                              |    3|SMH  |
+|@ PLTC                                                                                                    |    1|SMH  |
+|@ WPDR                                                                                                    |    2|SMH  |
+|<3                                                                                                        |   10|SMH  |
+|<3                                                                                                        |    1|SMH  |
+|93 .                                                                                                      |    1|SMH  |
+|CLOTTED                                                                                                   |   47|SBK  |
+|DIFF                                                                                                      |    1|SBK  |
+|DUPL                                                                                                      |    1|SBK  |
+|LBLM                                                                                                      |    2|SBK  |
+|NSQ                                                                                                       |    1|SBK  |
+|OEE BY FLOOR                                                                                              |    1|SBK  |
+|PLTNR                                                                                                     |    1|SBK  |
+|TO OR1                                                                                                    |    1|SBK  |
+|TUBE EMPTY                                                                                                |    1|SBK  |
+|.                                                                                                         | 2177|UHN  |
+|< 1                                                                                                       |    1|UHN  |
+|< 3                                                                                                       |   99|UHN  |
+|appear normal, platelet clumps present                                                                    |    1|UHN  |
+|Duplicate order.                                                                                          |    1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.                              |    3|UHN  |
+|paltelets clumped ; unable to count                                                                       |    1|UHN  |
+|Platelet clumped. Unable to provide count                                                                 |    1|UHN  |
+|Platelet clumped. Unable to provide count.                                                                |    1|UHN  |
+|Platelet clumping present, unable to provide count                                                        |    1|UHN  |
+|Platelet clumping present, unable to provide count.                                                       |   72|UHN  |
+|platelet clumping present. unable to provide count                                                        |    1|UHN  |
+|platelet clumping present. Unable to provide count.                                                       |    1|UHN  |
+|platelet clumps present                                                                                   |    1|UHN  |
+|platelet clumps present, appear slightly decreased                                                        |    1|UHN  |
+|platelet clumps present, platelet count appears normal                                                    |    2|UHN  |
+|platelet clumps present, platelet count appears slightly decreased                                        |    1|UHN  |
+|Platelet clumps present, unable to provide count.                                                         |    1|UHN  |
+|platelet clumps present,platelet  clumps appear normal                                                    |    1|UHN  |
+|platelet count appears decreased, small clumps of platelets seen                                          |    1|UHN  |
+|platelet count appears decreased, small platelet clumps seen                                              |    2|UHN  |
+|platelet count appears normal, small platelet clumps present                                              |    1|UHN  |
+|platelets clumped                                                                                         |    1|UHN  |
+|platelets clumped ; unable to count                                                                       |    1|UHN  |
+|platelets clumped present,unable to perform count                                                         |    1|UHN  |
+|platelets clumped unable to count                                                                         |    2|UHN  |
+|Platelets clumped, however, count appears decreased. Please send a Sodium Citrate tube with the next CBC. |    4|UHN  |
+|Platelets clumped, however, count appears normal. Please send a Sodium Citrate tube with the next CBC.    |   12|UHN  |
+|platelets clumped, unable to count                                                                        |    1|UHN  |
+|Platelets clumped, unable to count.                                                                       |   14|UHN  |
+|Platelets clumped, unable to count. Please send a Sodium Citrate tube with next CBC.                      |   18|UHN  |
+|Platelets clumped, unable to count. Please send a Sodium Citrate tube.                                    |   12|UHN  |
+|Platelets clumped, unable to count. Please send a Sodium Citrate tube. Platelet count appears normal.     |    1|UHN  |
+|Platelets clumped.                                                                                        |    1|UHN  |
+|platelets clumped; unable to count                                                                        |    1|UHN  |
+|Platelets clumped; unable to count                                                                        |    1|UHN  |
+|platelets clumped; unable to count.                                                                       |    1|UHN  |
+|platelets clumps, appear slightly gecreased                                                               |    1|UHN  |
+|Please see previous CBC for today for platelet results.                                                   |    1|UHN  |
+|PLT to be verified.                                                                                       |   38|UHN  |
+|Plts to be verified.                                                                                      |   18|UHN  |
+|small platelet clumps present, platelet count appear slightly decrease                                    |    1|UHN  |
+|Specimen clotted.                                                                                         |    6|UHN  |
+|unable to count                                                                                           |    2|UHN  |
+|unable to perfom                                                                                          |    1|UHN  |
+|unable to perform                                                                                         |   17|UHN  |
+|Unable to perform                                                                                         |  246|UHN  |
+|Unable to perform Platelets clumped, unable to count.                                                     |    1|UHN  |
+|Unable to perform Platelets to be verified on blood film from EDTA and Citrate tubes.                     |    1|UHN  |
+|Unable to perform Specimen clotted.                                                                       |    1|UHN  |
+|Unable to perform.                                                                                        |   10|UHN  |
+|unable to provide platelet count due to platelet clumps.                                                  |    1|UHN  |
+|unable to report                                                                                          |    1|UHN  |
+|unable to report, fibrin strands present, suggest repeat                                                  |    1|UHN  |
+
+\newpage
+# Sodium
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 140201|140055 (99.9)         |146 (0.1)                 |SMH  |
+| 223766|223706 (99.97)        |60 (0.03)                 |SBK  |
+| 312008|311776 (99.93)        |232 (0.07)                |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |110  |134      |137    |136.4 |139      |180  |
+|SBK  |63   |135      |138    |137.8 |141      |190  |
+|UHN  |100  |134      |138    |137.4 |141      |198  |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                       |   N|site |
+|:--------------------------------------------|---:|:----|
+|.                                                                              |   5|SMH  |
+|. OCANC                                                                        |   6|SMH  |
+|. TCANC1                                                                       |   1|SMH  |
+|@                                                                              |   3|SMH  |
+|@ NRGH @ CALL                                                                  |   1|SMH  |
+|@ NSF                                                                          |   5|SMH  |
+|@ NSF @ CALL                                                                   |   1|SMH  |
+|@ NSQ                                                                          |   3|SMH  |
+|@ NSQ @ CALL                                                                   |   1|SMH  |
+|@ SPUS                                                                         |   5|SMH  |
+|@ WPDR                                                                         |   5|SMH  |
+|<110                                                                           |  90|SMH  |
+|<110                                                                           |  11|SMH  |
+|>180                                                                           |   1|SMH  |
+|NA                                                                             |   8|SMH  |
+|>180                                                                           |   3|SBK  |
+|0700 MOLLY                                                                     |   1|SBK  |
+|1940 D2                                                                        |   1|SBK  |
+|AMY @ 1505,ER                                                                  |   1|SBK  |
+|ANNA B4 1045                                                                   |   1|SBK  |
+|ANNE ER 1045                                                                   |   1|SBK  |
+|B425 1431                                                                      |   1|SBK  |
+|DIANE IN C3                                                                    |   1|SBK  |
+|DOREEN 1148                                                                    |   1|SBK  |
+|DUPL                                                                           |   1|SBK  |
+|EMPTY TUBE                                                                     |   1|SBK  |
+|ERICA @  0725                                                                  |   1|SBK  |
+|ERICA 1023                                                                     |   1|SBK  |
+|GLADYS                                                                         |   1|SBK  |
+|KEN @ 1335,ER                                                                  |   1|SBK  |
+|N/A                                                                            |   1|SBK  |
+|NATALIE                                                                        |   1|SBK  |
+|NIYI IN B4                                                                     |   1|SBK  |
+|PHONED                                                                         |  27|SBK  |
+|PND                                                                            |   4|SBK  |
+|RENE IN B4                                                                     |   1|SBK  |
+|ROSE B4 1002                                                                   |   1|SBK  |
+|SEE W50490                                                                     |   1|SBK  |
+|STAT                                                                           |   1|SBK  |
+|TO ER @  2226                                                                  |   1|SBK  |
+|TO ER @ 1720                                                                   |   1|SBK  |
+|TO ER MIKE                                                                     |   1|SBK  |
+|TO ER@ 0602                                                                    |   1|SBK  |
+|YAN @ 1850,D4                                                                  |   1|SBK  |
+|.                                                                              | 119|UHN  |
+|< 100                                                                          |  20|UHN  |
+|> 200                                                                          |   4|UHN  |
+|Duplicate order. see barcode L200129 for results                               |   1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.   |   2|UHN  |
+|Not done.                                                                      |  17|UHN  |
+|unable to perform                                                              |   1|UHN  |
+|Unable to perform                                                              |  57|UHN  |
+|Unable to perform due to interference.                                         |   9|UHN  |
+|Unable to perform Please repeat. Results called to ward                        |   1|UHN  |
+|Unable to perform reordered as venous blood. See barcode 26333174 for results. |   1|UHN  |
+
+\newpage
+
+# Potassium
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 140289|138946 (99.04)        |1343 (0.96)               |SMH  |
+| 223614|223569 (99.98)        |45 (0.02)                 |SBK  |
+| 313776|313421 (99.89)        |355 (0.11)                |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |2    |3.7      |4.1    |4.095 |4.4      |12.6 |
+|SBK  |0.7  |3.5      |3.8    |3.907 |4.2      |24.1 |
+|UHN  |1    |3.6      |3.9    |3.971 |4.3      |10   |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                     |   N|site |
+|:--------------------------------|---:|:----|
+|.                                                                            |   7|SMH  |
+|. OCANC                                                                      |   6|SMH  |
+|. TCANC1                                                                     |   1|SMH  |
+|@                                                                            |  23|SMH  |
+|@ CKDC                                                                       |   1|SMH  |
+|@ GH                                                                         |   2|SMH  |
+|@ GH @                                                                       |   4|SMH  |
+|@ GH @ CALL                                                                  |   2|SMH  |
+|@ GH @ NRGH                                                                  |   2|SMH  |
+|@ GH @ SPUS                                                                  |   4|SMH  |
+|@ GH @ SPUS @ CALL                                                           |   1|SMH  |
+|@ GH;                                                                        |   1|SMH  |
+|@ MH @ SHUA                                                                  |   1|SMH  |
+|@ NRGH                                                                       | 748|SMH  |
+|@ NRGH   @ CALL                                                              |   3|SMH  |
+|@ NRGH  @ CALL                                                               |  18|SMH  |
+|@ NRGH  @ CKDC                                                               |   2|SMH  |
+|@ NRGH @  CALL                                                               |   1|SMH  |
+|@ NRGH @ CALL                                                                | 336|SMH  |
+|@ NRGH @ CKDC                                                                |  25|SMH  |
+|@ NRGH@ CALL                                                                 |   1|SMH  |
+|@ NSF                                                                        |   6|SMH  |
+|@ NSQ                                                                        |   3|SMH  |
+|@ NSQ @ CALL                                                                 |   1|SMH  |
+|@ SHUA                                                                       |  10|SMH  |
+|@ SHUA @ CALL                                                                |  10|SMH  |
+|@ SHUA @ CKD                                                                 |   1|SMH  |
+|@ SHUA @ GH @ CALL                                                           |  25|SMH  |
+|@ SHUA @ MH @ CALL                                                           |   1|SMH  |
+|@ SHUA @ SH @ CALL                                                           |   1|SMH  |
+|@ SPUS                                                                       |  12|SMH  |
+|@ SPUS @ CKDC                                                                |   1|SMH  |
+|@ SUGH                                                                       |  38|SMH  |
+|@ SUGH @ CALL                                                                |   1|SMH  |
+|@ SUGH @ CKDC                                                                |   1|SMH  |
+|@ WPDR                                                                       |   3|SMH  |
+|<2.0                                                                         |   8|SMH  |
+|<2.0                                                                         |   5|SMH  |
+|<2.0                                                                         |   1|SMH  |
+|>8.0                                                                         |  11|SMH  |
+|>8.0                                                                         |   3|SMH  |
+|>8.0                                                                         |   3|SMH  |
+|see message                                                                  |   1|SMH  |
+|NA                                                                           |   8|SMH  |
+|0404 NADIA                                                                   |   1|SBK  |
+|DIANE IN C3                                                                  |   1|SBK  |
+|DUPL                                                                         |   1|SBK  |
+|EMPTY TUBE                                                                   |   1|SBK  |
+|ER KEN 1126                                                                  |   1|SBK  |
+|ER KEN 1433                                                                  |   1|SBK  |
+|ER TO REDRAW                                                                 |   1|SBK  |
+|GLADYS                                                                       |   1|SBK  |
+|ICTERIC                                                                      |   1|SBK  |
+|JOELINE                                                                      |   1|SBK  |
+|K=6.3                                                                        |   1|SBK  |
+|K=6.4.                                                                       |   1|SBK  |
+|KATHRA 0942                                                                  |   1|SBK  |
+|N/A                                                                          |   1|SBK  |
+|NIYI IN B4                                                                   |   1|SBK  |
+|PATIENTS RN                                                                  |   1|SBK  |
+|PHONED                                                                       |  15|SBK  |
+|PND                                                                          |   4|SBK  |
+|RENE IN B4                                                                   |   1|SBK  |
+|SEE W50490                                                                   |   1|SBK  |
+|SEVA                                                                         |   1|SBK  |
+|SLH                                                                          |   1|SBK  |
+|STAT                                                                         |   1|SBK  |
+|TO ER @  2226                                                                |   1|SBK  |
+|TO ER INGA                                                                   |   1|SBK  |
+|TO ER JACOB                                                                  |   1|SBK  |
+|TO REDRAW                                                                    |   1|SBK  |
+|TOYA 1239                                                                    |   1|SBK  |
+|.                                                                            | 120|UHN  |
+|> 10.0                                                                       | 136|UHN  |
+|Draw from IV arm, possible contamination, Ph'd RN Christopher                |   1|UHN  |
+|Duplicate order.                                                             |   1|UHN  |
+|Duplicate order. see barcode L200129 for result.                             |   1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. |   1|UHN  |
+|Not done.                                                                    |  20|UHN  |
+|unable to perform                                                            |   1|UHN  |
+|Unable to perform                                                            |  63|UHN  |
+|Unable to perform due to interference.                                       |   9|UHN  |
+|Unable to perform due to interference. Marked hemolysis.                     |   1|UHN  |
+|Unable to perform incorrectly ordered. Reordered under barcode 26333174      |   1|UHN  |
+
+
+\newpage
+
+
+# Troponin
+### Summary of numbers
+
+
+| Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|-----:|:---------------------|:-------------------------|:----|
+| 33614|28058 (83.47)         |5556 (16.53)              |SMH  |
+| 57230|45741 (79.92)         |11489 (20.08)             |SBK  |
+| 61229|20560 (33.58)         |40669 (66.42)             |UHN  |
+### Summary of numeric values
+
+
+|Site |Min.  |X1st.Qu. |Median |Mean   |X3rd.Qu. |Max.  |
+|:----|:-----|:--------|:------|:------|:--------|:-----|
+|SMH  |0.006 |0.02     |0.051  |0.5592 |0.165    |48.21 |
+|SBK  |0     |6        |26     |107.1  |66       |27380 |
+|UHN  |0.07  |0.11     |0.2    |5.906  |0.62     |3383  |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                                       |     N|site |
+|:------------------------------------|-----:|:----|
+|.                                                                                              |     2|SMH  |
+|. OCANC                                                                                        |     3|SMH  |
+|@                                                                                              |     3|SMH  |
+|@ NSF                                                                                          |    11|SMH  |
+|@ NSF @                                                                                        |     1|SMH  |
+|@ NSQ                                                                                          |     8|SMH  |
+|@ NSQ  @ CALL                                                                                  |     1|SMH  |
+|@ NSQ @ CALL                                                                                   |     6|SMH  |
+|@ WPDR                                                                                         |     3|SMH  |
+|<0.006                                                                                         |  5419|SMH  |
+|>50.000                                                                                        |    92|SMH  |
+|>50.000                                                                                        |     1|SMH  |
+|NSQ                                                                                            |     1|SMH  |
+|NA                                                                                             |     5|SMH  |
+|<0.01                                                                                          | 10013|SBK  |
+|<5                                                                                             |  1459|SBK  |
+|DUPL                                                                                           |     2|SBK  |
+|LORI                                                                                           |     1|SBK  |
+|NSQ                                                                                            |     1|SBK  |
+|PHONED                                                                                         |     6|SBK  |
+|PND                                                                                            |     6|SBK  |
+|SUFA                                                                                           |     1|SBK  |
+|.                                                                                              |    28|UHN  |
+|< 0.07                                                                                         | 40484|UHN  |
+|< 0.20                                                                                         |     9|UHN  |
+|< 2                                                                                            |    65|UHN  |
+|> 50.00                                                                                        |    32|UHN  |
+|Duplicate order.                                                                               |     1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.                   |     4|UHN  |
+|Not done.                                                                                      |     4|UHN  |
+|Unable to perform                                                                              |    40|UHN  |
+|Unable to perform Insufficient quantity for testing. Please re-order test and send new sample. |     1|UHN  |
+|Unable to perform Results called to ward Please repeat.                                        |     1|UHN  |
+
+\newpage
+# Lactate
+### Summary of numbers
+
+
+| Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|-----:|:---------------------|:-------------------------|:----|
+| 20563|20510 (99.74)         |53 (0.26)                 |SMH  |
+| 41406|41399 (99.98)         |7 (0.02)                  |SBK  |
+| 53876|50135 (93.06)         |3741 (6.94)               |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |0.1  |1.2      |1.7    |2.383 |2.7      |27   |
+|SBK  |0.2  |1        |1.5    |2.023 |2.2      |37   |
+|UHN  |0.1  |1.1      |1.6    |2.199 |2.5      |36.9 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                     |    N|site |
+|:------------------------------------|----:|:----|
+|.                                                                            |    2|SMH  |
+|. OCANC                                                                      |    4|SMH  |
+|. SCANC                                                                      |    1|SMH  |
+|. TCANC17                                                                    |    1|SMH  |
+|. TCANC2                                                                     |    1|SMH  |
+|@                                                                            |    6|SMH  |
+|@ AIR @ NSF                                                                  |    2|SMH  |
+|@ CLOT                                                                       |    4|SMH  |
+|@ NSF                                                                        |    2|SMH  |
+|@ NSF @ CGSE @ CAL                                                           |    1|SMH  |
+|@ NSQ                                                                        |    2|SMH  |
+|<0.5                                                                         |    1|SMH  |
+|>15.0                                                                        |    5|SMH  |
+|>15.0                                                                        |    5|SMH  |
+|NA                                                                           |   16|SMH  |
+|DUPL                                                                         |    1|SBK  |
+|EMPTY TUBE                                                                   |    1|SBK  |
+|LBLM                                                                         |    1|SBK  |
+|PHONED                                                                       |    4|SBK  |
+|.                                                                            | 3702|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. |    1|UHN  |
+|Not done.                                                                    |    1|UHN  |
+|unable to perform                                                            |    1|UHN  |
+|Unable to perform                                                            |   36|UHN  |
+
+
+\newpage
+# Albumin
+
+
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+|  65292|64728 (99.14)         |564 (0.86)                |SMH  |
+| 106876|106811 (99.94)        |65 (0.06)                 |SBK  |
+|  88934|88872 (99.93)         |62 (0.07)                 |UHN  |
+### Summary of numeric values
+
+
+|Site |Min.  |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:-----|:--------|:------|:-----|:--------|:----|
+|SMH  |0.101 |23       |29     |29.28 |35       |68   |
+|SBK  |5     |26       |32     |31.38 |37       |76   |
+|UHN  |7     |25       |30     |29.8  |34       |104  |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                     |   N|site |
+|:-------------------------------------|---:|:----|
+|.                                                                            |   9|SMH  |
+|. OCANC                                                                      |   3|SMH  |
+|. TCANC1                                                                     |  26|SMH  |
+|. TCANC2                                                                     |   2|SMH  |
+|@                                                                            |  18|SMH  |
+|@ NRGH @ CALL                                                                |   1|SMH  |
+|@ NSF                                                                        |  10|SMH  |
+|@ NSQ                                                                        |   3|SMH  |
+|@ SHUA @ GH                                                                  |   1|SMH  |
+|@ SPUS                                                                       |   3|SMH  |
+|@ WPDR                                                                       |   2|SMH  |
+|<10                                                                          | 144|SMH  |
+|<10                                                                          |   5|SMH  |
+|<15                                                                          | 330|SMH  |
+|<15                                                                          |   1|SMH  |
+|>60                                                                          |   1|SMH  |
+|NA                                                                           |   5|SMH  |
+|<10                                                                          |  34|SBK  |
+|CLT                                                                          |   1|SBK  |
+|DUPL                                                                         |   3|SBK  |
+|GLADYS                                                                       |   1|SBK  |
+|IMSP                                                                         |   2|SBK  |
+|LBLM                                                                         |   1|SBK  |
+|N/A                                                                          |   1|SBK  |
+|NSQ                                                                          |   1|SBK  |
+|PHONED                                                                       |   2|SBK  |
+|PND                                                                          |  17|SBK  |
+|PUT ON 36686                                                                 |   1|SBK  |
+|REDRAW                                                                       |   1|SBK  |
+|.                                                                            |  35|UHN  |
+|< 6                                                                          |   3|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. |   2|UHN  |
+|Not done.                                                                    |   1|UHN  |
+|Unable to perform                                                            |  20|UHN  |
+|Unable to perform due to interference.                                       |   1|UHN  |
+
+\newpage
+# Calcium
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+|  49604|49558 (99.91)         |46 (0.09)                 |SMH  |
+|  99523|99484 (99.96)         |39 (0.04)                 |SBK  |
+| 148032|147799 (99.84)        |233 (0.16)                |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max. |
+|:----|:----|:--------|:------|:-----|:--------|:----|
+|SMH  |0.69 |1.94     |2.09   |2.089 |2.23     |6.82 |
+|SBK  |0.11 |1.97     |2.12   |2.113 |2.25     |9.33 |
+|UHN  |1.25 |2.04     |2.19   |2.189 |2.32     |5.03 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                                       |  N|site |
+|:----------------------|--:|:----|
+|.                                                                                              |  4|SMH  |
+|. OCANC                                                                                        |  4|SMH  |
+|@                                                                                              |  3|SMH  |
+|@ IS                                                                                           |  1|SMH  |
+|@ NSF                                                                                          | 14|SMH  |
+|@ NSF @ CALL                                                                                   |  2|SMH  |
+|@ NSQ                                                                                          |  3|SMH  |
+|@ SPUS                                                                                         |  3|SMH  |
+|@ SPUS @ SH                                                                                    |  1|SMH  |
+|@ WPDR                                                                                         |  2|SMH  |
+|<0.50                                                                                          |  1|SMH  |
+|<1.00                                                                                          |  4|SMH  |
+|<1.00                                                                                          |  1|SMH  |
+|<1.00                                                                                          |  1|SMH  |
+|NA                                                                                             |  2|SMH  |
+|AMY ER 2146                                                                                    |  1|SBK  |
+|CLT                                                                                            |  1|SBK  |
+|DUPL                                                                                           |  3|SBK  |
+|ER 1647                                                                                        |  1|SBK  |
+|GLADYS                                                                                         |  1|SBK  |
+|IMSP                                                                                           |  1|SBK  |
+|LBLM                                                                                           |  1|SBK  |
+|N/A                                                                                            |  2|SBK  |
+|NSQ                                                                                            |  1|SBK  |
+|PHONED                                                                                         |  8|SBK  |
+|PND                                                                                            | 16|SBK  |
+|REDRAW                                                                                         |  1|SBK  |
+|TED @ 0915,B4                                                                                  |  1|SBK  |
+|TO ER@ 2258                                                                                    |  1|SBK  |
+|.                                                                                              | 85|UHN  |
+|< 1.25                                                                                         | 95|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.                   |  3|UHN  |
+|Not done.                                                                                      | 11|UHN  |
+|Unable to perform                                                                              | 35|UHN  |
+|Unable to perform due to interference.                                                         |  3|UHN  |
+|Unable to perform Insufficient quantity for testing. Please re-order test and send new sample. |  1|UHN  |
+\newpage
+
+
+# AST
+### Summary of numbers
+
+
+| Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|-----:|:---------------------|:-------------------------|:----|
+| 40176|40110 (99.84)         |66 (0.16)                 |SMH  |
+| 53760|53743 (99.97)         |17 (0.03)                 |SBK  |
+| 91546|91465 (99.91)         |81 (0.09)                 |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |5    |20       |31     |87.52 |60       |24320 |
+|SBK  |4    |20       |30     |89.35 |54       |31100 |
+|UHN  |3    |20       |32     |98.06 |63       |23940 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                  |  N|site |
+|:--------------------------|--:|:----|
+|.                                         |  3|SMH  |
+|. OCANC                                   |  3|SMH  |
+|@                                         |  7|SMH  |
+|@ IS                                      |  1|SMH  |
+|@ NRGH                                    |  4|SMH  |
+|@ NRGH @ CALL                             |  1|SMH  |
+|@ NSF                                     |  8|SMH  |
+|@ NSQ                                     |  7|SMH  |
+|@ NSQ @ CALL                              |  1|SMH  |
+|@ SHUA                                    |  1|SMH  |
+|@ SHUA @ CALL                             |  1|SMH  |
+|@ SHUA @ GH                               |  1|SMH  |
+|@ SPUS                                    | 11|SMH  |
+|@ SUGH                                    |  2|SMH  |
+|<5                                        | 12|SMH  |
+|<5                                        |  1|SMH  |
+|NA                                        |  2|SMH  |
+|<4                                        |  4|SBK  |
+|DUPL                                      |  2|SBK  |
+|LBLM                                      |  1|SBK  |
+|NSR                                       |  1|SBK  |
+|OEE                                       |  1|SBK  |
+|OLD                                       |  1|SBK  |
+|PND                                       |  7|SBK  |
+|.                                         | 52|UHN  |
+|< 3                                       |  4|UHN  |
+|Not done.                                 |  4|UHN  |
+|Test will be performed under a new order. |  1|UHN  |
+|Unable to perform                         | 18|UHN  |
+|Unable to perform due to interference.    |  2|UHN  |
+\newpage
+# ALT
+### Summary of numbers
+
+
+| Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|-----:|:---------------------|:-------------------------|:----|
+| 39056|38492 (98.56)         |564 (1.44)                |SMH  |
+| 53759|53301 (99.15)         |458 (0.85)                |SBK  |
+| 90758|90071 (99.24)         |687 (0.76)                |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |5    |15       |25     |71.97 |50       |6316  |
+|SBK  |1    |15       |24     |77.22 |48       |16270 |
+|UHN  |3    |15       |26     |86.32 |55       |14710 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                  |   N|site |
+|:----------------------|---:|:----|
+|.                                         |   2|SMH  |
+|. OCANC                                   |   3|SMH  |
+|@                                         |   6|SMH  |
+|@ IS                                      |   1|SMH  |
+|@ NRGH                                    |   5|SMH  |
+|@ NSF                                     |   8|SMH  |
+|@ NSQ                                     |   8|SMH  |
+|@ NSQ @ CALL                              |   1|SMH  |
+|@ SHUA                                    |   1|SMH  |
+|@ SHUA @ CALL                             |   1|SMH  |
+|@ SPUS                                    |  11|SMH  |
+|@ SUGH                                    |   2|SMH  |
+|<5                                        | 510|SMH  |
+|<5                                        |   3|SMH  |
+|<5                                        |   1|SMH  |
+|<5                                        |   1|SMH  |
+|<4                                        | 445|SBK  |
+|DUPL                                      |   2|SBK  |
+|LBLM                                      |   1|SBK  |
+|NSR                                       |   1|SBK  |
+|OEE                                       |   1|SBK  |
+|OLD                                       |   1|SBK  |
+|PND                                       |   7|SBK  |
+|.                                         |  50|UHN  |
+|< 3                                       | 238|UHN  |
+|< 30                                      |   4|UHN  |
+|< 6                                       | 358|UHN  |
+|Not done.                                 |   4|UHN  |
+|Test will be performed under a new order. |   1|UHN  |
+|Unable to perform                         |  28|UHN  |
+|Unable to perform due to interference.    |   3|UHN  |
+|Unable to perform Lipemic.                |   1|UHN  |
+\newpage
+# MCV
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+| 127584|127504 (99.94)        |80 (0.06)                 |SMH  |
+| 207244|207153 (99.96)        |91 (0.04)                 |SBK  |
+| 295499|294092 (99.52)        |1407 (0.48)               |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |48.7 |86.8     |91.3   |91.05 |95.7     |135.2 |
+|SBK  |44.8 |86.9     |91.1   |90.91 |95.4     |147   |
+|UHN  |0.3  |86.6     |91     |90.96 |95.4     |142   |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                     |    N|site |
+|:-------------------------------|----:|:----|
+|.                                                                            |   20|SMH  |
+|. OCANC                                                                      |   39|SMH  |
+|. SCANC                                                                      |    9|SMH  |
+|. TCANC1                                                                     |    6|SMH  |
+|. TCANC2                                                                     |    1|SMH  |
+|@                                                                            |    1|SMH  |
+|@ NSQ                                                                        |    4|SMH  |
+|CLOTTED                                                                      |   47|SBK  |
+|DIFF                                                                         |    1|SBK  |
+|DUPL                                                                         |    1|SBK  |
+|LBLM                                                                         |    2|SBK  |
+|N/A                                                                          |   37|SBK  |
+|NSQ                                                                          |    1|SBK  |
+|OEE BY FLOOR                                                                 |    1|SBK  |
+|TUBE EMPTY                                                                   |    1|SBK  |
+|.                                                                            | 1321|UHN  |
+|Duplicate order.                                                             |    1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. |    2|UHN  |
+|Specimen clotted.                                                            |    6|UHN  |
+|Unable to perform                                                            |   76|UHN  |
+|Unable to perform Specimen clotted.                                          |    1|UHN  |
+
+
+\newpage
+# ALP
+### Summary of numbers
+
+
+| Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|-----:|:---------------------|:-------------------------|:----|
+| 39003|38979 (99.94)         |24 (0.06)                 |SMH  |
+| 53791|53776 (99.97)         |15 (0.03)                 |SBK  |
+| 89744|89659 (99.91)         |85 (0.09)                 |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |8    |60       |84     |123   |131      |2886  |
+|SBK  |12   |65       |88     |137.6 |136      |32280 |
+|UHN  |10   |70       |97     |148.5 |155      |4928  |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                  |  N|site |
+|:-----------------------------------------|--:|:----|
+|.                                         |  4|SMH  |
+|. OCANC                                   |  3|SMH  |
+|@                                         |  2|SMH  |
+|@ IS                                      |  1|SMH  |
+|@ NSF                                     |  3|SMH  |
+|@ NSQ                                     |  4|SMH  |
+|@ SHUA                                    |  1|SMH  |
+|@ SPUS                                    |  5|SMH  |
+|<5                                        |  1|SMH  |
+|DUPL                                      |  2|SBK  |
+|LBLM                                      |  1|SBK  |
+|NSR                                       |  1|SBK  |
+|OEE                                       |  1|SBK  |
+|OLD                                       |  1|SBK  |
+|PND                                       |  8|SBK  |
+|SIERRA                                    |  1|SBK  |
+|.                                         | 49|UHN  |
+|< 10                                      |  5|UHN  |
+|Not done.                                 |  4|UHN  |
+|Test will be performed under a new order. |  1|UHN  |
+|Unable to perform                         | 24|UHN  |
+|Unable to perform due to interference.    |  2|UHN  |
+
+
+
+\newpage
+
+# Glucose
+### Summary of numbers
+
+
+|  Total|Numeric Values (N, %) |Non-numeric Values (N, %) |Site |
+|------:|:---------------------|:-------------------------|:----|
+|  70189|70138 (99.93)         |51 (0.07)                 |SMH  |
+|  70542|70525 (99.98)         |17 (0.02)                 |SBK  |
+| 104142|103970 (99.83)        |172 (0.17)                |UHN  |
+### Summary of numeric values
+
+
+|Site |Min. |X1st.Qu. |Median |Mean  |X3rd.Qu. |Max.  |
+|:----|:----|:--------|:------|:-----|:--------|:-----|
+|SMH  |1    |5.3      |6.4    |7.563 |8.3      |95.8  |
+|SBK  |0.1  |5.6      |6.7    |7.653 |8.4      |98.5  |
+|UHN  |1    |5.6      |6.8    |8.217 |9        |169.3 |
+### Summary of non-numeric values
+
+
+|Non-numeric Result Value                                                                                    |  N|site |
+|:-------------------------------------------|--:|:----|
+|.                                                                                                           |  8|SMH  |
+|. OCANC                                                                                                     |  3|SMH  |
+|. TCANC1                                                                                                    |  2|SMH  |
+|@                                                                                                           |  5|SMH  |
+|@ GH                                                                                                        |  1|SMH  |
+|@ NRGH                                                                                                      |  1|SMH  |
+|@ NSF                                                                                                       |  8|SMH  |
+|@ NSQ                                                                                                       |  8|SMH  |
+|@ NSQ @ CALL                                                                                                |  1|SMH  |
+|@ SPUS                                                                                                      |  2|SMH  |
+|@ SPUS @ MH @ GL                                                                                            |  1|SMH  |
+|@ UNIN                                                                                                      |  1|SMH  |
+|@ WPDR                                                                                                      |  1|SMH  |
+|<1.0                                                                                                        |  3|SMH  |
+|NA                                                                                                          |  6|SMH  |
+|ALEX                                                                                                        |  1|SBK  |
+|ER @ 1139                                                                                                   |  1|SBK  |
+|N/A                                                                                                         |  1|SBK  |
+|PHONED                                                                                                      |  1|SBK  |
+|PND                                                                                                         | 10|SBK  |
+|TO ER @  0023                                                                                               |  1|SBK  |
+|TO ER @  0533                                                                                               |  1|SBK  |
+|TRISH 1817                                                                                                  |  1|SBK  |
+|.                                                                                                           | 94|UHN  |
+|< 1.0                                                                                                       | 17|UHN  |
+|> 42.2                                                                                                      |  1|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample.                                |  2|UHN  |
+|Insufficient quantity for testing. Please re-order test and send new sample. see barcode L379533 for result |  1|UHN  |
+|Not done.                                                                                                   | 15|UHN  |
+|unable to perform                                                                                           |  1|UHN  |
+|Unable to perform                                                                                           | 38|UHN  |
+|Unable to perform due to interference.                                                                      |  2|UHN  |
+|Unable to perform Insufficient quantity for testing. Please re-order test and send new sample.              |  1|UHN  |
