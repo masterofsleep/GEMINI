@@ -1,10 +1,15 @@
-# ==============================================================================
-# =====================  SBK Physician Names  ==================================
-# ======================    March 2 2017   =====================================
-library(gemini)
-lib.pa()
-rm(list = ls())
+# ------------ list of admissions to exclude base on physician -----------------
+# ------------------------------ 2017-03-20 ------------------------------------
 
+# smh geriatrics and not gim
+smh.marked <- readxl::read_excel("R:/GEMINI/_RESTORE/SMH/Physicians/smh.notgim.mrn.xlsx") %>%
+  data.table
+geriatrics.smh <- smh.marked[Geriatrics==1, EncID.new]
+not.gim.smh <- smh.marked[is.na(Geriatrics), EncID.new]
+
+# sbk not gim
+sbk.adm <- readg(sbk, adm)
+sbk.adm[Admitting.Service=="GMS", EncID.new]
 names.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names_code_link_ASW.csv")
 adm.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/adm.physician.hashes.csv")
 dad.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/dad.mrp.hashes.csv")
@@ -25,10 +30,4 @@ sum(is.na(adm.names$gim.adm))
 
 adm.names[,gim:= ifelse(gim.adm=="Y"|gim.dis=="Y", "Y", 
                         ifelse(gim.adm=="N"&gim.dis=="N", "N", "U"))]
-table(adm.names$gim)
-
-fwrite(adm.names, "R:/GEMINI/_RESTORE/SBK/Physicians/adm.physician.hashes.marked.csv")
-fwrite(adm.names[gim=="N", .(EncID.new, Admiting.Name, Discharging.Name)], "R:/GEMINI/_RESTORE/SBK/Physicians/list.not.gim.csv")
-fwrite(adm.names[gim=="U", .(EncID.new, Admiting.Name, Discharging.Name)], "R:/GEMINI/_RESTORE/SBK/Physicians/list.unknown.csv")
-
-
+adm.names[gim%in%c("N", "U")] -> check

@@ -73,4 +73,37 @@ fwrite(msh.bb, "H:/GEMINI/Data/MSH/BB/msh.bb.nophi.csv")
 
 
 # ------------------------ sbk data --------------------------------------------
-sbk <- fread("R:/GEMINI/_RESTORE/SBK/Transfers/")
+sbk <- fread("R:/GEMINI/_RESTORE/SBK/Transfers/sbk.transfers.MRN_only_link.nophi.csv")
+sbk[,V1:=NULL]
+er <- readg(sbk, sbk.er.nophi)
+dad <- readg(sbk, dad)
+sum(duplicated(dad$EncID.new))
+sum(duplicated(er$EncID.new))
+er[EncID.new%in%er[duplicated(EncID.new), EncID.new]] -> check
+sbktime <- merge(unique(er[,.(Triage.Date, Triage.Time, EncID.new)]),
+                 dad[,.(Admit.Date, Admit.Time, Discharge.Date,
+                        Discharge.Time, EncID.new)], 
+                 by = "EncID.new", all.y = T)
+sbktime[is.na(Triage.Date), ':='(
+  Triage.Date = Admit.Date,
+  Triage.Time = Admit.Time
+)]
+sbk[, EncID.new:=paste("12", EncID.new, sep = "")]
+sbk[,':='(Issue.Date=dmy(Issue.Date))]
+
+sbk <- merge(sbk, sbktime, by = "EncID.new",
+             all.x = T)
+sbk[ymd_hms(paste(Issue.Date, Issue.Time))<=ymd_hm(paste(Discharge.Date, Discharge.Time))&
+      ymd_hms(paste(Issue.Date, Issue.Time))>=ymd_hm(paste(Triage.Date, Triage.Time))]
+
+
+sbk[ymd(Issue.Date)<=ymd(Discharge.Date)&
+      ymd(Issue.Date)>=ymd(Triage.Date)] -> sbk.bb
+sbk.bb[, ':='(Triage.Date = NULL,
+              Triage.Time = NULL,
+              Admit.Date = NULL,
+              Admit.Time = NULL,
+              Discharge.Date = NULL,
+              Discharge.Time = NULL)]
+
+fwrite(sbk.bb, "H:/GEMINI/Data/SBK/BB/sbk.bb.csv")

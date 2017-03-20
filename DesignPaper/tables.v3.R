@@ -428,9 +428,12 @@ dad[, top20.diag := ifelse(Diag.Code%in%diag.freq$V1[1:20], Diagnosis, "Other")]
 
 library(devtools)
 library(treemapify)
-top20diag  <- ddply(dad, ~top20.diag, summarize,
+top20diag  <- ddply(dad, ~top20.diag, summarize, 
                     N = length(EncID.new),
                     Cost = median(Cost, na.rm = T)) %>% arrange(desc(N))
+top20diag$Prevalence <- sprintf("%.1f", top20diag$N/1384.85)
+top20diag$top20.diag <- paste(top20diag$top20.diag, top20diag$Prevalence,
+                              sep = "\n")
 names(top20diag)[1] <- "Diagnosis"
 top20diag$ID <-c(21, 1:20)
 cbind(top20diag$Diagnosis, c("Other", 
@@ -475,7 +478,7 @@ top20diag$Diagnosis <- c("Other",
                          "Chest Pain",
                          "Gastroenteritis",
                          "C. difficile")
-                         
+top20diag$label <- paste(top20diag$Diagnosis, "\n(", top20diag$Prevalence, ")",sep = "")          
                          
 
 library(treemap)
@@ -490,7 +493,7 @@ reds <- c(rgb(255/255, 255/255, 255/255, 1),
 
 treemap(top20diag,
         algorithm = "pivotSize",
-        index = c("Diagnosis"),
+        index = c("label"),
         vSize = "N",
         vColor = "Cost",
         sortID = "ID",
@@ -506,43 +509,38 @@ treemap(top20diag,
 p1 <-ggplot(dad, aes(Age)) +
   geom_histogram(aes(y = ..density..),
                  binwidth = 2, alpha= 0.5,
-                 color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2) +
+                 color = "black", fill = "#FF6666") + 
   theme_bw() +
   xlab("Age") + ylab(NULL)
 
 p2 <- ggplot(dad, aes(n.comorb)) +
   geom_histogram(aes(y = ..density..),
                  binwidth = 1, alpha= 0.5,
-                 color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2, adjust = 2) +
+                 color = "black", fill = "#FF6666") + 
   theme_bw() +
   xlab("Number of Comorbidities")+ ylab(NULL)
 
 p3 <- ggplot(dad, aes(LoS)) +
   geom_histogram(aes(y = ..density..),
                  binwidth = 2, alpha= 0.5,
-                 color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2) +
+                 color = "black", fill = "#FF6666") + 
   theme_bw() +
   xlab("Length of Stay")+ ylab(NULL) +
   xlim(0, 100)
-p3
+
 
 
 p4 <- ggplot(dad, aes(Cost)) +
   geom_histogram(aes(y = ..density..),
                  binwidth = 2000, alpha= 0.5,
-                 color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2, adjust =1) +
+                 color = "black", fill = "#FF6666") + 
   theme_bw() + 
   xlab("Cost")+ ylab(NULL) + xlim(0, 100000)
 
 p4 <- ggplot(dad, aes(logcost)) +
   geom_histogram(aes(y = ..density..),
                  binwidth = 0.05, alpha= 0.5,
-                 color = "black", fill = "white") + 
-  geom_density(fill = "#FF6666", alpha = 0.2, adjust =1.5) +
+                 color = "black", fill = "#FF6666") 
   theme_bw() + scale_x_continuous(labels = trans_format("identity", math_format(10^.x))) +
   xlab("log10(Cost)")+ ylab(NULL)# + xlim(0, 100000) 
 

@@ -19,6 +19,7 @@ smh.lab[str_sub(Result.Value,1,1)%in%c(0:9)&is.na(as.numeric(Result.Value))&
 smh.lab[str_sub(Result.Value,1,1)%in%c(">", "<")&str_detect(Result.Value, "@"),
         Result.Value := str_replace_all(Result.Value, "[@A-z]","")]
 
+lab.merge <- 
 
 lab.desc <- function(x, y, z){
   cat("### Summary of numbers\n")
