@@ -278,3 +278,9 @@ nrow(unique(uhn.old[,.(Order_No, Generic_Name ,AHFS)]))
 nrow(unique(uhn.old[,.(Order_No, AHFS, Route_Code)]))
 unique(uhn.old[,.(Order_No, AHFS, Route_Code)]) -> check
 ## result: approach not plausible, old data contains
+
+
+
+
+msh <- readg(msh, phar)
+apply(msh, 2, function(x)sum(is.na(x)))

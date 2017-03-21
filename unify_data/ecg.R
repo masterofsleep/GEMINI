@@ -16,3 +16,7 @@ write.csv(msh, "H:/GEMINI/Data/MSH/ECG/msh.ecg.csv",row.names = F,
           na = "")
 apply(smh, MARGIN = 2, FUN = function(x)sum(is.na(x)))
 apply(msh, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+
+
+msh <- readg(msh, ecg)
+apply(msh, 2, function(x)sum(is.na(x)))

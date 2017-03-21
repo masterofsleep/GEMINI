@@ -181,3 +181,15 @@ for(i in c(5,10,20,50)){
 }
 fwrite(data.frame(t(tab2b)), "H:/GEMINI/Results/Ad Hoc/for.administrators.tab2b.csv")
 
+
+
+# --------------------------- Figures ------------------------------------------
+# --------------------------- 2017 03 21 ---------------------------------------
+los$EncID.new <- as.character(los$EncID.new)
+cohort <- merge(cohort, unique(los), by = "EncID.new")
+cohort$mrp <- as.numeric(factor(cohort$MRP))
+ddply(cohort, ~mrp, summarize,
+      ave.los = mean(LoS)) %>%
+  ggplot(aes(mrp, ave.los)) + geom_bar(stat = "identity")
+
+

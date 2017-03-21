@@ -340,6 +340,11 @@ uti <- "N39"
 sepsis <- "A41"
 fever <- "R50"
 
+# new
+pneumonia <- c("J100", "J110", "J120", "J121", "J122", "J128", "J129",
+                           "J13", "J14", "J15", "J160", "J168", "J17", "J18")
+uti <- c("N10", "N12", "N151", "N300", "N308", "N309","N410", "N412",
+             "N413", "N510", "N390")
 ip.diag <- readg(gim, ip_diag)
 er.diag <- readg(gim, er_diag)
 
@@ -522,7 +527,7 @@ drm.feasi <- function(x, er.diag = NULL, ip.diag = NULL){
 feasi.table <- rbind(drm.feasi(drm.cohort, er.diag = c(sepsis, fever, uti, pneumonia)), 
                      drm.feasi(drm.cohort[ER.Diagnosis.Code==sepsis], er.diag = sepsis),
                      drm.feasi(drm.cohort[ER.Diagnosis.Code==fever], er.diag = fever),
-                     drm.feasi(drm.cohort[ER.Diagnosis.Code==uti], er.diag = uti),
+                     drm.feasi(drm.cohort[ER.Diagnosis.Codeuti], er.diag = uti),
                      drm.feasi(drm.cohort[ER.Diagnosis.Code==pneumonia], er.diag = pneumonia),
                      drm.feasi(drm.cohort, ip.diag = c(sepsis, fever, uti, pneumonia)), 
                      drm.feasi(drm.cohort[Diagnosis.Code==sepsis], ip.diag = sepsis),
@@ -532,3 +537,216 @@ feasi.table <- rbind(drm.feasi(drm.cohort, er.diag = c(sepsis, fever, uti, pneum
                      fill = T)
 
 write.csv(t(feasi.table), "H:/GEMINI/Results/DRM/feasi.table.march15.csv")
+
+
+# ------------ new tables with codes in design paper for cap and uti -----------
+rm(list = ls())
+antibio.inc <- fread("H:/GEMINI/Results/DRM/drm.antibio.inc.csv")
+ns.cul <- fread("H:/GEMINI/Results/DRM/drm.cul.ns.csv")
+drm.cohort <- intersect(antibio.inc$drm.antibio.inc, ns.cul$EncID.new)
+all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+all.dad[EncID.new%in%antibio.inc$drm.antibio.inc, Institution.Number] %>% table
+all.dad[EncID.new%in%ns.cul$EncID.new, Institution.Number] %>% table
+all.dad[EncID.new%in%drm.cohort, Institution.Number] %>% table
+
+sepsis <- "A41"
+fever <- "R50"
+
+# new
+pneumonia <- c("J100", "J110", "J120", "J121", "J122", "J128", "J129",
+               "J13", "J14", "J15", "J160", "J168", "J17", "J18")
+uti <- c("N10", "N12", "N151", "N300", "N308", "N309","N410", "N412",
+         "N413", "N510", "N390")
+ip.diag <- readg(gim, ip_diag)
+er.diag <- readg(gim, er_diag)
+
+drm.ip.diag <- ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code, EncID.new)]
+drm.er.diag <- er.diag[ER.Diagnosis.Type=="M", 
+                       .(ER.Diagnosis.Code, EncID.new)]
+drm.cohort <- merge(drm.ip.diag[EncID.new%in%drm.cohort],
+                    drm.er.diag[EncID.new%in%drm.cohort],
+                    by = "EncID.new", all.x = T, all.y = T)
+drm.cohort[,':='(Urine = EncID.new%in%ns.cul[Urine==1, EncID.new],
+                 Blood = EncID.new%in%ns.cul[Blood==1, EncID.new],
+                 Resp = EncID.new%in%ns.cul[Resp==1, EncID.new],
+                 Other.sterile = EncID.new%in%ns.cul[
+                   is.na(Urine)&is.na(Blood)&is.na(Resp)&NonBacterial==1, EncID.new],
+                 Other.non.sterile = EncID.new%in%ns.cul[
+                   is.na(Urine)&is.na(Blood)&is.na(Resp)&is.na(NonBacterial), EncID.new])]
+
+
+drm.cohort <- merge(drm.cohort, all.dad[,.(EncID.new, Age, Institution.Number, Gender)])
+
+dad <- readg(smh, dad)
+mrp <- rbind(readg(smh, dad, select = c("MostResponsible.DocterCode", "EncID.new")),
+             readg(sbk, dad, select = c("MostResponsible.DocterCode", "EncID.new")),
+             readg(uhn, dad, select = c("MostResponsible.DocterCode", "EncID.new")))
+hcn <- rbind(readg(smh, adm, select = c("Hash", "EncID.new")),
+             readg(sbk, adm, select = c("Hash", "EncID.new")),
+             readg(uhn, adm, select = c("Hash", "EncID.new")))
+drm.cohort$EncID.new <- as.character(drm.cohort$EncID.new)
+drm.cohort <- merge(drm.cohort, mrp, by = "EncID.new")
+drm.cohort <- merge(drm.cohort, hcn, by = "EncID.new")
+drm.cohort[Institution.Number=="uhn-general", Institution.Number:="tgh"]
+drm.cohort[Institution.Number=="uhn-western", Institution.Number:="twh"]
+fwrite(drm.cohort, "H:/GEMINI/Results/DRM/drm.cohort.csv")
+drm.cohort <- fread("H:/GEMINI/Results/DRM/drm.cohort.csv")
+drm.feasi <- function(x, er.diag = NULL, ip.diag = NULL){
+  part1 <- data.table(n.patient = length(unique(x$Hash)),
+                      n.admission = length(unique(x$EncID.new)),
+                      smh = paste(sum(x$Institution.Number=="smh"), " (",
+                                  round(sum(x$Institution.Number=="smh")/nrow(x)*100, 1), ")",
+                                  sep = ""),
+                      tgh = paste(sum(x$Institution.Number=="tgh"), " (",
+                                  round(sum(x$Institution.Number=="tgh")/nrow(x)*100, 1), ")",
+                                  sep = ""),
+                      twh = paste(sum(x$Institution.Number=="twh"), " (",
+                                  round(sum(x$Institution.Number=="twh")/nrow(x)*100, 1), ")",
+                                  sep = ""),
+                      sbk = paste(sum(x$Institution.Number=="sbk"), " (",
+                                  round(sum(x$Institution.Number=="sbk")/nrow(x)*100, 1), ")",
+                                  sep = ""),
+                      age = paste(round(mean(x$Age), 1), " (", round(sd(x$Age),1),
+                                  ")", sep = ""),
+                      sex = paste(sum(x$Gender=="F"), " (",
+                                  round(sum(x$Gender=="F")/nrow(x)*100, 1), ")", sep = ""),
+                      urine = paste(sum(x$Urine==1), " (",
+                                    round(sum(x$Urine==1)/nrow(x)*100, 1), ")",
+                                    sep = ""), 
+                      respiratory = paste(sum(x$Resp==1), " (",
+                                          round(sum(x$Resp==1)/nrow(x)*100, 1), ")",
+                                          sep = ""),
+                      blood = paste(sum(x$Blood==1), " (",
+                                    round(sum(x$Blood==1)/nrow(x)*100, 1), ")",
+                                    sep = ""),
+                      other.sterile = paste(sum(x$Other.sterile==1), " (",
+                                            round(sum(x$Other.sterile==1)/nrow(x)*100, 1), ")",
+                                            sep = ""),
+                      other.non.sterile = paste(sum(x$Other.non.sterile==1), " (",
+                                                round(sum(x$Other.non.sterile==1)/nrow(x)*100, 1), ")",
+                                                sep = "")
+  )
+  if(is.null(er.diag)&is.null(ip.diag)) return(part1)
+  if(!is.null(er.diag)){
+    smh.phy.n <- x[startwith.any(ER.Diagnosis.Code, er.diag)&Institution.Number=="smh", 
+                   .N, by = MostResponsible.DocterCode]
+    sbk.phy.n <- x[startwith.any(ER.Diagnosis.Code, er.diag)&Institution.Number=="sbk", 
+                   .N, by = MostResponsible.DocterCode]
+    tgh.phy.n <- x[startwith.any(ER.Diagnosis.Code, er.diag)&Institution.Number=="tgh", 
+                   .N, by = MostResponsible.DocterCode]
+    twh.phy.n <- x[startwith.any(ER.Diagnosis.Code, er.diag)&Institution.Number=="twh", 
+                   .N, by = MostResponsible.DocterCode]
+    provider <- data.table(
+      provider.5 = " ",
+      smh.5 = paste(sum(smh.phy.n$N>5), " (", 
+                    round(sum(smh.phy.n$N>5)/nrow(smh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      tgh.5 = paste(sum(tgh.phy.n$N>5), " (", 
+                    round(sum(tgh.phy.n$N>5)/nrow(tgh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      twh.5 = paste(sum(twh.phy.n$N>5), " (", 
+                    round(sum(twh.phy.n$N>5)/nrow(twh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      sbk.5 = paste(sum(sbk.phy.n$N>5), " (", 
+                    round(sum(sbk.phy.n$N>5)/nrow(sbk.phy.n)*100, 1), ")", 
+                    sep = ""),
+      
+      provider.10 = " ",
+      smh.10 = paste(sum(smh.phy.n$N>10), " (", 
+                     round(sum(smh.phy.n$N>10)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.10 = paste(sum(tgh.phy.n$N>10), " (", 
+                     round(sum(tgh.phy.n$N>10)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.10 = paste(sum(twh.phy.n$N>10), " (", 
+                     round(sum(twh.phy.n$N>10)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.10 = paste(sum(sbk.phy.n$N>10), " (", 
+                     round(sum(sbk.phy.n$N>10)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = ""),
+      provider.15 = " ",
+      smh.15 = paste(sum(smh.phy.n$N>15), " (", 
+                     round(sum(smh.phy.n$N>15)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.15 = paste(sum(tgh.phy.n$N>15), " (", 
+                     round(sum(tgh.phy.n$N>15)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.15 = paste(sum(twh.phy.n$N>15), " (", 
+                     round(sum(twh.phy.n$N>15)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.15 = paste(sum(sbk.phy.n$N>15), " (", 
+                     round(sum(sbk.phy.n$N>15)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = "")
+    )
+    return(cbind(part1, provider))
+  }
+  if(!is.null(ip.diag)){
+    smh.phy.n <- x[startwith.any(Diagnosis.Code, ip.diag)&Institution.Number=="smh", 
+                   .N, by = MostResponsible.DocterCode]
+    sbk.phy.n <- x[startwith.any(Diagnosis.Code, ip.diag)&Institution.Number=="sbk", 
+                   .N, by = MostResponsible.DocterCode]
+    tgh.phy.n <- x[startwith.any(Diagnosis.Code, ip.diag)&Institution.Number=="tgh", 
+                   .N, by = MostResponsible.DocterCode]
+    twh.phy.n <- x[startwith.any(Diagnosis.Code, ip.diag)&Institution.Number=="twh", 
+                   .N, by = MostResponsible.DocterCode]
+    provider <- data.table(
+      provider.5 = " ",
+      smh.5 = paste(sum(smh.phy.n$N>5), " (", 
+                    round(sum(smh.phy.n$N>5)/nrow(smh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      tgh.5 = paste(sum(tgh.phy.n$N>5), " (", 
+                    round(sum(tgh.phy.n$N>5)/nrow(tgh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      twh.5 = paste(sum(twh.phy.n$N>5), " (", 
+                    round(sum(twh.phy.n$N>5)/nrow(twh.phy.n)*100, 1), ")", 
+                    sep = ""),
+      sbk.5 = paste(sum(sbk.phy.n$N>5), " (", 
+                    round(sum(sbk.phy.n$N>5)/nrow(sbk.phy.n)*100, 1), ")", 
+                    sep = ""),
+      
+      provider.10 = " ",
+      smh.10 = paste(sum(smh.phy.n$N>10), " (", 
+                     round(sum(smh.phy.n$N>10)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.10 = paste(sum(tgh.phy.n$N>10), " (", 
+                     round(sum(tgh.phy.n$N>10)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.10 = paste(sum(twh.phy.n$N>10), " (", 
+                     round(sum(twh.phy.n$N>10)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.10 = paste(sum(sbk.phy.n$N>10), " (", 
+                     round(sum(sbk.phy.n$N>10)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = ""),
+      provider.15 = " ",
+      smh.15 = paste(sum(smh.phy.n$N>15), " (", 
+                     round(sum(smh.phy.n$N>15)/nrow(smh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      tgh.15 = paste(sum(tgh.phy.n$N>15), " (", 
+                     round(sum(tgh.phy.n$N>15)/nrow(tgh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      twh.15 = paste(sum(twh.phy.n$N>15), " (", 
+                     round(sum(twh.phy.n$N>15)/nrow(twh.phy.n)*100, 1), ")", 
+                     sep = ""),
+      sbk.15 = paste(sum(sbk.phy.n$N>15), " (", 
+                     round(sum(sbk.phy.n$N>15)/nrow(sbk.phy.n)*100, 1), ")", 
+                     sep = "")
+    )
+    return(cbind(part1, provider))
+  }
+}
+
+
+feasi.table <- rbind(drm.feasi(drm.cohort, er.diag = c(sepsis, fever, uti, pneumonia)), 
+                     drm.feasi(drm.cohort[startwith.any(ER.Diagnosis.Code, sepsis)], er.diag = sepsis),
+                     drm.feasi(drm.cohort[startwith.any(ER.Diagnosis.Code, fever)], er.diag = fever),
+                     drm.feasi(drm.cohort[startwith.any(ER.Diagnosis.Code, uti)], er.diag = uti),
+                     drm.feasi(drm.cohort[startwith.any(ER.Diagnosis.Code, pneumonia)], er.diag = pneumonia),
+                     drm.feasi(drm.cohort, ip.diag = c(sepsis, fever, uti, pneumonia)), 
+                     drm.feasi(drm.cohort[startwith.any(Diagnosis.Code, sepsis)], ip.diag = sepsis),
+                     drm.feasi(drm.cohort[startwith.any(Diagnosis.Code, fever)], ip.diag = fever),
+                     drm.feasi(drm.cohort[startwith.any(Diagnosis.Code, uti)], ip.diag = uti),
+                     drm.feasi(drm.cohort[startwith.any(Diagnosis.Code,pneumonia)], ip.diag = pneumonia),
+                     fill = T)
+t(feasi.table)
+write.csv(t(feasi.table), "H:/GEMINI/Results/DRM/feasi.table.march21.csv")
+

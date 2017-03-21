@@ -14,13 +14,23 @@ uhn.lab <- readg(uhn, labs, dt = T)
 # fwrite(msh.lab.freq, "H:/GEMINI/Results/Shortadm/msh.lab.freq.csv")
 
 smh.lab[str_sub(Result.Value,1,1)%in%c(0:9)&is.na(as.numeric(Result.Value))&
-          !is.na(Result.Value)&str_detect(Result.Value, "@"),
-        Result.Value := str_replace_all(Result.Value, "[@A-z]","")]
+          !is.na(Result.Value),
+        Result.Value := str_replace_all(Result.Value, "[@A-z!]","")]
 smh.lab[str_sub(Result.Value,1,1)%in%c(">", "<")&str_detect(Result.Value, "@"),
         Result.Value := str_replace_all(Result.Value, "[@A-z]","")]
 
-lab.merge <- 
+smh.lab <- smh.lab[,.(EncID.new, Test.Name, Test.ID, Result.Value,
+                        Result.Unit, Reference.Range, Collection.DtTm, Site = "SMH")]
+sbk.lab <- sbk.lab[,.(EncID.new, Test.Name, Test.ID, Result.Value,
+                      Result.Unit, Reference.Range, Collection.DtTm, Site = "SBK")]
+uhn.lab <- uhn.lab[,.(EncID.new, Test.Name, Test.ID, Test.Item, Result.Value ,
+                      Result.Unit = Result.Units, 
+                      Collection.DtTm = ymd_hms(paste(Specimen.Col, Specimen.C)),
+                      Site = "UHN")]
 
+names(smh.lab)
+names(sbk.lab)
+names(uhn.lab)
 lab.desc <- function(x, y, z){
   cat("### Summary of numbers\n")
   "Numeric Values (N, %)" <- c(
@@ -74,6 +84,9 @@ lab.desc(hgb.smh$Result.Value,
          hgb.sbk$Result.Value,
          hgb.uhn$Result.Value)
 
+hgb <- rbind(hgb.smh, 
+             hgb.sbk,
+             hgb.uhn, fill = T)
 
 # ------------------------------- wbc ------------------------------------------
 wbc.smh <- smh.lab[Test.Name=="WBC"]
@@ -107,7 +120,11 @@ sodium.uhn <- uhn.lab[Test.Item=="Sodium"&
 lab.desc(sodium.smh$Result.Value,
          sodium.sbk$Result.Value,
          sodium.uhn$Result.Value)
-
+sodium <- rbind(sodium.smh,
+                sodium.sbk,
+                sodium.uhn, fill = T)
+sodium[as.numeric(Result.Value)<100] %>% 
+  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/sodium.lt100.csv")
 
 # ---------------------------- potassium ---------------------------------------
 potassium.smh <- smh.lab[Test.Name=="Potassium"]
@@ -119,6 +136,12 @@ potassium.uhn <- uhn.lab[Test.Item=="Potassium"&Test.Name%in%c(
 lab.desc(potassium.smh$Result.Value,
          potassium.sbk$Result.Value,
          potassium.uhn$Result.Value)
+
+potassium <- rbind(potassium.smh,
+                   potassium.sbk,
+                   potassium.uhn, fill = T)
+potassium[as.numeric(Result.Value)<1|as.numeric(Result.Value)>10] %>% 
+  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/potassium.lt1orgt10.csv")
 
 # ---------------------------- troponin ----------------------------------------
 troponin.smh <- smh.lab[Test.Name=="Troponin I"]
@@ -176,6 +199,11 @@ mcv.uhn <- uhn.lab[Test.Item=="MCV"&Test.Name=="CBC"]
 lab.desc(mcv.smh$Result.Value,
          mcv.sbk$Result.Value,
          mcv.uhn$Result.Value)
+mcv <- rbind(mcv.smh,
+             mcv.sbk,
+             mcv.uhn, fill = T)
+mcv[as.numeric(Result.Value)<40] %>% 
+  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/mcv.lt40.csv")
 
 # ------------------------------ ALP -------------------------------------------
 alp.smh <- smh.lab[Test.Name=="ALP"]
@@ -195,3 +223,11 @@ glucose.uhn <- uhn.lab[Test.Item=="Glucose"&
 lab.desc(glucose.smh$Result.Value,
          glucose.sbk$Result.Value,
          glucose.uhn$Result.Value)
+
+glucose <- rbind(glucose.smh,
+                 glucose.sbk,
+                 glucose.uhn, fill = T)
+glucose[as.numeric(Result.Value)>40] %>% 
+  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/glucose.gt40.csv")
+
+glucose[as.numeric(Result.Value)>40, Site] %>% table 

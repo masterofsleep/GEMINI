@@ -12,3 +12,6 @@ smh <- smh[!duplicated(smh)]
 apply(smh, MARGIN = 2, FUN = function(x)sum(is.na(x)))
 
 write.csv(smh, "H:/GEMINI/Data/SMH/Diet/smh.diet.csv", row.names = F, na = "")
+
+msh <- readg(msh, diet)
+apply(msh, 2, function(x)sum(is.na(x)))

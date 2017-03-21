@@ -96,3 +96,6 @@ lib.pa()
 msh <- fread("R:/GEMINI/_RESTORE/MSH/Transfers/msh.transfers.nophi.csv")
 msh[, EncID.new := paste("14", EncID.new, sep = "")]
 fwrite(msh, "H:/GEMINI/Data/MSH/CIHI/msh.xfer.csv")
+
+msh <- readg(msh, xfer)
+apply(msh, 2, function(x)sum(is.na(x)))

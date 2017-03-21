@@ -70,8 +70,8 @@ msh.bb <- fread("msh.bb.nophi.csv")
 msh.bb$EncID.new <- paste("14", msh.bb$EncID.new, sep = "")
 msh.bb[, V1 := NULL]
 fwrite(msh.bb, "H:/GEMINI/Data/MSH/BB/msh.bb.nophi.csv")
-
-
+msh <- readg(msh, bb)
+apply(msh, 2, function(x)sum(is.na(x)))
 # ------------------------ sbk data --------------------------------------------
 sbk <- fread("R:/GEMINI/_RESTORE/SBK/Transfers/sbk.transfers.MRN_only_link.nophi.csv")
 sbk[,V1:=NULL]

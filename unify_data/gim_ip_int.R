@@ -95,3 +95,5 @@ int.ip <- rbind(smh.intip,
                 thp.intip)
 int.ip <- int.ip[!is.na(Intervention.Code)]
 fwrite(int.ip, "H:/GEMINI/Data/GEMINI/gim.ip_int.csv")
+msh.intip[is.na(Intervention.Code)&!is.na(Intervention.Occurrence)]
+228/34245

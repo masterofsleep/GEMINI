@@ -102,3 +102,7 @@ uhn.echo.only <- uhn.echo[Procedure%in%name[c(2,3,6,7)]]
 fwrite(uhn.echo.only, "H:/GEMINI/Data/UHN/Echo/uhn.echo.csv")
 uhn.ecg <- uhn.echo[Procedure%in%name[c(1,4,5)]]
 fwrite(uhn.ecg, "H:/GEMINI/Data/UHN/Echo/uhn.ecg.csv")
+
+
+
+

@@ -250,8 +250,8 @@ msh.lab[, X:= NULL]
 head(msh.lab, 100)
 sum(is.na(msh.lab$REFERANCE_LAB))
 fwrite(msh.lab, "H:/GEMINI/Data/MSH/Lab/msh.lab.nophi.csv")
-
-
+msh <- readg(msh, lab)
+apply(msh, 2, function(x)sum(is.na(x)))
 
 # ----------- march 7 new sbk lab er -------------------------------------------
 sbk.lab.er1 <- fread("R:/GEMINI/_RESTORE/SBK/Lab/sbk.labs_er1.csv")
