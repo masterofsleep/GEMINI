@@ -119,11 +119,19 @@ cohort <- rbind(readg(smh, dad, select = c("EncID.new", "Age", "MostResponsible.
 
 
 
+
 cohort[, ':='(MRP = paste(MostResponsible.DocterCode, str_sub(EncID.new, 1, 2), sep = "-"),
               pneumonia = EncID.new%in%cap.cohort,
               copd = EncID.new%in%copd.cohort,
               chf = EncID.new%in%chf.cohort,
               stroke = EncID.new%in%stro.inc)]
+los <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv", 
+             select = c("EncID.new", "LoS", "Cost", "Discharge.Disposition",
+                        "read.in.30"))
+los[EncID.new%in%los[duplicated(EncID.new), EncID.new]]
+los$EncID.new <- as.character(los$EncID.new)
+cohort <- merge(cohort, unique(los), by = "EncID.new")
+fwrite(cohort, "H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
 
 diag.by.phy <- ddply(cohort, ~MRP, summarize,
       n.cap = sum(pneumonia, na.rm = T),
@@ -159,15 +167,21 @@ cohort2 <- rbind(cohort2, msh) %>% unique
 # find those with same admitting and discharging doctor code
 cohort2.same.phy <- cohort2[Admitting.Code==Discharging.Code|is.na(Discharging.Code)]
 
-los <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv", select = c("EncID.new", "LoS"))
+los <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv", 
+             select = c("EncID.new", "LoS", "Cost", "Discharge.Disposition",
+                        "read.in.30"))
+
 cohort2.same.phy <- cohort2.same.phy[EncID.new%in%los[LoS<35, EncID.new]]
 
+los$EncID.new <- as.character(los$EncID.new)
+cohort2.same.phy<- merge(cohort2.same.phy, unique(los), by = "EncID.new")
 
 cohort2.same.phy[, ':='(ADMP = paste(Admitting.Code, str_sub(EncID.new, 1, 2), sep = "-"),
               pneumonia = EncID.new%in%cap.cohort,
               copd = EncID.new%in%copd.cohort,
               chf = EncID.new%in%chf.cohort,
               stroke = EncID.new%in%stro.inc)]
+fwrite(cohort2.same.phy, "H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")
 
 
 diag.by.phy <- ddply(cohort2.same.phy, ~ADMP, summarize,
@@ -185,11 +199,261 @@ fwrite(data.frame(t(tab2b)), "H:/GEMINI/Results/Ad Hoc/for.administrators.tab2b.
 
 # --------------------------- Figures ------------------------------------------
 # --------------------------- 2017 03 21 ---------------------------------------
-los$EncID.new <- as.character(los$EncID.new)
-cohort <- merge(cohort, unique(los), by = "EncID.new")
-cohort$mrp <- as.numeric(factor(cohort$MRP))
-ddply(cohort, ~mrp, summarize,
-      ave.los = mean(LoS)) %>%
-  ggplot(aes(mrp, ave.los)) + geom_bar(stat = "identity")
+cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
+cohort2 <- fread("H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")
+site.map <- data.table(
+  code = c("11", "12","13","14","15"),
+  site = c("smh", "sbk", "uhn", "msh", "thp")
+)
+fig1 <- function(dat, title){
+  df <- ddply(dat, ~MRP, summarize,
+        ave.los = mean(LoS),
+        N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$MRP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  for(i in c("smh", "sbk", "uhn", "msh", "thp")){
+    df[site ==i, mrp := as.numeric(factor(MRP, levels = MRP[order(ave.los, decreasing = T)]))]
+  }
+  ggplot(df, aes(mrp, ave.los)) + geom_bar(stat = "identity", width = 0.6)+ 
+    ggtitle(paste(title, "by MRP", sep = " ")) + 
+    facet_grid(. ~site) +
+    theme(plot.title = element_text(hjust = 0.5))
+}
 
 
+
+fig1.2 <- function(dat, title){
+  df <- ddply(dat, ~ADMP, summarize,
+              ave.los = mean(LoS),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$ADMP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  for(i in c("smh", "sbk", "uhn", "msh", "thp")){
+    df[site ==i, admp := as.numeric(factor(ADMP, levels = ADMP[order(ave.los, decreasing = T)]))]
+  }
+  ggplot(df, aes(admp, ave.los)) + geom_bar(stat = "identity", width = 0.6)+ 
+    ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
+    facet_grid(. ~site) +
+    theme(plot.title = element_text(hjust = 0.5))
+}
+p1 <- fig1(cohort, "Overall")
+p2 <- fig1(cohort[pneumonia==T], "Pneumonia")
+p3 <- fig1(cohort[chf==T], "CHF")
+p4 <- fig1(cohort[copd==T], "COPD")
+p5 <- fig1(cohort[stroke==T], "Stroke")
+
+
+fig1.2(cohort2, "Overall")
+fig1.2(cohort2[pneumonia==T], "Pneumonia")
+fig1.2(cohort2[chf==T], "CHF")
+fig1.2(cohort2[copd==T], "COPD")
+fig1.2(cohort2[stroke==T], "Stroke")
+
+
+
+
+
+
+fig2 <- function(dat, title){
+  df <- ddply(dat, ~MRP, summarize,
+              ave.cost = mean(Cost, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$MRP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  for(i in c("smh", "sbk", "uhn", "msh", "thp")){
+    df[site ==i, mrp := as.numeric(factor(MRP, levels = MRP[order(ave.cost, decreasing = T)]))]
+  }
+  ggplot(df, aes(mrp, ave.cost)) + geom_bar(stat = "identity", width = 0.6)+ 
+    facet_grid(. ~site) + ggtitle(paste(title, "by MRP", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5))
+}
+
+fig2.2 <- function(dat, title){
+  df <- ddply(dat, ~ADMP, summarize,
+              ave.cost = mean(Cost, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$ADMP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  for(i in c("smh", "sbk", "uhn", "msh", "thp")){
+    df[site ==i, admp := as.numeric(factor(ADMP, levels = ADMP[order(ave.cost, decreasing = T)]))]
+  }
+  ggplot(df, aes(admp, ave.cost)) + geom_bar(stat = "identity", width = 0.6)+ 
+    facet_grid(. ~site) + 
+    ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5))
+}
+p1 <- fig2(cohort, "Overall")
+p2 <- fig2(cohort[pneumonia==T], "Pneumonia")
+p3 <- fig2(cohort[chf==T], "CHF")
+p4 <- fig2(cohort[copd==T], "COPD")
+p5 <- fig2(cohort[stroke==T], "Stroke")
+grid.arrange(p1, p2, p3, p4, p5, ncol = 1, nrow = 5)
+
+
+fig2.2(cohort2, "Overall")
+fig2.2(cohort2[pneumonia==T], "Pneumonia")
+fig2.2(cohort2[chf==T], "CHF")
+fig2.2(cohort2[copd==T], "COPD")
+fig2.2(cohort2[stroke==T], "Stroke")
+
+
+
+fig3 <- function(dat, title){
+  df <- ddply(dat, ~MRP, summarize,
+              readmission.rate = mean(read.in.30, na.rm = T),
+              ave.los = mean(LoS, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$MRP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  ggplot(df, aes(ave.los, readmission.rate)) + geom_jitter() + 
+    ggtitle(paste(title, "by MRP", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5)) + facet_grid( .~site)
+}
+
+
+
+fig3.2 <- function(dat, title){
+  df <- ddply(dat, ~ADMP, summarize,
+              readmission.rate = mean(read.in.30, na.rm = T),
+              ave.los = mean(LoS, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$ADMP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  ggplot(df, aes(ave.los, readmission.rate)) + geom_jitter() + 
+    ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5)) + facet_grid( .~site)
+}
+fig3(cohort, "Overall")
+fig3(cohort[pneumonia==T], "Pneumonia")
+fig3(cohort[chf==T], "CHF")
+fig3(cohort[copd==T], "COPD")
+fig3(cohort[stroke==T], "Stroke")
+fig3.2(cohort2, "Overall")
+fig3.2(cohort2[pneumonia==T], "Pneumonia")
+fig3.2(cohort2[chf==T], "CHF")
+fig3.2(cohort2[copd==T], "COPD")
+fig3.2(cohort2[stroke==T], "Stroke")
+
+
+fig4 <- function(dat, title){
+  df <- ddply(dat, ~MRP, summarize,
+              rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
+              ave.los = mean(LoS, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$MRP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  ggplot(df, aes(ave.los, rate.of.inhospital.death)) + geom_jitter() + 
+    ggtitle(paste(title, "by MRP", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5)) + facet_grid(.~ site)
+}
+
+
+
+fig4.2 <- function(dat, title){
+  df <- ddply(dat, ~ADMP, summarize,
+              rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
+              ave.los = mean(LoS, na.rm = T),
+              N = length(EncID.new))
+  if(title == "Overall"){
+    df <- df[df$N>100, ]
+  } else{
+    df <- df[df$N>20,]
+  }
+  df <- data.table(df)
+  df$code <- str_sub(df$ADMP, -2, -1)
+  df <- merge(df, site.map, by = "code")
+  ggplot(df, aes(ave.los, rate.of.inhospital.death)) + geom_jitter() + 
+    ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
+    theme(plot.title = element_text(hjust = 0.5)) + facet_grid(.~ site)
+}
+
+fig4(cohort, "Overall")
+fig4(cohort[pneumonia==T], "Pneumonia")
+fig4(cohort[chf==T], "CHF")
+fig4(cohort[copd==T], "COPD")
+fig4(cohort[stroke==T], "Stroke")
+
+
+fig4.2(cohort2, "Overall")
+fig4.2(cohort2[pneumonia==T], "Pneumonia")
+fig4.2(cohort2[chf==T], "CHF")
+fig4.2(cohort2[copd==T], "COPD")
+fig4.2(cohort2[stroke==T], "Stroke")
+
+
+cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
+smh.names <- fread("R:/GEMINI/Check/physician_names/smh.mrp.csv")
+uhn.names <- fread("R:/GEMINI/Check/physician_names/uhn.mrp.freq.csv")
+msh.names <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/dad_names.csv")
+sbk.hash <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/dad.mrp.hashes.csv")
+sbk.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names_code_link_ASW.csv")
+sbk.names <- merge(sbk.hash, sbk.marked,
+                   by.x = "mrpCode", by.y = "hashed", all.x = T)
+sbk.names$EncID.new <- paste("12", sbk.names$EncID.new, sep = "")
+cohort$EncID.new <- as.character(cohort$EncID.new)
+sbk.names <- merge(sbk.names, cohort[,.(EncID.new, MRP)], by = "EncID.new" )
+sbk.names <- unique(sbk.names[,.(MRP.Code = MRP, Name)])
+smh.names <- smh.names[,.(MRP.Code = paste(MRP.Code, "11", sep = "-"), 
+                          Name = paste(MostResponsiblePhysicianFirstName, MostResponsiblePhysicianLastName))]
+uhn.names <- uhn.names[,.(MRP.Code = paste(MostResponsibleDoctorCode, "13", sep = "-"),
+                          Name = paste(mostresponsiblefirstname, mostresponsiblelastname))]
+msh.names <- msh.names[,.(MRP.Code = paste(Most.Responsible.Doctor.Code, "14", sep = "-"),
+                          Name = paste(Most.Responsible.Physician.First.Name, Most.Responsible.Physician.Last.Name))]
+name <- rbind(smh.names,
+              sbk.names,
+              uhn.names,
+              msh.names) %>% unique
+
+cohort <- merge(cohort, name, by.x = "MRP", by.y = "MRP.Code", all.x = T)
+cohort$code <- str_sub(cohort$MRP, -2, -1)
+cohort <- merge(cohort, site.map, by = "code")
+
+ddply(cohort, ~Name, summarize,
+      site = site[1],
+      number.of.patient = length(EncID.new),
+      ave.los = mean(LoS, na.rm = T),
+      rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
+      readmission.rate = mean(read.in.30, na.rm = T)) %>%
+fwrite("H:/GEMINI/Results/Ad Hoc/mrp.summary.csv")

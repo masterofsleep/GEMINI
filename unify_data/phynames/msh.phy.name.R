@@ -122,6 +122,7 @@ overlap$GIM..y[overlap$GIM..y=="maybe"] <- "don't know"
 overlap[, GIM := ifelse(GIM..x=="y"|GIM..y=="y", "y", 
                         ifelse(GIM..x=="n"&GIM..y=="n", "n", "u"))]
 overlap[GIM=="u"]
+table(overlap$GIM)
 names(overlap)[c(5, 7)] <- c("adm.phy.gim", "dis.phy.gim")
 fwrite(overlap[GIM=="u", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
                            GIM)],
@@ -145,6 +146,7 @@ adm.only [, GIM := ifelse(GIM..x=="y"|GIM..y=="y", "y",
                         ifelse(GIM..x=="n"&GIM..y=="n", "n", "u"))]
 adm.only [GIM=="u"]
 names(adm.only)[c(5, 7)] <- c("adm.phy.gim", "dis.phy.gim")
+table(adm.only$GIM)
 fwrite(adm.only[GIM=="u", .(EncID.new, adm.phy.name, adm.phy.gim, dis.phy.name, dis.phy.gim,
                            GIM)],
        "R:/GEMINI/_RESTORE/MSH/Physician Names/adm.only.unknown.csv")
@@ -157,5 +159,31 @@ dad.only <- dad.full[!EncID.new%in%adm.full$EncID.new, -"V1"]
 table(dad.only$GIM.)
 dad.only <- merge(dad.only, msh.phy.marked[,.(mrp = full.name,GIM. ,code)],
                   by.x = "mrp.code", by.y = "code", all.x = T, all.y = F)
+table(dad.only$GIM.)
 fwrite(dad.only[GIM.=="y"], "R:/GEMINI/_RESTORE/MSH/Physician Names/dad.only.gim.csv")
 fwrite(dad.only[!GIM.%in%c("y", "n")], "R:/GEMINI/_RESTORE/MSH/Physician Names/dad.only.unknown.csv")
+
+
+
+# ----------------------- check fiscal number ----------------------------------
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+table(dad$Institution.Number)
+msh.adm <- readg(msh, adm)
+msh.dad <- readg(msh, dad)
+over <- intersect(msh.adm$EncID.new, msh.dad$EncID.new)
+sum(over%in%dad$EncID.new)
+msh.overlap <- dad[EncID.new%in%overlap[GIM=="y", paste("14", EncID.new, sep = "")]]
+table(msh.overlap$fiscal.year)
+msh.overlap[ymd(Admit.Date)>=ymd("2010-04-01")&ymd(Admit.Date)<ymd("2011-04-01"),
+    fiscal.year1 := "2010"]
+msh.overlap[ymd(Admit.Date)>=ymd("2011-04-01")&ymd(Admit.Date)<ymd("2012-04-01"),
+    fiscal.year1 := "2011"]
+msh.overlap[ymd(Admit.Date)>=ymd("2012-04-01")&ymd(Admit.Date)<ymd("2013-04-01"),
+    fiscal.year1 := "2012"]
+msh.overlap[ymd(Admit.Date)>=ymd("2013-04-01")&ymd(Admit.Date)<ymd("2014-04-01"),
+    fiscal.year1 := "2013"]
+msh.overlap[ymd(Admit.Date)>=ymd("2014-04-01")&ymd(Admit.Date)<ymd("2015-04-01"),
+    fiscal.year1 := "2014"]
+msh.overlap[ymd(Admit.Date)>=ymd("2015-04-01")&ymd(Admit.Date)<ymd("2016-04-01"),
+    fiscal.year1 := "2015"]
+table(msh.overlap$fiscal.year1)
