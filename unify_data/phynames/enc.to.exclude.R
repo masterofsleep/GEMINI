@@ -1,6 +1,7 @@
 # ------------ list of admissions to exclude base on physician -----------------
 # ------------------------------ 2017-03-20 ------------------------------------
-
+library(gemini)
+lib.pa()
 # smh geriatrics and not gim
 smh.marked <- readxl::read_excel("R:/GEMINI/_RESTORE/SMH/Physicians/smh.notgim.mrn.xlsx") %>%
   data.table
@@ -31,3 +32,15 @@ sum(is.na(adm.names$gim.adm))
 adm.names[,gim:= ifelse(gim.adm=="Y"|gim.dis=="Y", "Y", 
                         ifelse(gim.adm=="N"&gim.dis=="N", "N", "U"))]
 adm.names[gim%in%c("N", "U")] -> check
+not.gim.sbk <- check$EncID.new
+
+# msh not gim in overlap
+not.gim.msh <- c(fread("R:/GEMINI/_RESTORE/MSH/Physician Names/march15/overlap.notgim.csv", select = "EncID.new"),
+                 fread("R:/GEMINI/_RESTORE/MSH/Physician Names/march15/overlap.unknown.csv", select = "EncID.new"))%>%unlist
+
+
+
+
+
+
+exclude <- c(not.gim.smh, not.gim.sbk, not.gim.msh)

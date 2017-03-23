@@ -32,3 +32,20 @@ fwrite(adm.names[gim=="N", .(EncID.new, Admiting.Name, Discharging.Name)], "R:/G
 fwrite(adm.names[gim=="U", .(EncID.new, Admiting.Name, Discharging.Name)], "R:/GEMINI/_RESTORE/SBK/Physicians/list.unknown.csv")
 
 
+# -------------------------- to create complete list ---------------------------
+names.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names_code_link_ASW.csv")
+names.parse <- str_split(names.marked$Name, " ")%>% 
+  ldply(function(x) data.frame(first.name = paste(x[1:(length(x)-1)], collapse = " "), last.name = tail(x,1)))
+sbk.names <- cbind(Code = names.marked$hashed,
+               code.type = "sbk",
+               names.parse, 
+               GIM = tolower(names.marked$`Was GIM Attending`))
+adm.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/adm.physician.hashes.csv")
+dad.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/dad.mrp.hashes.csv")
+freq <- c(adm.names$admitCode, adm.names$disCode, dad.names$mrpCode) %>% table %>%
+  data.table
+
+sbk.names <- merge(sbk.names, freq, by.x = "Code", by.y = ".")
+
+
+fwrite(sbk.names, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/sbk.names.csv")

@@ -187,3 +187,31 @@ msh.overlap[ymd(Admit.Date)>=ymd("2014-04-01")&ymd(Admit.Date)<ymd("2015-04-01")
 msh.overlap[ymd(Admit.Date)>=ymd("2015-04-01")&ymd(Admit.Date)<ymd("2016-04-01"),
     fiscal.year1 := "2015"]
 table(msh.overlap$fiscal.year1)
+
+
+
+# --------------------- create complete list -----------------------------------
+adm.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/adm.full.csv")
+dad.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/dad.full.csv")
+msh.phy.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names.code.link.csv")
+
+sum(adm.full$adm.code%in%msh.phy.marked$code)
+sum(adm.full$dis.code%in%msh.phy.marked$code)
+sum(dad.full$mrp.code%in%msh.phy.marked$code)
+
+freq <- c(adm.full$adm.code, adm.full$dis.code,
+          dad.full$mrp.code) %>% table %>% data.table
+
+msh.names <- merge(msh.phy.marked[,.(Code = code, 
+                  first.name = First,
+                  last.name = Last,
+                  GIM = GIM.,
+                  code.type = "msh")],
+                  freq, by.x = "Code", by.y = '.',
+                  all.x = T)
+msh.names[GIM=="don't know", GIM:= "u"]
+msh.names[!GIM%in%c("y","n", "u"), GIM:="u"]
+
+table(msh.names$GIM)
+
+fwrite(msh.names,  "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/msh.names.csv")

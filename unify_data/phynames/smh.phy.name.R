@@ -47,3 +47,48 @@ smh.link[, GIM:= admit.phy.name%in%names.coded$Name[names.coded$GIM==1]|
 smh.link$GIM %>% table
 
 smh.link[GIM==F] %>% fwrite("H:/GEMINI/Results/Check/phynames/smh.notgim.csv")
+
+
+# ---------------------------- complete list -----------------------------------
+smh.link <- fread("R:/GEMINI/_RESTORE/SMH/CIHI/SMH.LINKLIST_NEWHASH.csv")
+adm.names <- data.table(
+  Code = c(smh.link$AdmitingPhysicianCode, smh.link$DischargingPhysicianCode),
+  first.name = c(smh.link$AdmittingPhysicianFirstName, smh.link$DischargingPhysicianFirstName),
+  last.name = c(smh.link$ADMITTINGPRACTITIONERLASTNAME, smh.link$DischargingPhysicianLastName)
+)
+adm.names$Code <- as.character(adm.names$Code)
+adm.names <- merge(unique(adm.names), data.table(table(adm.names$Code)), 
+                   by.x = "Code", by.y = "V1")
+adm.names$code.type <- "smh.adm"
+
+mrp.names <- fread("R:/GEMINI/_RESTORE/SMH/Physicians/DAD_MRPs.csv")
+mrp.names[, UMRDOCSERVICE:=NULL]
+names(mrp.names) <- c("Code", "first.name", "last.name")
+mrp.names$Code <- as.character(mrp.names$Code)
+mrp.names <- merge(unique(mrp.names), data.table(table(mrp.names$Code)),
+                   by.x = "Code", by.y = "V1")
+mrp.names$code.type <- "smh.mrp"
+
+smh.names <- merge(adm.names, mrp.names, by = c("first.name", "last.name"),
+            all.x = T, all.y = T)
+
+smh.names[is.na(Code.x), ':='(Code.x = Code.y,
+                              N.x = 0)]
+smh.names[is.na(N.y), N.y := 0]
+smh.names <- smh.names[,.(Code = Code.x, 
+                          first.name, 
+                          last.name,
+                          N = N.x + N.y,
+                          code.type = "smh")]
+names.coded <- readxl::read_excel("R:/GEMINI/Check/physician_names/smh.physician.names.coded.all.xlsx")%>%
+  data.table
+names.coded[, GIM:= ifelse(GIM==1, "y", "n")]
+names.coded[Geriatrics==1, GIM:= "Geriatrics"]
+
+smh.names$Name <- paste(smh.names$first.name, smh.names$last.name)
+smh.names <- merge(smh.names, names.coded[,.(Name, GIM)],
+                   by = "Name", all.x = T)
+smh.names[,Name:=NULL]
+fwrite(smh.names[,.(Code, code.type, N, 
+                    first.name, last.name,
+                    GIM)], "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/smh.names.csv")

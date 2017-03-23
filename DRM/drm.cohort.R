@@ -573,7 +573,28 @@ drm.cohort[,':='(Urine = EncID.new%in%ns.cul[Urine==1, EncID.new],
                    is.na(Urine)&is.na(Blood)&is.na(Resp)&NonBacterial==1, EncID.new],
                  Other.non.sterile = EncID.new%in%ns.cul[
                    is.na(Urine)&is.na(Blood)&is.na(Resp)&is.na(NonBacterial), EncID.new])]
+diag.names <- readxl::read_excel("H:/GEMINI/Results/Diabetes/MRD.freqtable.xlsx")
+drm.cohort <- merge(drm.cohort, diag.names[,c(1,4)], by.x = "Diagnosis.Code",
+                    by.y = "Diagnosis.Code", all.x = T)
+drm.cohort <- merge(drm.cohort, diag.names[,c(1,4)], by.x = "ER.Diagnosis.Code",
+                    by.y = "Diagnosis.Code", all.x = T)
+names(drm.cohort)[9:10] <- c("IP.Diagnosis", "ER.Diagnosis")
+ip.diag.freq <- data.table(table(drm.cohort[,.(Diagnosis.Code, IP.Diagnosis)]))[N!=0]
+er.diag.freq <- data.table(table(drm.cohort[,.(ER.Diagnosis.Code, ER.Diagnosis)]))[N!=0]
+ip.diag.all <- ip.diag[EncID.new%in%drm.cohort$EncID.new, str_sub(Diagnosis.Code,1,3)] %>% table %>% data.table
+er.diag.all <- er.diag[EncID.new%in%drm.cohort$EncID.new, str_sub(ER.Diagnosis.Code,1,3)] %>% table %>% data.table
+ip.diag.all <- merge(ip.diag.all, diag.names[,c(1,4)], by.x = ".",
+                     by.y = "Diagnosis.Code", all.x = T)
 
+er.diag.all <- merge(er.diag.all, diag.names[,c(1,4)], by.x = ".",
+                     by.y = "Diagnosis.Code", all.x = T)
+
+fwrite(ip.diag.freq[order(N, decreasing = T)], "H:/GEMINI/Results/DRM/ip.diag.freq.csv")
+fwrite(er.diag.freq[order(N, decreasing = T)], "H:/GEMINI/Results/DRM/er.diag.freq.csv")
+
+
+fwrite(ip.diag.all[order(N, decreasing = T)], "H:/GEMINI/Results/DRM/ip.diag.all.freq.csv")
+fwrite(er.diag.all[order(N, decreasing = T)], "H:/GEMINI/Results/DRM/er.diag.all.freq.csv")
 
 drm.cohort <- merge(drm.cohort, all.dad[,.(EncID.new, Age, Institution.Number, Gender)])
 

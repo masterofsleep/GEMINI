@@ -93,3 +93,33 @@ mrp.freq <- merge(mrp.freq, uhn.mrp.list,
                   all.x = T, all.y = T)
 
 sum(duplicated())
+
+
+# ------------------- create names list to be marked ---------------------------
+adm.names <- fread("R:/GEMINI/Check/physician_names/uhn.adm.freq.csv")
+
+marked <- readxl::read_excel("R:/GEMINI/Check/physician_names/UHN Physician Names - Coded.xlsx")
+marked$paste <- paste(marked$first.name, marked$last.name)
+adm.names$paste <- paste(adm.names$first.name, adm.names$last.name)
+adm.names <- merge(adm.names, marked[,c(4,5,7)], by = "paste", all.x = T)
+adm.names <- adm.names[order(Code)]
+adm.names[,':='(first.name = last.name,
+                last.name = first.name,
+                paste = NULL,
+                code.type = "uhn.adm")]
+fwrite(adm.names, "R:/GEMINI/Check/physician_names/uhn.adm.freq.csv")
+
+mrp.freq <- fread("R:/GEMINI/Check/physician_names/uhn.mrp.freq.csv")
+names(mrp.freq) <- c("Code","mrp.hash", "first.name", "last.name", "N")
+
+simpleCap <- function(x)gsub("(^|[[:space:]]|'|-)([[:alpha:]])", "\\1\\U\\2", x, perl=TRUE)
+mrp.freq <- mrp.freq[!duplicated(Code)]
+mrp.freq$first.name <- simpleCap(mrp.freq$first.name)
+mrp.freq$last.name <- simpleCap(mrp.freq$last.name)
+mrp.freq$paste <- toupper(paste(mrp.freq$last.name, mrp.freq$first.name))
+mrp.freq <- merge(mrp.freq, marked[,c(4,5,7)], by = "paste", all.x = T)
+mrp.freq[,':='(paste = NULL,
+               mrp.hash = NULL,
+               code.type = "uhn.mrp")]
+uhn.names <- rbind(adm.names, mrp.freq) %>% arrange(last.name, first.name)
+fwrite(uhn.names, "R:/GEMINI/Check/physician_names/uhn.all.names.csv")
