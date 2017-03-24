@@ -123,3 +123,17 @@ mrp.freq[,':='(paste = NULL,
                code.type = "uhn.mrp")]
 uhn.names <- rbind(adm.names, mrp.freq) %>% arrange(last.name, first.name)
 fwrite(uhn.names, "R:/GEMINI/Check/physician_names/uhn.all.names.csv")
+
+
+
+# ------------------  find the GIM patients ------------------------------------
+adm.link <- fread("R:/GEMINI/_RESTORE/UHN/Physicians/adm.dis.phys.codes.csv")
+adm.all <- fread("C:/Users/guoyi/Desktop/marked_names/uhn/adm.dis.phys.codes-names.csv")
+mrp.all <- fread("C:/Users/guoyi/Desktop/marked_names/uhn/dad.mrp.codes-names.csv")
+
+
+adm.link <- merge(adm.link, unique(adm.all[,.(admCode, AdmittingPhysicianCode)]),
+                  by = "admCode", all.x = T)
+adm.link <- merge(adm.link, unique(adm.all[,.(disCode, DischargingPhysicianCode)]),
+                  by = "disCode", all.x = T)
+unique(adm.all[,.(disCode, DischargingPhysicianCode)])[duplicated(disCode)]

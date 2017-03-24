@@ -127,21 +127,22 @@ ip.diag <- readg(gim, ip_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
 er.diag$Diagnosis.Code <- er.diag$ER.Diagnosis.Code
 diag<- rbind(er.diag[,.(Diagnosis.Code, EncID.new)],
              ip.diag[,.(Diagnosis.Code, EncID.new)])
+atrial.fibrillation <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I48"))]
 hypertension <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I10", "I11", "I12", 
                                                                "I13", "I15"))]
 hyperlipidemia <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("E78"))]
 hemorrhagic.stroke <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I60", "I61", "I62"))]
 diabetes <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("E10", "E11", "E13", "E14"))]
-coronary.artery.disease <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I121", "I122", 
-                                                                          "I125", "I123", 
-                                                                          "I124"))]
-congestive.heart.failure <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("L50", "L110", 
-                                                                           "L130", "I132"))]
+coronary.artery.disease <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I21", "I22", 
+                                                                          "I25", "I23", 
+                                                                          "I24"))]
+congestive.heart.failure <- diag$EncID.new[startwith.any(diag$Diagnosis.Code, c("I50", "I110", 
+                                                                           "I130", "I132"))]
 # ----------------------- los and time to TTE ----------------------------------
 smh.echo <- readg(smh, echo, dt = T)
 smh.timeTTE0 <- smh.echo[dmy(ADMITDATE) == dmy(StudyStartDateTime)]
 smh.timeTTE1 <- smh.echo[dmy(ADMITDATE) < dmy(StudyStartDateTime)&
-                           !EncID.new%in%timeTTE0$EncID.new]
+                           !EncID.new%in%smh.timeTTE0$EncID.new]
 sbk.echo <- readg(sbk, echo, dt = T)
 sbk.timeTTE0 <- sbk.echo[mdy(str_sub(`Test Performed Date/time`, 1, 11))==
                            ymd(Admit.Date)]
@@ -154,9 +155,11 @@ timeTTE <- rbind(data.table(EncID.new = timeTTE0, timeTTE = 0),
 demo.var <-  fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv", 
               select = c("EncID.new", "LoS", "Age", "Gender"))[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
 
-demo.var[,':='(hypertension = as.numeric(EncID.new%in%hypertension),
+demo.var[,':='(afib = as.numeric(EncID.new%in%atrial.fibrillation),
+               hypertension = as.numeric(EncID.new%in%hypertension),
                hyperlipidemia = as.numeric(EncID.new%in%hyperlipidemia),
                hemorrhagic.stroke = as.numeric(EncID.new%in%hemorrhagic.stroke),
+               diabetes = as.numeric(EncID.new%in%diabetes),
                coronary.artery.disease = as.numeric(EncID.new%in%coronary.artery.disease),
                congestive.heart.failure = as.numeric(EncID.new%in%congestive.heart.failure))]
 demo.var$EncID.new <- as.character(demo.var$EncID.new)
@@ -254,4 +257,48 @@ table(c(smh.echo$Mvsten, sbk.echo.combined$Mvsten))
 
 
 
-fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")
+fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv") -> check
+
+sum(check$coronary.artery.disease)
+
+
+
+
+
+# ---------------------------- table 1 -----------------------------------------
+setwd("R:/GEMINI-DREAM/DATA FINAL")
+smh.chart <- fread("SMH chart pulls COMBINED_processed_newvar.csv")
+sbk.chart <- fread("Combined SBK Chart Pulls Deidentified_processed NG_newvar.csv")
+#check number of dups
+sum(duplicated(smh.chart$EncID.new))
+sum(duplicated(sbk.chart$encoutnerID))
+
+unique(smh.chart[,c(1:11,15), with = F])[duplicated(EncID.new)|duplicated(EncID.new, fromLast = T)]
+unique(sbk.chart[,c(1:10,13), with = F])[duplicated(encoutnerID)|duplicated(encoutnerID, fromLast = T)]
+
+
+
+smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
+sum(duplicated(smh.echo$EncID.new))
+df<- unique(smh.echo[,c(1:19, 24:34), with = F])
+df[duplicated(df[,.(EncID.new, Conclusions)])|duplicated(df[,.(EncID.new, Conclusions)], fromLast = T)]
+
+sbk.echo <- readxl::read_excel("SBK ECHO COMBINED_YG_march14_NG March 15.xlsx")%>%data.table
+df<- unique(sbk.echo[,-5, with = F])
+df[duplicated(df[,.(EncID.new, Report)])|duplicated(df[,.(EncID.new, Report)], fromLast = T)]
+
+
+tpa.exclude <- fread("H:/GEMINI/Results/DREAM/tpa.exclude.csv")
+sum(sbk.chart$encoutnerID%in%tpa.exclude$tpa.exclude)
+sum(sbk.echo$EncID.new%in%tpa.exclude$tpa.exclude)
+
+dreams.cohort <- c(paste("12", sbk.chart$encoutnerID, sep = ""), paste("11", smh.chart$EncID.new, sep = ""))
+dreams.cohort <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")[EncID.new%in%dreams.cohort]
+table(str_sub(dreams.cohort$EncID.new,1,2))
+
+library(tableone)
+cat.var <- names(dreams.cohort)[c(4:12)]
+vars <- names(dreams.cohort)[c(2:12)]
+
+CreateTableOne(vars = vars, factorVars = cat.var, data = dreams.cohort)
+

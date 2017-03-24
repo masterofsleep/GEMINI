@@ -92,3 +92,4 @@ smh.names[,Name:=NULL]
 fwrite(smh.names[,.(Code, code.type, N, 
                     first.name, last.name,
                     GIM)], "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/smh.names.csv")
+

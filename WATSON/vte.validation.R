@@ -10,9 +10,9 @@ all.enc <- fread("watson.enc.csv", select = "x")
 all.enc <- all.enc$x
 ip.diag <- readg(gim, ip_diag)[EncID.new%in%all.enc]
 
-all.pe <- ip.diag[startwith.any(Diagnosis.Code, "I26"), EncID.new] %>% unique
+all.pe <- ip.diag[startwith.any(Diagnosis.Code, "I26")] %>% unique
 all.dvt <- ip.diag[startwith.any(Diagnosis.Code, c("I80", "I821", "I828", "I829")), 
-                   EncID.new] %>% unique
+                   ] %>% unique
 setwd("R:/GEMINI-SYNCOPE/watson")
 files <- list.files()
 files <- files[str_sub(files, -4, -1)=="xlsx"]
@@ -51,8 +51,8 @@ table(du$`Positive Study (y,n,u)`, useNA = "ifany")
 table(vq$`Probability of PE (l,m,h,u)`, useNA = "ifany")
 
 all.enc <- data.table(EncID.new = all.enc)
-all.enc[,':='(diag.pe = EncID.new%in%all.pe,
-              diag.dvt = EncID.new%in%all.dvt,
+all.enc[,':='(diag.pe = EncID.new%in%all.pe$EncID.new,
+              diag.dvt = EncID.new%in%all.dvt$EncID.new,
               ctpa.test = EncID.new%in%ctpa[ctpa$`CTPA Study (y, n)`=="y", EncID.new],
               vq.test = EncID.new%in%vq$EncID.new,
               du.test = EncID.new%in%du[
@@ -61,7 +61,7 @@ all.enc[,':='(diag.pe = EncID.new%in%all.pe,
 
 all.enc[ctpa.test==T, ctpa.pos := EncID.new%in%ctpa[`Acute PE (y, n)`== "y", EncID.new]]
 all.enc[vq.test==T, vq.pos := EncID.new%in%vq[`Probability of PE (l,m,h,u)`=="h", EncID.new]]
-all.enc[dvt.test==T, dvt.pos := EncID.new%in%du[`Positive Study (y,n,u)`%in%c("y", "Y"), EncID.new]]
+all.enc[du.test==T, du.pos := EncID.new%in%du[`Positive Study (y,n,u)`%in%c("y", "Y"), EncID.new]]
 
 all.enc[, ':='(pe.test = ctpa.test== TRUE | vq.test==TRUE,
                pe.pos = ctpa.pos==T|vq.pos==T)]
@@ -77,3 +77,26 @@ apply(all.enc[,.(dvt.test, dvt.pos)], MARGIN = 2, FUN = function(x)sum(x, na.rm 
 
 #accuracy of diagnosis of dvt
 table(all.enc[, .(diag.dvt, dvt.pos)], useNA = "ifany")
+
+
+
+# ---------------------------- table by diagnosis type -------------------------
+names(all.pe) <- c("EncID.new", "PE.Diagnosis.Code", "PE.Diagnosis.Type")
+names(all.dvt) <- c("EncID.new", "DVT.Diagnosis.Code", "DVT.Diagnosis.Type")
+all.pe[EncID.new%in%all.pe[duplicated(EncID.new), EncID.new]]
+all.dvt[EncID.new%in%all.dvt[duplicated(EncID.new), EncID.new]]
+
+all.enc$EncID.new <- as.integer(all.enc$EncID.new)
+all.enc.pe <- merge(all.enc, all.pe, by = "EncID.new", all.x = T)
+all.enc.dvt <- merge(all.enc, all.dvt, by = "EncID.new", all.x = T)
+
+
+table(all.enc.pe[, .(PE.Diagnosis.Type, pe.pos)], useNA = "ifany")
+all.enc.pe[EncID.new%in%c("12857413", "12161542")]
+
+
+
+
+table(all.enc.dvt[, .(DVT.Diagnosis.Type, du.pos)], useNA = "ifany")
+all.enc.dvt[EncID.new=="12577475"]
+

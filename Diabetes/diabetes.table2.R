@@ -57,3 +57,13 @@ p.value <- sprintf("%.3f", round(p.value, 3))
 p.value[as.numeric(p.value)==0] <- "<0.001"
 write.csv(p.value, "H:/GEMINI/Results/Diabetes/p.value.csv", row.names = F)
 
+code = "I63"
+
+dat <- matrix(c(2724,(38515-2724),3881,(99917-3881)), nrow = 2, byrow = TRUE)
+rownames(dat) <- c("DF+", "DF-"); colnames(dat) <- c("FUS+", "FUS-"); dat
+
+res <- epi.2by2(dat = as.table(dat), method = "cross.sectional", 
+         conf.level = 0.95, units = 100,  homogeneity = "breslow.day", 
+         outcome = "as.columns")
+
+res$n.strata
