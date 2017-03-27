@@ -49,3 +49,14 @@ sbk.names <- merge(sbk.names, freq, by.x = "Code", by.y = ".")
 
 
 fwrite(sbk.names, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/sbk.names.csv")
+
+
+
+
+# ------------- create a complete link from enc id to phy names ----------------
+adm.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/adm.physician.hashes.csv")
+dad.names <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/dad.mrp.hashes.csv")
+sbk.phy.link <- merge(adm.names, dad.names, by = "EncID.new")
+sbk.phy.link$EncID.new <- paste("12", sbk.phy.link$EncID.new, sep = "")
+names(sbk.phy.link)[2:4] <- c("adm.code", "dis.code","mrp.code")
+fwrite(sbk.phy.link, "H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")

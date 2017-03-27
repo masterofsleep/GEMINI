@@ -62,10 +62,12 @@ all.enc[,':='(diag.pe = EncID.new%in%all.pe$EncID.new,
 all.enc[ctpa.test==T, ctpa.pos := EncID.new%in%ctpa[`Acute PE (y, n)`== "y", EncID.new]]
 all.enc[vq.test==T, vq.pos := EncID.new%in%vq[`Probability of PE (l,m,h,u)`=="h", EncID.new]]
 all.enc[du.test==T, du.pos := EncID.new%in%du[`Positive Study (y,n,u)`%in%c("y", "Y"), EncID.new]]
+all.enc[ctpa.test== TRUE | vq.test==TRUE, ':='(pe.test = TRUE,
+                                               pe.pos = FALSE)]
+all.enc[ctpa.pos==T|vq.pos==T, ':='(pe.pos = TRUE)]
 
-all.enc[, ':='(pe.test = ctpa.test== TRUE | vq.test==TRUE,
-               pe.pos = ctpa.pos==T|vq.pos==T)]
-
+table(all.enc$pe.pos)
+table(all.enc$du.pos)
 # test results for pe
 apply(all.enc[,.(ctpa.test, ctpa.pos, vq.test, vq.pos)], MARGIN = 2, FUN = function(x)sum(x, na.rm = T))
 # accuracy of Diagnosis of pe
@@ -90,7 +92,7 @@ all.enc$EncID.new <- as.integer(all.enc$EncID.new)
 all.enc.pe <- merge(all.enc, all.pe, by = "EncID.new", all.x = T)
 all.enc.dvt <- merge(all.enc, all.dvt, by = "EncID.new", all.x = T)
 
-
+table(all.enc$pe.pos)
 table(all.enc.pe[, .(PE.Diagnosis.Type, pe.pos)], useNA = "ifany")
 all.enc.pe[EncID.new%in%c("12857413", "12161542")]
 

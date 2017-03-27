@@ -93,3 +93,24 @@ fwrite(smh.names[,.(Code, code.type, N,
                     first.name, last.name,
                     GIM)], "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/smh.names.csv")
 
+
+
+
+
+# ------------- create a complete link from enc id to phy names ----------------
+smh.dad <- readg(smh, dad)
+smh.link <- fread("R:/GEMINI/_RESTORE/SMH/CIHI/SMH.LINKLIST_NEWHASH.csv")
+
+smh.phy.link <- merge(smh.link[,.(EncID.new = paste("11", EncID.new, sep = ""), 
+                              AdmitingPhysicianCode, DischargingPhysicianCode)],
+                  smh.dad[,.(EncID.new, MostResponsible.DocterCode)],
+                  by = "EncID.new")
+names(smh.phy.link) <- c("EncID.new", "adm.code", "dis.code", "mrp.code")
+
+fwrite(smh.phy.link, "H:/GEMINI/Results/DataSummary/physician_names/link/smh.link.csv")
+
+
+
+
+
+

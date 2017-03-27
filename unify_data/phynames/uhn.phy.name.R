@@ -127,13 +127,54 @@ fwrite(uhn.names, "R:/GEMINI/Check/physician_names/uhn.all.names.csv")
 
 
 # ------------------  find the GIM patients ------------------------------------
+uhn.all <- fread("C:/Users/guoyi/Desktop/marked_names/uhn//uhn.all.names.csv")
 adm.link <- fread("R:/GEMINI/_RESTORE/UHN/Physicians/adm.dis.phys.codes.csv")
 adm.all <- fread("C:/Users/guoyi/Desktop/marked_names/uhn/adm.dis.phys.codes-names.csv")
 mrp.all <- fread("C:/Users/guoyi/Desktop/marked_names/uhn/dad.mrp.codes-names.csv")
+mrp.link <- fread("R:/GEMINI/_RESTORE/UHN/Physicians/dad.mrp.codes.csv")
+
+uhn.all[is.na(`MD Code`), `MD Code`:=4]
+uhn.all$GIM <- ifelse(uhn.all$`MD Code`%in%c(1,2), "y", 
+                      ifelse(uhn.all$`MD Code`%in%c(3,5), "n","u"))
+fwrite(uhn.all[,c(1:5,8), with = F], "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/uhn.names.csv")
 
 
-adm.link <- merge(adm.link, unique(adm.all[,.(admCode, AdmittingPhysicianCode)]),
-                  by = "admCode", all.x = T)
-adm.link <- merge(adm.link, unique(adm.all[,.(disCode, DischargingPhysicianCode)]),
-                  by = "disCode", all.x = T)
-unique(adm.all[,.(disCode, DischargingPhysicianCode)])[duplicated(disCode)]
+sum(adm.link$admCode==adm.all$admCode)
+sum(adm.link$disCode==adm.all$disCode)
+sum(adm.link$EncID.new==mrp.all$EncID.new)
+sum(mrp.link$mrpCode==mrp.all$mrpCode)
+sum(mrp.link$EncID.new==adm.link$EncID.new)
+uhn.phy.codes <- cbind(EncID.new = adm.link$EncID.new, 
+                       adm.code = adm.all$AdmittingPhysicianCode, 
+                       dis.code = adm.all$DischargingPhysicianCode,
+                       mrp.code = mrp.all$MostResponsibleDoctorCode)
+uhn.phy.codes <- data.table(uhn.phy.codes)
+uhn.phy.codes$EncID.new <- paste("13", uhn.phy.codes$EncID.new, sep = "")
+#fwrite(uhn.phy.codes, "H:/GEMINI/Results/DataSummary/physician_names/link/uhn.link.csv")
+
+uhn.phy.codes <- merge(uhn.phy.codes, uhn.all[code.type=="uhn.adm", .(Code, first.name, last.name, GIM)],
+                       by.x = "adm.code", by.y = "Code", all.x = T)
+uhn.phy.codes <- merge(uhn.phy.codes, uhn.all[code.type=="uhn.adm", .(Code, first.name, last.name, GIM)],
+                       by.x = "dis.code", by.y = "Code", all.x = T)
+
+uhn.phy.codes <- data.table(uhn.phy.codes)
+uhn.phy.codes[, GIM:= ifelse(GIM.x=="y"|GIM.y=="y", "y",
+                             ifelse(GIM.x=="n"&GIM.y=="n", "n", "u"))]
+not.gim <- uhn.phy.codes[GIM=="n"]
+unknown <- uhn.phy.codes[GIM=="u"]
+
+xfer <- readg(uhn, xfer)
+xfer[str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[adm.code=="56118", EncID.new]|
+           str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[dis.code=="56118", EncID.new]]%>% 
+  fwrite("R:/GEMINI/_RESTORE/UHN/Physicians/carolina.landolt.marticorena.csv")
+xfer[str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[adm.code=="15142", EncID.new]|
+          str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[dis.code=="15142", EncID.new]]%>% 
+  fwrite("R:/GEMINI/_RESTORE/UHN/Physicians/malcolm.moore.csv")
+xfer[str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[adm.code=="110530", EncID.new]|
+          str_sub(EncID.new, 3, 8)%in%uhn.phy.codes[dis.code=="110530", EncID.new]]%>% 
+  fwrite("R:/GEMINI/_RESTORE/UHN/Physicians/phil.segal.csv")
+
+
+
+fwrite(not.gim, "H:/GEMINI/Results/Check/phynames/uhn.notgim.csv")
+fwrite(unknown, "H:/GEMINI/Results/Check/phynames/uhn.unknown.csv")

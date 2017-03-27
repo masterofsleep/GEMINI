@@ -37,7 +37,7 @@ find.p <- function(code){
   mort.p <- prop.test(c(sum(dbt.diag$Discharge.Disposition==4),
                         sum(nondbt.diag$Discharge.Disposition==4)),
                       c(nrow(dbt.diag), 
-                        nrow(nondbt.diag)))
+                        nrow(nondbt.diag)))$p.value
   icu.p <- prop.test(c(sum(dbt.diag$SCU.adm==T),
                         sum(nondbt.diag$SCU.adm==T)),
                       c(nrow(dbt.diag), 
@@ -48,6 +48,8 @@ find.p <- function(code){
                        nondbt.diag$Number.of.ALC.Days)$p.value
   return(c(prop.p, mort.p, icu.p, los.p, cost.p, alc.days.p))
 }
+
+
 p.value <- NULL
 for(i in codes){
   p.value <- c(p.value, find.p(i))
@@ -56,6 +58,33 @@ p.value
 p.value <- sprintf("%.3f", round(p.value, 3))
 p.value[as.numeric(p.value)==0] <- "<0.001"
 write.csv(p.value, "H:/GEMINI/Results/Diabetes/p.value.csv", row.names = F)
+
+codes <- c("I50", "N39", "I63", "J18", 
+           "J44", "N17", "A41", "E87", 
+           "F05")
+find.p2 <- function(code){
+  dbt.diag <- dbt[Diagnosis.Code==code]
+  nondbt.diag <- nondbt[Diagnosis.Code==code]
+  
+  los.p <- wilcox.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
+  cost.p <- wilcox.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
+  return(c(los.p, cost.p))
+}
+p.value <- NULL
+for(i in codes){
+  p.value <- c(p.value, find.p2(i))
+}
+p.value <- sprintf("%.3f", round(p.value, 3))
+p.value[as.numeric(p.value)==0] <- "<0.001"
+p.value %>% matrix(nrow = 2)
+# soft tissue and bone infections
+dad <- merge(dad, ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code, EncID.new)])
+dad.in <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==T]
+dad.out <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==F]
+
+wilcox.test(dad.in$LoS, dad.out$LoS)
+
+wilcox.test(dad.in$Cost, dad.out$Cost)
 
 code = "I63"
 
@@ -66,4 +95,31 @@ res <- epi.2by2(dat = as.table(dat), method = "cross.sectional",
          conf.level = 0.95, units = 100,  homogeneity = "breslow.day", 
          outcome = "as.columns")
 
-res$n.strata
+library(epiR)
+dbt <- dad[diabetic==T]
+nondbt <- dad[diabetic==F]
+pr.ci <- function(code){
+  dbt.diag <- dbt[Diagnosis.Code==code] %>% nrow
+  nondbt.diag <- nondbt[Diagnosis.Code==code] %>% nrow
+  dat <- matrix(c(dbt.diag,(38517-dbt.diag),nondbt.diag,(99917-nondbt.diag)), nrow = 2, byrow = TRUE)
+  print(epi.2by2(dat = as.table(dat), method = "cross.sectional", 
+                  conf.level = 0.95, units = 100,  homogeneity = "breslow.day", 
+                  outcome = "as.columns"))
+}
+
+
+celebral.infarction = "I63"
+copd = "J44"
+uti = "N39"
+hf = c("I50")
+acute.renal.failure = "N17"
+stroke.code = c("I63")
+pneumonia  = "J18"
+
+
+pr.ci(hf)
+pr.ci(uti)
+pr.ci(stroke.code)
+pr.ci(pneumonia)
+pr.ci(copd)
+pr.ci(acute.renal.failure)
