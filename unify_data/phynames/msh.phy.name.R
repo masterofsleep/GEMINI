@@ -215,3 +215,13 @@ msh.names[!GIM%in%c("y","n", "u"), GIM:="u"]
 table(msh.names$GIM)
 
 fwrite(msh.names,  "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/msh.names.csv")
+
+
+# -------------------- create link file ----------------------------------------
+adm.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/adm.full.csv")
+dad.full <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/dad.full.csv")
+
+link <- merge(adm.full[, -"V1"], dad.full[, -"V1"],
+              by = "EncID.new")
+link[,EncID.new := paste("14", EncID.new, sep = "")]
+fwrite(link, "H:/GEMINI/Results/DataSummary/physician_names/link/msh.link.csv")

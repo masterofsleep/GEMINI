@@ -32,3 +32,22 @@ all.names$code.type <- "thp"
 all.names$GIM <- "y"
 
 fwrite(all.names, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/thp.names.csv")
+
+
+
+# ----------------------------- create link file -------------------------------
+dad.link <- fread("R:/GEMINI/_RESTORE/THP/phynames/thp.dad.LINKINGLIST_physicians.csv")
+adm.link <- fread("R:/GEMINI/_RESTORE/THP/phynames/thp.GIM_IP_LINKING_LIST_physicians.csv")
+thp.dad <- readg(thp, dad)
+
+apply(adm.link, 2, function(x) sum(x ==""))
+apply(dad.link, 2, function(x) sum(x ==""))
+
+adm.link[AdmittingPhysicianCode=="", EncID.new] -> check
+adm.link[AdmittingPhysicianCode==DischargingPhysicianCode] %>% dim
+
+thp.dad[str_sub(EncID.new, 3, 8)%in%check] %>%
+  ggplot(aes(ymd(Admit.Date), fill = Gender)) + geom_histogram(binwidth = 5)
+
+thp.dad[str_sub(EncID.new, 3, 8)%in%check] %>%
+  ggplot(aes(ymd(Discharge.Date), fill = Gender)) + geom_histogram(binwidth = 5)

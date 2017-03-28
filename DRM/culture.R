@@ -169,3 +169,36 @@ src.none <- rbind(tgh.micro[SRC =="NONE", .(TEST, SITE, ORG)],
                   twh.micro[SRC =="NONE", .(TEST, SITE, ORG)])
 
 fwrite(src.none, "H:/GEMINI/Results/DRM/cul.src.none.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- find organism name in micro data ----------------------------
+smh <- readg(smh, micro)
+sbkpos <- readg(sbk, micro_pos.csv)
+tgh.micro <- readg(uhn.tgh, micro)
+twh.micro <- readg(uhn.twh, micro)
+
+
+data.table(table(smh[,.(Organism_ID, Org_Name)]))[N!=0]  %>%
+  fwrite("H:/GEMINI/Results/DRM/organism.freq/smh.org.freq.csv")
+
+data.table(table(sbkpos$Organism)) %>%
+  rename(Organism = V1) %>%
+  fwrite("H:/GEMINI/Results/DRM/organism.freq/sbk.org.freq.csv")
+
+data.table(table(tgh.micro$ORG)) %>% 
+  rename(ORG = V1 ) %>%
+  fwrite("H:/GEMINI/Results/DRM/organism.freq/tgh.org.freq.csv")
+
+data.table(table(twh.micro$ORG)) %>% 
+  rename(ORG = V1 ) %>%
+  fwrite("H:/GEMINI/Results/DRM/organism.freq/twh.org.freq.csv")

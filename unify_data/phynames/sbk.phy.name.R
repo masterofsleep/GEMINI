@@ -60,3 +60,15 @@ sbk.phy.link <- merge(adm.names, dad.names, by = "EncID.new")
 sbk.phy.link$EncID.new <- paste("12", sbk.phy.link$EncID.new, sep = "")
 names(sbk.phy.link)[2:4] <- c("adm.code", "dis.code","mrp.code")
 fwrite(sbk.phy.link, "H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")
+
+
+
+
+dad <- readg(sbk, dad)
+link <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")
+link$EncID.new <- as.character(link$EncID.new)
+compare <- merge(dad[,.(EncID.new, MostResponsible.DocterCode)], link, by = "EncID.new")
+
+compare[duplicated(MostResponsible.DocterCode)!=duplicated(mrp.code)]
+compare[duplicated(MostResponsible.DocterCode, fromLast = T)!=duplicated(mrp.code, fromLast = T)]
+comp.list <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/sbk.names.csv")

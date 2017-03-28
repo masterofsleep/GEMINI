@@ -39,8 +39,14 @@ not.gim.msh <- c(fread("R:/GEMINI/_RESTORE/MSH/Physician Names/march15/overlap.n
                  fread("R:/GEMINI/_RESTORE/MSH/Physician Names/march15/overlap.unknown.csv", select = "EncID.new"))%>%unlist
 
 
+# uhn to exclude
+not.gim.uhn <- c(fread("R:/GEMINI/_RESTORE/UHN/Physicians/uhn.notgim.csv", select = "EncID.new"),
+                 fread("R:/GEMINI/_RESTORE/UHN/Physicians/uhn.unknown.csv", select = "EncID.new"))%>%unlist
 
 
 
+exclude <- c(not.gim.smh, paste("12", not.gim.sbk, sep = ""), 
+             paste("13", not.gim.uhn, sep = ""), 
+             paste("14", not.gim.msh, sep = ""))
+fwrite(data.table(EncID.new = exclude), "H:/GEMINI/Data/GEMINI/gim.notgim.csv")
 
-exclude <- c(not.gim.smh, not.gim.sbk, not.gim.msh)

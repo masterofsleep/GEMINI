@@ -10,8 +10,10 @@ library(grid)
 library(gemini)
 lib.pa()
 options(scipen = 999)
-cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
-cohort2 <- fread("H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")
+exclude <- fread("H:/GEMINI/Data/GEMINI/gim.notgim.csv")
+cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")[!EncID.new%in%exclude$EncID.new]
+cohort2 <- fread("H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")[!EncID.new%in%exclude$EncID.new]
+
 site.map <- data.table(
   code = c("11", "12","13","14","15"),
   site = c("smh", "sbk", "uhn", "msh", "thp")

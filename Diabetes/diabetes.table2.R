@@ -26,6 +26,7 @@ dad <- dad[!is.na(Cost)]
 codes <- c("I50", "N39", "I63", "J18", 
            "J44", "N17", "A41", "E87", 
            "F05", "L03", "I20", "M86")
+code = "E87"
 
 dbt <- dad[diabetic==T]
 nondbt <- dad[diabetic==F]
@@ -33,21 +34,27 @@ find.p <- function(code){
   dbt.diag <- dbt[Diagnosis.Code==code]
   nondbt.diag <- nondbt[Diagnosis.Code==code]
   prop.p <- prop.test(c(nrow(dbt.diag), nrow(nondbt.diag)),
-                      c(nrow(dad), nrow(dad)))$p.value
-  mort.p <- prop.test(c(sum(dbt.diag$Discharge.Disposition==4),
-                        sum(nondbt.diag$Discharge.Disposition==4)),
+                      c(nrow(dbt), nrow(nondbt)))$p.value
+  mort.p <- prop.test(c(sum(dbt.diag$Discharge.Disposition==7),
+                        sum(nondbt.diag$Discharge.Disposition==7)),
                       c(nrow(dbt.diag), 
                         nrow(nondbt.diag)))$p.value
   icu.p <- prop.test(c(sum(dbt.diag$SCU.adm==T),
                         sum(nondbt.diag$SCU.adm==T)),
                       c(nrow(dbt.diag), 
                         nrow(nondbt.diag)))$p.value
-  los.p <- t.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
-  cost.p <- t.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
-  alc.days.p <- t.test(dbt.diag$Number.of.ALC.Days, 
-                       nondbt.diag$Number.of.ALC.Days)$p.value
-  return(c(prop.p, mort.p, icu.p, los.p, cost.p, alc.days.p))
+  # los.p <- t.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
+  # cost.p <- t.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
+  los.p <- wilcox.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
+  cost.p <- wilcox.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
+  # alc.days.p <- t.test(dbt.diag$Number.of.ALC.Days, 
+  #                      nondbt.diag$Number.of.ALC.Days)$p.value
+  return(c(prop.p, mort.p, icu.p, los.p, cost.p))
 }
+
+
+prop.test(c(1092, 1795), c(38517, 99917))
+prop.test(c(33, 15), c(38517, 99917))
 
 
 p.value <- NULL
@@ -57,7 +64,8 @@ for(i in codes){
 p.value
 p.value <- sprintf("%.3f", round(p.value, 3))
 p.value[as.numeric(p.value)==0] <- "<0.001"
-write.csv(p.value, "H:/GEMINI/Results/Diabetes/p.value.csv", row.names = F)
+matrix(p.value, nrow = 6)
+write.csv(matrix(p.value, nrow = 6), "H:/GEMINI/Results/Diabetes/p.value.csv", row.names = F)
 
 codes <- c("I50", "N39", "I63", "J18", 
            "J44", "N17", "A41", "E87", 

@@ -80,33 +80,41 @@ hgb.smh <- smh.lab[Test.Name=="HGB"]
 hgb.sbk <- sbk.lab[Test.Name=="Hemoglobin"] %>%data.table
 hgb.uhn <- uhn.lab[Test.Item=="Hb"&Test.Name=="CBC"] %>%data.table
 
-lab.desc(hgb.smh$Result.Value,
-         hgb.sbk$Result.Value,
-         hgb.uhn$Result.Value)
+# lab.desc(hgb.smh$Result.Value,
+#          hgb.sbk$Result.Value,
+#          hgb.uhn$Result.Value)
 
 hgb <- rbind(hgb.smh, 
              hgb.sbk,
              hgb.uhn, fill = T)
 
+hgb[is.na(as.numeric(Result.Value)), Result.Value] %>% table
+hgb[Result.Value=="70.0 g/L   specimen is hemolysed", Result.Value:=70]
 # ------------------------------- wbc ------------------------------------------
 wbc.smh <- smh.lab[Test.Name=="WBC"]
 wbc.sbk <- sbk.lab[Test.Name=="WBC Count"] 
 wbc.uhn <- uhn.lab[Test.Item=="WBC"&Test.Name=="CBC"]
 
-lab.desc(wbc.smh$Result.Value,
-         wbc.sbk$Result.Value,
-         wbc.uhn$Result.Value)
-wbc.smh[str_sub(Result.Value,1,1)%in%c(1:9, "0.")&is.na(as.numeric(Result.Value))]&
-          !is.na(Result.Value)&str_detect(Result.Value, "@")]
-head(wbc.smh)
+# lab.desc(wbc.smh$Result.Value,
+#          wbc.sbk$Result.Value,
+#          wbc.uhn$Result.Value)
+# wbc.smh[str_sub(Result.Value,1,1)%in%c(1:9, "0.")&is.na(as.numeric(Result.Value))]&
+#           !is.na(Result.Value)&str_detect(Result.Value, "@")]
+wbc <- rbind(wbc.smh,
+             wbc.sbk,
+             wbc.uhn, fill = T)
+wbc[is.na(as.numeric(Result.Value)), Result.Value] %>% table
+wbc[Result.Value=="< 0.1", Result.Value:= 0.1]
+
+
 # ---------------------------- platelet ----------------------------------------
 plt.smh <- smh.lab[Test.Name=="PLT"]
 plt.sbk <- sbk.lab[Test.Name=="Platelet Count"] 
 plt.uhn <- uhn.lab[Test.Item=="Plt"&Test.Name=="CBC"]
 
-lab.desc(plt.smh$Result.Value,
-         plt.sbk$Result.Value,
-         plt.uhn$Result.Value)
+# lab.desc(plt.smh$Result.Value,
+#          plt.sbk$Result.Value,
+#          plt.uhn$Result.Value)
 
 # ---------------------------- sodium ------------------------------------------
 sodium.smh <- smh.lab[Test.Name=="Sodium"]
@@ -117,9 +125,9 @@ sodium.uhn <- uhn.lab[Test.Item=="Sodium"&
                                        "Sodium, Plasma",
                                        "Electrolytes, Creatinine, Profile")]
 
-lab.desc(sodium.smh$Result.Value,
-         sodium.sbk$Result.Value,
-         sodium.uhn$Result.Value)
+# lab.desc(sodium.smh$Result.Value,
+#          sodium.sbk$Result.Value,
+#          sodium.uhn$Result.Value)
 sodium <- rbind(sodium.smh,
                 sodium.sbk,
                 sodium.uhn, fill = T)

@@ -232,3 +232,37 @@ names(smh.rad.freq) <- c("Test.Name", "Freq")
 fwrite(smh.rad.freq, "H:/GEMINI/Results/Ad Hoc/smh.rad.freq.csv")
 
 fwrite(smh.rad, "H:/GEMINI/Data/SMH/Radiology/smh.rad.csv")
+
+
+
+
+# -------------- frequency tables for further use ------------------------------
+smh.ct <- readg(smh, ct)
+sbk.rad <-readg(sbk, rad.csv)
+uhn.rad <- rbind(readg(UHN, rad_ip),
+                 readg(UHN, rad_er))
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
+## CT
+data.table(table(smh.ct[,.(proc_desc_long,body_part_mne)]))[N!=0] %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/ct.smh.csv")
+data.table(table(sbk.rad[,.(Test.Name, Test.Code)]))[N!=0] %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/rad.sbk.csv")
+data.table(table(uhn.rad[str_sub(ProcedureName, 1, 2)=="CT", ProcedureName])) %>%
+  rename(ProcedureName = V1) %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/ct.uhn.csv")
+data.table(table(msh.rad[str_sub(ProcedureName, 1, 2)=="CT", ProcedureName])) %>%
+  rename(ProcedureName = V1) %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/ct.msh.csv")
+
+## XRAY
+smh.xray <- readg(smh, xray)
+data.table(table(smh.xray[,.(proc_desc_long,body_part_mne)]))[N!=0] %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/xray.smh.csv")
+data.table(table(uhn.rad[str_sub(ProcedureName, 1, 2)=="XR", ProcedureName])) %>%
+  rename(ProcedureName = V1) %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/xr.uhn.csv")
+data.table(table(msh.rad[str_sub(ProcedureName, 1, 2)=="XR", ProcedureName])) %>%
+  rename(ProcedureName = V1) %>%
+  fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/xr.msh.csv")
+

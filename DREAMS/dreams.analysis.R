@@ -164,7 +164,7 @@ demo.var[,':='(afib = as.numeric(EncID.new%in%atrial.fibrillation),
                congestive.heart.failure = as.numeric(EncID.new%in%congestive.heart.failure))]
 demo.var$EncID.new <- as.character(demo.var$EncID.new)
 
-dream.vars <- merge(demo.var, timeTTE, by = "EncID.new")
+dream.vars <- merge(demo.var, timeTTE, by = "EncID.new", all.x = T)
 
 fwrite(dream.vars, "H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")
 
@@ -267,7 +267,7 @@ sum(check$coronary.artery.disease)
 
 # ---------------------------- table 1 -----------------------------------------
 setwd("R:/GEMINI-DREAM/DATA FINAL")
-smh.chart <- fread("SMH chart pulls COMBINED_processed_newvar.csv")
+smh.chart <- fread("SMH chart pulls COMBINED_processed_newvar March 25.csv")
 sbk.chart <- fread("Combined SBK Chart Pulls Deidentified_processed NG_newvar.csv")
 #check number of dups
 sum(duplicated(smh.chart$EncID.new))
@@ -292,13 +292,36 @@ tpa.exclude <- fread("H:/GEMINI/Results/DREAM/tpa.exclude.csv")
 sum(sbk.chart$encoutnerID%in%tpa.exclude$tpa.exclude)
 sum(sbk.echo$EncID.new%in%tpa.exclude$tpa.exclude)
 
-dreams.cohort <- c(paste("12", sbk.chart$encoutnerID, sep = ""), paste("11", smh.chart$EncID.new, sep = ""))
-dreams.cohort <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv")[EncID.new%in%dreams.cohort]
-table(str_sub(dreams.cohort$EncID.new,1,2))
+chartpull <- rbind(unique(smh.chart[,.(EncID.new = paste("11", EncID.new, sep = ""), 
+                                afib, prevstroke, antipltprior, antipltDC,
+                                ACprior = Acprior, ACDC, ACNEW)]),
+                   unique(sbk.chart[,.(EncID.new = paste("12", encoutnerID, sep = ""),
+                                afib, prevstroke, antipltprior, antipltDC,
+                                ACprior, ACDC, ACNEW)]))
+chartpull <- chartpull[!duplicated(EncID.new)]
+
+
+dreams.cohort <- c(paste("12", sbk.chart$encoutnerID, sep = ""), paste("11", smh.chart$EncID.new, sep = "")) %>% unique
+demo.all <- fread("H:/GEMINI/Results/DREAM/201703/variable_created/dream.vars.csv") %>% unique
+demo.all[EncID.new%in%demo.all[duplicated(EncID.new), EncID.new]] -> check
+table(demo.all$timeTTE, str_sub(demo.all$EncID.new, 1,2), useNA = "ifany")
+
+sum(!dreams.cohort%in%cohort$EncID.new)
+dreams.cohort[!dreams.cohort%in%cohort$EncID.new]
+
+cohort <- demo.all[EncID.new%in%dreams.cohort]
+table(str_sub(cohort$EncID.new,1,2))
+length(unique(cohort$EncID.new))
+table(cohort$timeTTE, str_sub(cohort$EncID.new, 1,2), useNA = "ifany")
+
+cohort$EncID.new <- as.character(cohort$EncID.new)
+cohort <- merge(cohort, chartpull, by = "EncID.new")
+
 
 library(tableone)
-cat.var <- names(dreams.cohort)[c(4:12)]
-vars <- names(dreams.cohort)[c(2:12)]
+names(cohort)
+cat.var <- names(cohort)[c(4,6:11,13,14:19)]
+vars <- names(cohort)[c(2:4,6:11,13,14:19)]
 
-CreateTableOne(vars = vars, factorVars = cat.var, data = dreams.cohort)
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort)
 

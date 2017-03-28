@@ -199,8 +199,10 @@ fwrite(data.frame(t(tab2b)), "H:/GEMINI/Results/Ad Hoc/for.administrators.tab2b.
 
 # --------------------------- Figures ------------------------------------------
 # --------------------------- 2017 03 21 ---------------------------------------
-cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
-cohort2 <- fread("H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")
+exclude <- fread("H:/GEMINI/Data/GEMINI/gim.notgim.csv")
+cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")[!EncID.new%in%exclude$EncID.new]
+cohort2 <- fread("H:/GEMINI/Results/Ad Hoc/cohort2.to.administrators.csv")[!EncID.new%in%exclude$EncID.new]
+
 site.map <- data.table(
   code = c("11", "12","13","14","15"),
   site = c("smh", "sbk", "uhn", "msh", "thp")
@@ -248,11 +250,11 @@ fig1.2 <- function(dat, title){
     facet_grid(. ~site) +
     theme(plot.title = element_text(hjust = 0.5))
 }
-p1 <- fig1(cohort, "Overall")
-p2 <- fig1(cohort[pneumonia==T], "Pneumonia")
-p3 <- fig1(cohort[chf==T], "CHF")
-p4 <- fig1(cohort[copd==T], "COPD")
-p5 <- fig1(cohort[stroke==T], "Stroke")
+fig1(cohort, "Overall")
+fig1(cohort[pneumonia==T], "Pneumonia")
+fig1(cohort[chf==T], "CHF")
+fig1(cohort[copd==T], "COPD")
+fig1(cohort[stroke==T], "Stroke")
 
 
 fig1.2(cohort2, "Overall")
@@ -306,12 +308,11 @@ fig2.2 <- function(dat, title){
     ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
     theme(plot.title = element_text(hjust = 0.5))
 }
-p1 <- fig2(cohort, "Overall")
-p2 <- fig2(cohort[pneumonia==T], "Pneumonia")
-p3 <- fig2(cohort[chf==T], "CHF")
-p4 <- fig2(cohort[copd==T], "COPD")
-p5 <- fig2(cohort[stroke==T], "Stroke")
-grid.arrange(p1, p2, p3, p4, p5, ncol = 1, nrow = 5)
+fig2(cohort, "Overall")
+fig2(cohort[pneumonia==T], "Pneumonia")
+fig2(cohort[chf==T], "CHF")
+fig2(cohort[copd==T], "COPD")
+fig2(cohort[stroke==T], "Stroke")
 
 
 fig2.2(cohort2, "Overall")
@@ -364,6 +365,7 @@ fig3(cohort[pneumonia==T], "Pneumonia")
 fig3(cohort[chf==T], "CHF")
 fig3(cohort[copd==T], "COPD")
 fig3(cohort[stroke==T], "Stroke")
+
 fig3.2(cohort2, "Overall")
 fig3.2(cohort2[pneumonia==T], "Pneumonia")
 fig3.2(cohort2[chf==T], "CHF")
@@ -422,11 +424,13 @@ fig4.2(cohort2[chf==T], "CHF")
 fig4.2(cohort2[copd==T], "COPD")
 fig4.2(cohort2[stroke==T], "Stroke")
 
+exclude <- fread("H:/GEMINI/Data/GEMINI/gim.notgim.csv")
+cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")[!EncID.new%in%exclude$EncID.new]
 
-cohort <- fread("H:/GEMINI/Results/Ad Hoc/cohort.to.administrators.csv")
 smh.names <- fread("R:/GEMINI/Check/physician_names/smh.mrp.csv")
 uhn.names <- fread("R:/GEMINI/Check/physician_names/uhn.mrp.freq.csv")
 msh.names <- fread("R:/GEMINI/_RESTORE/MSH/Physician Names/dad_names.csv")
+
 sbk.hash <- fread("R:/GEMINI/_RESTORE/SBK/Physicians/dad.mrp.hashes.csv")
 sbk.marked <- fread("C:/Users/guoyi/Desktop/marked_names/names_code_link_ASW.csv")
 sbk.names <- merge(sbk.hash, sbk.marked,
@@ -441,19 +445,38 @@ uhn.names <- uhn.names[,.(MRP.Code = paste(MostResponsibleDoctorCode, "13", sep 
                           Name = paste(mostresponsiblefirstname, mostresponsiblelastname))]
 msh.names <- msh.names[,.(MRP.Code = paste(Most.Responsible.Doctor.Code, "14", sep = "-"),
                           Name = paste(Most.Responsible.Physician.First.Name, Most.Responsible.Physician.Last.Name))]
+cohort$EncID.new <- as.character(cohort$EncID.new)
+
+thp.names <- fread("R:/GEMINI/_RESTORE/THP/phynames/thp.dad.LINKINGLIST_physicians.csv")
+cohort <- merge(cohort, thp.names[,.(EncID.new = paste("15", EncID.new, sep = ""),
+                                     MRP.Code = paste(MostResponsibleDoctorCode, "-15", sep = ""))],
+                by = "EncID.new", all.x = T)
+cohort[str_sub(EncID.new, 1, 2)=="15", MRP := MRP.Code]
+cohort[, MRP.Code:=NULL]
+
+
+thp.names <- thp.names[,.(MRP.Code = paste(MostResponsibleDoctorCode,"-15", sep = ""), 
+                          Name = paste(MostResponsiblePhysicianFirstName, MostResponsiblePhysicianLastName))] %>% unique
 name <- rbind(smh.names,
               sbk.names,
               uhn.names,
-              msh.names) %>% unique
+              msh.names,
+              thp.names) %>% unique
+site.map <- data.table(
+  code = c("11", "12","13","14","15"),
+  site = c("smh", "sbk", "uhn", "msh", "thp")
+)
 
-cohort <- merge(cohort, name, by.x = "MRP", by.y = "MRP.Code", all.x = T)
-cohort$code <- str_sub(cohort$MRP, -2, -1)
-cohort <- merge(cohort, site.map, by = "code")
 
-ddply(cohort, ~Name, summarize,
-      site = site[1],
-      number.of.patient = length(EncID.new),
-      ave.los = mean(LoS, na.rm = T),
-      rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
-      readmission.rate = mean(read.in.30, na.rm = T)) %>%
-fwrite("H:/GEMINI/Results/Ad Hoc/mrp.summary.csv")
+                
+by.mrp <-   ddply(cohort, ~MRP, summarize,
+                  number.of.patient = length(EncID.new),
+                  ave.los = mean(LoS, na.rm = T),
+                  rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
+                  readmission.rate = mean(read.in.30, na.rm = T))
+
+by.mrp <- merge(by.mrp, name, by.x = "MRP", by.y = "MRP.Code", all.x = T)
+by.mrp$code <- str_sub(by.mrp$MRP, -2, -1)
+by.mrp <- merge(by.mrp, site.map, by = "code")
+
+fwrite(by.mrp, "H:/GEMINI/Results/Ad Hoc/mrp.summary.csv")
