@@ -97,3 +97,11 @@ int.ip <- int.ip[!is.na(Intervention.Code)]
 fwrite(int.ip, "H:/GEMINI/Data/GEMINI/gim.ip_int.csv")
 msh.intip[is.na(Intervention.Code)&!is.na(Intervention.Occurrence)]
 228/34245
+
+
+
+
+# --------------- missingness of intervention date time ------------------------
+msh.intip <- msh.intip %>% arrange(EncID.new, Intervention.Occurrence) %>% 
+  select(EncID.new, Intervention.Occurrence, Intervention.Code,
+         Intervention.Episode.Start.Date, Intervention.Episode.Start.Time)

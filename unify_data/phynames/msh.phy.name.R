@@ -213,6 +213,7 @@ msh.names[GIM=="don't know", GIM:= "u"]
 msh.names[!GIM%in%c("y","n", "u"), GIM:="u"]
 
 table(msh.names$GIM)
+sum(duplicated(msh.names))
 
 fwrite(msh.names,  "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/msh.names.csv")
 

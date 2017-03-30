@@ -16,3 +16,7 @@ smh.all.names <- rbind(smh.link[,.(Code = AdmitingPhysicianCode,
                                     Last = MostResponsiblePhysicianLastName,
                                     site = "SMH")]) %>% unique %>% 
   arrange(Last, First)
+
+
+
+

@@ -227,7 +227,7 @@ fig3.2(cohort2[chf==T], "CHF")
 fig3(cohort[copd==T], "COPD")
 fig3.2(cohort2[copd==T], "COPD")
 fig3(cohort[stroke==T], "Stroke")
-fig1.2(cohort2[stroke==T], "Stroke")
+fig3.2(cohort2[stroke==T], "Stroke")
 ```
 
 # Figure 4. Rate of in-hospital death vs. average length-of-stay per doctor

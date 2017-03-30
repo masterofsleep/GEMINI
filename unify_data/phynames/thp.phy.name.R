@@ -10,7 +10,7 @@ thp <- readg(thp, dad)
 length(unique(thp$EncID.new))
 
 intersect(adm$AdmittingPhysicianCode, mrp$MostResponsibleDoctorCode)
-adm[AdmittingPhysicianCode=="1050"]
+adm[AdmittingPhysicianCode=="1348"]
 mrp[MostResponsibleDoctorCode=="1050"]
 # all names are in the same coding system
 
@@ -51,3 +51,12 @@ thp.dad[str_sub(EncID.new, 3, 8)%in%check] %>%
 
 thp.dad[str_sub(EncID.new, 3, 8)%in%check] %>%
   ggplot(aes(ymd(Discharge.Date), fill = Gender)) + geom_histogram(binwidth = 5)
+
+
+link <- merge(unique(adm.link[,.(EncID.new, adm.code = AdmittingPhysicianCode, 
+                          dis.code = DischargingPhysicianCode)]),
+              dad.link[,.(EncID.new, mrp.code = MostResponsibleDoctorCode)],
+              by = "EncID.new")
+link$EncID.new <- paste("15", link$EncID.new, sep = "")
+
+fwrite(link, "H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")

@@ -472,11 +472,15 @@ site.map <- data.table(
 by.mrp <-   ddply(cohort, ~MRP, summarize,
                   number.of.patient = length(EncID.new),
                   ave.los = mean(LoS, na.rm = T),
+                  median.los = median(LoS, na.rm = T),
+                  ave.cost = mean(Cost, na.rm = T),
+                  median.cost = median(Cost, na.rm = T),
                   rate.of.inhospital.death = mean(Discharge.Disposition==7, na.rm = T),
                   readmission.rate = mean(read.in.30, na.rm = T))
 
 by.mrp <- merge(by.mrp, name, by.x = "MRP", by.y = "MRP.Code", all.x = T)
 by.mrp$code <- str_sub(by.mrp$MRP, -2, -1)
 by.mrp <- merge(by.mrp, site.map, by = "code")
+
 
 fwrite(by.mrp, "H:/GEMINI/Results/Ad Hoc/mrp.summary.csv")
