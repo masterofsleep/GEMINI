@@ -50,3 +50,28 @@ conpare <- data.table(EncID.new = contrast.enc.all, contrast.in.int) %>% unique 
   data.table
 table(conpare$contrast.in.int, str_sub(conpare$EncID.new, 1, 2))[2, ]/
   table(str_sub(conpare$EncID.new, 1, 2))
+
+
+
+
+
+
+# --------------------- validate cci code vs radiology -------------------------
+library(readxl)
+smh.ctpa <- read_excel("smh.ctpa.xlsx") %>% data.table
+sbk.ctpa <- read_excel("sbk.ctpa.xlsx") %>% data.table
+uhn.ctpa <- read_excel("uhn.ctpa.xlsx") %>% data.table
+
+smh.ce <- smh.ctpa[`Contrast (y, n)`=="y"]
+smh.nce <- smh.ctpa[`Contrast (y, n)`=="n"]
+
+intersect(smh.ce$proc_desc_long, smh.nce$proc_desc_long)
+
+
+sbk.ce <- sbk.ctpa[`Contrast (y, n)`=="y"]
+sbk.nce <- sbk.ctpa[`Contrast (y, n)`=="n"]
+intersect(sbk.ce$Test.Name, sbk.nce$Test.Name)
+
+uhn.ce <- uhn.ctpa[`Contrast (y, n)`=="y"]
+uhn.nce <- uhn.ctpa[`Contrast (y, n)`=="n"]
+intersect(uhn.ce$ProcedureName, uhn.nce$ProcedureName)

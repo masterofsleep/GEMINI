@@ -90,6 +90,8 @@ sbk.echo <- readg(sbk, echo)
 sbk.lab <- rbind(readg(sbk, labs_ip),
                  readg(sbk, labs_er))
 sbk.rad[,Test.Code := str_replace_all(Test.Code, "[+-]", "")]
+lab.notinlist <- fread("H:/GEMINI/Results/Studycost/lab names notinpricelist_ASW_AV.csv")
+rad.notinlist <- fread("H:/GEMINI/Results/Studycost/rad names notinpricelist_ASW.csv")
 
 
 freq.rad <- data.table(table(sbk.rad[,.(Test.Name, Test.Code)]))[N!=0]
@@ -102,7 +104,23 @@ names(price.list1)[2] <- "Department2"
 check <- price.list1[duplicated(price.list1[,.(Exam, `Exam Name`)])|
                        duplicated(price.list1[,.(Exam, `Exam Name`)], fromLast = T)] %>%
   arrange(Exam, `Exam Name`)
-fwrite(check, "H:/GEMINI/Results/Studycost/pricelist.rad.notunique.csv")
+
+price.list1[duplicated(Exam)|duplicated(Exam, fromLast = T)] %>% arrange(Exam) %>%
+  fwrite("H:/GEMINI/Results/Studycost/pricelist.rad.dup.id.csv")
+price.list1[duplicated(`Exam Name`)|duplicated(`Exam Name`, fromLast = T)] %>% arrange(`Exam Name`) %>%
+  fwrite("H:/GEMINI/Results/Studycost/pricelist.rad.dup.name.csv")
+
+
+fwrite(check, "H:/GEMINI/Results/Studycost/pricelist.rad.dup.id.and.name.csv")
+
+
+
+
+
+sum(!paste(sbk.rad$Test.Name, sbk.rad$Test.Code)%in%paste(price.list1$`Exam Name`, price.list1$Exam))
+37000/100963
+freq.rad[!paste(Test.Name, Test.Code)%in%paste(price.list1$`Exam Name`, price.list1$Exam)]
+
 
 
 sum(duplicated(price.list2$Test))
@@ -112,8 +130,13 @@ names(price.list2)[2] <- "Department2"
 check <- price.list2[duplicated(price.list2[,.(Test, `Test Name`)])|
                        duplicated(price.list2[,.(Test, `Test Name`)], fromLast = T)] %>%
   arrange(Test, `Test Name`)
-fwrite(check, "H:/GEMINI/Results/Studycost/pricelist.lab.notunique.csv")
+fwrite(check, "H:/GEMINI/Results/Studycost/pricelist.lab.dup.id.and.name.csv")
+price.list2[duplicated(Test)|duplicated(Test, fromLast = T)] %>% arrange(Test) %>%
+  fwrite("H:/GEMINI/Results/Studycost/pricelist.lab.dup.id.csv")
+price.list2[duplicated(`Test Name`)|duplicated(`Test Name`, fromLast = T)] %>% arrange(`Test Name`) %>%
+  fwrite("H:/GEMINI/Results/Studycost/pricelist.lab.dup.name.csv")
 
+sum(!paste(sbk.lab$Test.Name, sbk.lab$Test.ID)%in%paste(price.list2$`Test Name`, price.list2$Test))/6310633
 
 # freq.rad[Test.Code=="3VNBCM", listed.Code := "A1CAROTIDCM"]
 # freq.rad[Test.Code=="3HEACM", listed.Code := "A1CAROTIDCM"]

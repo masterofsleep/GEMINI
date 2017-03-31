@@ -104,4 +104,47 @@ msh.intip[is.na(Intervention.Code)&!is.na(Intervention.Occurrence)]
 # --------------- missingness of intervention date time ------------------------
 msh.intip <- msh.intip %>% arrange(EncID.new, Intervention.Occurrence) %>% 
   select(EncID.new, Intervention.Occurrence, Intervention.Code,
-         Intervention.Episode.Start.Date, Intervention.Episode.Start.Time)
+         Intervention.Episode.Start.Date, Intervention.Episode.Start.Time) %>%
+  filter(!is.na(Intervention.Occurrence)& (!is.na(Intervention.Code))) %>%
+  data.table
+ex <- readg(gim, notgim)
+msh.intip <- msh.intip[!EncID.new%in%ex$EncID.new]
+
+length(unique(msh.intip$EncID.new))
+no.dt <- msh.intip[is.na(Intervention.Episode.Start.Date)]
+with.dt <- msh.intip[!is.na(Intervention.Episode.Start.Date)]
+
+no.dt[!EncID.new%in%with.dt$EncID.new, EncID.new] %>% unique %>% length 
+
+ddply(msh.intip, ~EncID.new, summarize,
+      n.int = length(Intervention.Code),
+      n.missingdate = sum(is.na(Intervention.Episode.Start.Date)),
+      n.no.date.before = min(c(min(which(!is.na(Intervention.Episode.Start.Date)))-1),
+      length(Intervention.Episode.Start.Date)))-> count
+sum(count$n.int==count$n.missingdate)
+sum(count$n.no.date.before)/sum(count$n.int)
+
+
+
+
+uhn.intip <- uhn.intip %>% arrange(EncID.new, Intervention.Occurrence) %>% 
+  select(EncID.new, Intervention.Occurrence, Intervention.Code,
+         Intervention.Episode.Start.Date, Intervention.Episode.Start.Time) %>%
+  filter(!is.na(Intervention.Occurrence)& (!is.na(Intervention.Code))) %>%
+  data.table
+ex <- readg(gim, notgim)
+uhn.intip <- uhn.intip[!EncID.new%in%ex$EncID.new]
+
+length(unique(uhn.intip$EncID.new))
+no.dt <- uhn.intip[is.na(Intervention.Episode.Start.Date)]
+with.dt <- uhn.intip[!is.na(Intervention.Episode.Start.Date)]
+
+no.dt[!EncID.new%in%with.dt$EncID.new, EncID.new] %>% unique %>% length 
+
+ddply(uhn.intip, ~EncID.new, summarize,
+      n.int = length(Intervention.Code),
+      n.missingdate = sum(is.na(Intervention.Episode.Start.Date)),
+      n.no.date.before = min(c(min(which(!is.na(Intervention.Episode.Start.Date)))-1),
+                             length(Intervention.Episode.Start.Date)))-> count
+sum(count$n.int==count$n.missingdate)
+sum(count$n.no.date.before)/sum(count$n.int)
