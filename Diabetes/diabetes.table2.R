@@ -7,29 +7,30 @@ ip.diag <- readg(gim, ip_diag)
 er.diag <- readg(gim, er_diag)
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 dad <- dad[, .(EncID.new, Age, Gender, Discharge.Disposition, Number.of.ALC.Days,
-               Institution.Number, LoS, SCU.adm, Cost)]
+               Institution.Number, LoS, SCU.adm, Cost, Diag.Code, Diagnosis)]
 dbt.code <- c("E11", "E10")
 dbt <- union(ip.diag[startwith.any(Diagnosis.Code, dbt.code), EncID.new],
              er.diag[startwith.any(ER.Diagnosis.Code, dbt.code), EncID.new])
 dad$diabetic <- dad$EncID.new%in%dbt
 
-mrd <- ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code = str_sub(Diagnosis.Code, 1, 3), EncID.new)]
-icd10 <- fread("H:/GEMINI/Coding/icd10_3digit.csv")
-names(icd10) <- c("Code", "Diagnosis")
-mrd <- merge(mrd, icd10, by.x = "Diagnosis.Code", by.y = "Code",
-             all.x = T, all.y = F)
-
-dad <- merge(dad, mrd[,.(Diagnosis.Code, Diagnosis, EncID.new)], by = "EncID.new")
+# mrd <- ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code = str_sub(Diagnosis.Code, 1, 3), EncID.new)]
+# icd10 <- fread("H:/GEMINI/Coding/icd10_3digit.csv")
+# names(icd10) <- c("Code", "Diagnosis")
+# mrd <- merge(mrd, icd10, by.x = "Diagnosis.Code", by.y = "Code",
+#              all.x = T, all.y = F)
+# 
+# dad <- merge(dad, mrd[,.(Diagnosis.Code, Diagnosis, EncID.new)], by = "EncID.new")
 dad <- dad[!is.na(Cost)]
-
-
-codes <- c("I50", "N39", "I63", "J18", 
-           "J44", "N17", "A41", "E87", 
-           "F05", "L03", "I20", "M86")
-code = "E87"
+# 
+# 
+# codes <- c("I50", "N39", "I63", "J18",
+#            "J44", "N17", "A41", "E87",
+#            "F05", "L03", "I20", "M86")
+# code = "E87"
 
 dbt <- dad[diabetic==T]
-nondbt <- dad[diabetic==F]
+nondbt <- dad[diabetic==F] %>% unique
+
 find.p <- function(code){
   dbt.diag <- dbt[Diagnosis.Code==code]
   nondbt.diag <- nondbt[Diagnosis.Code==code]
@@ -71,13 +72,19 @@ codes <- c("I50", "N39", "I63", "J18",
            "J44", "N17", "A41", "E87", 
            "F05")
 find.p2 <- function(code){
-  dbt.diag <- dbt[Diagnosis.Code==code]
-  nondbt.diag <- nondbt[Diagnosis.Code==code]
-  
-  los.p <- wilcox.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
-  cost.p <- wilcox.test(dbt.diag$Cost, nondbt.diag$Cost)$p.value
-  return(c(los.p, cost.p))
+  dbt.diag <- dbt[Diag.Code==code]
+  nondbt.diag <- nondbt[Diag.Code==code]
+  print(code)
+  print(dbt.diag$Diagnosis[1])
+  #los.p <- wilcox.test(dbt.diag$LoS, nondbt.diag$LoS)$p.value
+  #wilcox.test(dbt.diag$Cost, nondbt.diag$Cost, conf.int = T)
+  #return(c(los.p, cost.p))
+  print(HodgesLehmann(dbt.diag$Cost, nondbt.diag$Cost, conf.level = 0.95))
 }
+for(i in codes){
+  find.p2(i)
+}
+
 p.value <- NULL
 for(i in codes){
   p.value <- c(p.value, find.p2(i))
@@ -86,14 +93,15 @@ p.value <- sprintf("%.3f", round(p.value, 3))
 p.value[as.numeric(p.value)==0] <- "<0.001"
 p.value %>% matrix(nrow = 2)
 # soft tissue and bone infections
-dad <- merge(dad, ip.diag[Diagnosis.Type=="M", .(Diagnosis.Code, EncID.new)])
-dad.in <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==T]
-dad.out <- dad[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&diabetic==F]
+st <- ip.diag[startwith.any(Diagnosis.Code, c("M86", "L03", "E105", "E115"))&Diagnosis.Type=="M"]
 
+dbt.st <- dbt[EncID.new%in%st$EncID.new]
+nondbt.st <- nondbt[EncID.new%in%st$EncID.new]
 wilcox.test(dad.in$LoS, dad.out$LoS)
 
-wilcox.test(dad.in$Cost, dad.out$Cost)
-
+wilcox.test(dad.in$Cost, dad.out$Cost, conf.int = T)
+median(dbt.st$Cost)
+median(nondbt.st$Cost)
 code = "I63"
 
 dat <- matrix(c(2724,(38515-2724),3881,(99917-3881)), nrow = 2, byrow = TRUE)
@@ -131,3 +139,17 @@ pr.ci(stroke.code)
 pr.ci(pneumonia)
 pr.ci(copd)
 pr.ci(acute.renal.failure)
+
+
+pr.ci2 <- function(x, y){
+  dat <- matrix(c(x,(38517-x),y,(99917-y)), nrow = 2, byrow = TRUE)
+  epi.2by2(dat = as.table(dat), method = "cross.sectional", 
+           conf.level = 0.95, units = 100,  homogeneity = "breslow.day", 
+           outcome = "as.columns")
+}
+
+pr.ci2(1092, 1795) # soft tissue and bone infections
+pr.ci2(804, 1721)  # delirium
+pr.ci2(1053, 2226) # sepsis
+
+pr.ci2(1083, 1804)

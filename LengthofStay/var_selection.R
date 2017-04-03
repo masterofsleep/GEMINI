@@ -135,7 +135,7 @@ msh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/msh.link.csv")
 thp <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")
 exclude <- readg(gim, notgim)
 all.enc <- rbind(smh, sbk, uhn, msh, thp)[!EncID.new%in%exclude$EncID.new]
-list.fr <- readxl::read_excel("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.all.physician.check.xlsx")%>%
+list.fr <- readxl::read_excel("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.all.physician.check_FR.xlsx")%>%
   data.table
 list.fr <- list.fr[GIM!="n"]
 list.fr <- list.fr[!(str_detect(first.name, "Temp")|

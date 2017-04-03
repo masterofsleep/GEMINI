@@ -107,3 +107,5 @@ sbk.bb[, ':='(Triage.Date = NULL,
               Discharge.Time = NULL)]
 
 fwrite(sbk.bb, "H:/GEMINI/Data/SBK/BB/sbk.bb.csv")
+
+sbk.bb <- readg(sbk, bb)
