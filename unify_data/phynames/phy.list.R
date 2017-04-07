@@ -64,3 +64,44 @@ list.fr[Code=="3015"]
 list.check <- rbind(list.fr, list.all[GIM=="n"], fill = T)
 
 fwrite(list.check, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.all.physician.check.csv")
+
+
+# --------------------------- combine marked by terence ------------------------
+phy.list <- readxl::read_excel("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.all.physician.check_FR.xlsx")%>%
+  data.table
+tt.mark <- fread("C:/Users/guoyi/Desktop/marked_names/thp/thp.names_classified.csv")
+
+tt.mark[`GIM - Internist`=="X", GIM:="y"]
+tt.mark[`Family MD`=="X", GIM:="family.md"]
+tt.mark[`Internist (not necessarily core group, may be subspecialists or locums)`=="X", GIM:="internist"]
+tt.mark[`Not internist, not family MD`=="X", GIM:="n"]
+tt.mark[is.na(GIM), GIM:="u"]
+
+table(tt.mark$GIM)
+
+phy.list <- merge(phy.list, tt.mark[,.(Code, GIM)], by = "Code", all.x = T, all.y = F)
+phy.list[code.type=="thp", GIM.x:=GIM.y]
+phy.list[, GIM.y:=NULL]
+
+phy.list <- phy.list[!duplicated(phy.list[,.(Code, code.type)])]
+names(phy.list)[8] <- "GIM"
+
+phy.list[!is.na(`Same Name (Definite)`), code.new := `Same Name (Definite)`]
+phy.list[!is.na(`Same Name (Possible)`), code.new := `Same Name (Possible)`]
+phy.list[`Same Name (Definite)`!=`Same Name (Possible)`]
+range(phy.list$code.new, na.rm = T)
+table(phy.list$code.new)
+phy.list[code.new==1500, code.new:=214]
+sum(is.na(phy.list$code.new))
+phy.list[is.na(code.new), code.new:= 215: (215+1595)]
+all.name <- phy.list[,.(Code, code.type, last.name, first.name, code.new, GIM)] %>% unique
+
+all.name[str_detect(first.name, "Temp")|
+         str_detect(first.name, "Resident")|
+         str_detect(first.name, "Doctor")], GIM := "u"]
+
+
+
+
+fwrite(all.name, 
+       "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")

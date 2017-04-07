@@ -37,6 +37,7 @@ ex2 <- ip.int[startwith.any(Intervention.Code, int.ex), EncID.new]
 
 cap.cohort <- intersect(cap.ex1[!cap.ex1%in%ex2],
                         cohort[Age>=18, EncID.new])
+fwrite(data.table(EncID.new = cap.cohort), "H:/GEMINI/Results/to.administrator/qbp.cap.csv")
 
 #-------------------------- COPD -----------------------------------------------
 
@@ -64,7 +65,7 @@ ex1 <- ip.hig[HIG%in%ex.hig, EncID.new]
 copd.cohort <- intersect(copd.inc, cohort[Age>=35, EncID.new])
 
 
-
+fwrite(data.table(EncID.new = copd.cohort), "H:/GEMINI/Results/to.administrator/qbp.copd.csv")
 
 
 #---------------------------- CHF ----------------------------------------------
@@ -89,6 +90,7 @@ chf.inc <- intersect(c(chf.inc1, chf.inc2, chf.inc3),
                      cohort[Age>=20, EncID.new])
 chf.cohort <- unique(c(chf.inc1, chf.inc2, chf.inc3))
 
+fwrite(data.table(EncID.new = chf.cohort), "H:/GEMINI/Results/to.administrator/qbp.chf.csv")
 
 
 #--------------------------- STROKE --------------------------------------------
@@ -248,7 +250,8 @@ fig1.2 <- function(dat, title){
   ggplot(df, aes(admp, ave.los)) + geom_bar(stat = "identity", width = 0.6)+ 
     ggtitle(paste(title, "by adm/dis physician", sep = " ")) + 
     facet_grid(. ~site) +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          )
 }
 fig1(cohort, "Overall")
 fig1(cohort[pneumonia==T], "Pneumonia")

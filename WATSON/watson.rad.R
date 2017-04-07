@@ -16,7 +16,8 @@ EncID.new <- unique(c(dat1$EncID.new, dat2$EncID.new, dat3$EncID.new, dat4$EncID
                dat5$EncID.new))
 EncID.new <- paste("11", EncID.new, sep = "")
 watson.enc.smh <- EncID.new[1:1000]
-smh.ct <- readg(smh, ct)
+smh.ct <- readg(smh, ct, dt = T)
+smh.ct[,after72 := ymd_h(ord_for_dtime)> ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
 testnames <- unique(smh.ct$proc_desc_long)
 smh.ctpe.names <- c("THORACIC ANEUR - CONT",
                     "THORACIC ANEUR CTA",
@@ -44,19 +45,21 @@ smh.ctpe.names <- c("THORACIC ANEUR - CONT",
                     "THORAX/ABDOMEN/PELVIS + CONT" )
 smh.ctpe.names %in% testnames
 smh.ctpa <- smh.ct[proc_desc_long%in%smh.ctpe.names, 
-                   .(EncID.new, proc_desc_long, result, impression)]
+                   .(EncID.new, proc_desc_long, result, impression, after72)]
 smh.ctpa.watson <- smh.ctpa[EncID.new%in%watson.enc.smh]
 fwrite(smh.ctpa.watson, "H:/GEMINI/Results/WATSON/smh.ctpa.csv")
 
 # VQ
-smh.nuc <- readg(smh, nuc)
+smh.nuc <- readg(smh, nuc, dt = T)
+smh.nuc[,after72 := ymd_h(ord_for_dtime)> ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
 smh.vq <- smh.nuc[startsWith(proc_desc_long, "LUNG")]
 smh.vq.watson <- smh.vq[EncID.new%in%watson.enc.smh,
-                        .(EncID.new, proc_desc_long, result, impression)]
+                        .(EncID.new, proc_desc_long, result, impression, after72)]
 fwrite(smh.vq.watson, "H:/GEMINI/Results/WATSON/smh.vq.csv")
 
 #Doppler
-smh.us <- readg(smh, us)
+smh.us <- readg(smh, us, dt = T)
+smh.us[,after72 := ymd_h(ord_for_dtime)> ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
 smh.du.names <- c("DOP LEG VEIN/EXTREMITY BILAT",
                   "DOP LEG VEIN/EXTREMITY UNILAT",
                   "DOP VEN EXTREMITY BILAT",
@@ -68,7 +71,7 @@ smh.du.names <- c("DOP LEG VEIN/EXTREMITY BILAT",
 
 smh.du.watson <- smh.us[proc_desc_long%in%smh.du.names&
                           EncID.new%in%watson.enc.smh, 
-                        .(EncID.new, proc_desc_long, result, impression)]
+                        .(EncID.new, proc_desc_long, result, impression, after72)]
 fwrite(smh.du.watson, "H:/GEMINI/Results/WATSON/smh.du.csv")
 
 
@@ -100,16 +103,16 @@ uhn.du.names <- c("US Vascular Peripheral Vein Doppler",
                   "US Thigh",
                   "US Vascular Jugular Vein Doppler")
 
-uhn.radip <- readg(uhn, rad_ip)
-uhn.rader <- readg(uhn, rad_er)
+uhn.radip <- readg(uhn, rad_ip, dt = T)
+uhn.rader <- readg(uhn, rad_er, dt = T)
 uhn.rad <- rbind(uhn.rader, uhn.radip)
-
+uhn.rad[,after72 := mdy_hm(OrderDateTime)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
 uhn.ctpa <- uhn.rad[ProcedureName%in%uhn.ctpe.names&EncID.new%in%watson.enc.uhn,
-                    .(EncID.new, ProcedureName, ReportText)]
+                    .(EncID.new, ProcedureName, ReportText, after72)]
 uhn.du <- uhn.rad[ProcedureName%in%uhn.du.names&EncID.new%in%watson.enc.uhn,
-                    .(EncID.new, ProcedureName, ReportText)]
+                    .(EncID.new, ProcedureName, ReportText,  after72)]
 uhn.vq <- uhn.rad[ProcedureName%in%uhn.vq.names&EncID.new%in%watson.enc.uhn,
-                    .(EncID.new, ProcedureName, ReportText)]
+                    .(EncID.new, ProcedureName, ReportText, after72)]
 
 fwrite(uhn.ctpa, "H:/GEMINI/Results/WATSON/uhn.ctpa.csv")
 fwrite(uhn.du, "H:/GEMINI/Results/WATSON/uhn.du.csv")
@@ -157,14 +160,14 @@ sbk.enc$EncID.new <- paste("12", sbk.enc$EncID.new, sep = "")
 set.seed(1200)
 watson.enc.sbk <- sbk.enc$EncID.new[sample(nrow(sbk.enc), 1000)]
 
-sbk.rad <- readg(sbk, rad.csv)
-
+sbk.rad <- readg(sbk, rad.csv, dt = T)
+sbk.rad[,after72 := ymd_hms(Ordered.DtTm)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
 sbk.ctpa <- sbk.rad[Test.Name%in%sbk.ctpe.names&EncID.new%in%watson.enc.sbk,
-                    .(EncID.new, Test.Name, Results)]
+                    .(EncID.new, Test.Name, Results, after72)]
 sbk.du <- sbk.rad[Test.Name%in%sbk.du.names&EncID.new%in%watson.enc.sbk,
-                  .(EncID.new, Test.Name, Results)]
+                  .(EncID.new, Test.Name, Results, after72)]
 sbk.vq <- sbk.rad[Test.Name%in%sbk.vq.names&EncID.new%in%watson.enc.sbk,
-                  .(EncID.new, Test.Name, Results)]
+                  .(EncID.new, Test.Name, Results, after72)]
 fwrite(sbk.ctpa, "H:/GEMINI/Results/WATSON/sbk.ctpa.csv")
 fwrite(sbk.du, "H:/GEMINI/Results/WATSON/sbk.du.csv")
 fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")

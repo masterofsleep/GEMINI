@@ -128,58 +128,12 @@ ggsave("H:/GEMINI/Results/LengthofStay/hist.los.png")
 
 
 # ---------------------- NEW Cohort selection ----------------------------------
-smh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/smh.link.csv")
-sbk <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")
-uhn <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/uhn.link.csv")
-msh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/msh.link.csv")
-thp <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")
-exclude <- readg(gim, notgim)
-all.enc <- rbind(smh, sbk, uhn, msh, thp)[!EncID.new%in%exclude$EncID.new]
-list.fr <- readxl::read_excel("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.all.physician.check_FR.xlsx")%>%
-  data.table
-list.fr <- list.fr[GIM!="n"]
-list.fr <- list.fr[!(str_detect(first.name, "Temp")|
-          str_detect(first.name, "Resident")|
-            str_detect(first.name, "Doctor"))]
-
-list.fr[!is.na(`Same Name (Definite)`), code.new := `Same Name (Definite)`]
-list.fr[!is.na(`Same Name (Possible)`), code.new := `Same Name (Possible)`]
-list.fr[`Same Name (Definite)`!=`Same Name (Possible)`]
-range(list.fr$code.new, na.rm = T)
-sum(is.na(list.fr$code.new))
-list.fr[is.na(code.new), code.new := 214:(214+570)]
-all.name <- list.fr[,.(Code, code.type, code.new, GIM)] %>% unique
-find.new.code <- function(df, code.type.adm, code.type.mrp){
-  df$adm.code = as.character(df$adm.code)
-  df$dis.code = as.character(df$dis.code)
-  df$mrp.code = as.character(df$mrp.code)
-  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new)], 
-              by.x = "adm.code",by.y = "Code",
-              all.x = T, all.y = F)
-  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new)], 
-              by.x = "dis.code",by.y = "Code",
-              all.x = T, all.y = F)
-  df <- merge(df, all.name[code.type == code.type.mrp, .(Code, code.new, GIM)], 
-              by.x = "mrp.code",by.y = "Code",
-              all.x = T, all.y = F)
-  names(df)[5:7] <- c("adm.code.new", "dis.code.new", "mrp.code.new")
-  df
-}
-smh <- find.new.code(smh, "smh", "smh")
-sbk <- find.new.code(sbk, "sbk", "sbk")
-uhn <- find.new.code(uhn, "uhn.adm", "uhn.mrp")
-msh <- find.new.code(msh, "msh", "msh")
-thp <- find.new.code(thp, "thp", "thp")
-cohort <- rbind(smh, sbk, uhn, msh, thp)[!EncID.new%in%exclude$EncID.new]
-
-
-los.cohort <- cohort[adm.code==dis.code|(str_sub(EncID.new,1,2)=="15"&dis.code == mrp.code)]
-los.cohort[is.na(GIM), ':='(GIM = "n",
-                            mrp.code.new = mrp.code)]
-
+all.phy <- readg(gim, all.phy)
+los.cohort <- all.phy[adm.code.new==dis.code.new&GIM=="y"]
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 
-los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM)], dad[,.(EncID.new, Age, Gender, LoS)],by = "EncID.new")
+los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM)], 
+                    unique(dad[,.(EncID.new, Age, Gender, LoS)]),by = "EncID.new")
 
 cci <- readg(gim, cci)
 los.cohort <- merge(los.cohort, cci, by = "EncID.new", all.x = T, all.y = F)
@@ -191,23 +145,28 @@ site.map <- data.table(
 los.cohort$code <- str_sub(los.cohort$EncID.new, 1, 2)
 los.cohort <- merge(los.cohort, site.map, by = "code")
 
-los.cohort$mrp.code <- paste(los.cohort$site, los.cohort$mrp.code, sep = "-")
+los.cohort$mrp.code <- paste(los.cohort$site, los.cohort$mrp.code.new, sep = "-")
 los.cohort[, LoS := LoS * 24]
 los.cohort[, LOS_in_20_grps := 
              cut(LoS, breaks=quantile(LoS, probs=seq(0,1, by=0.05), na.rm=TRUE), 
                                              include.lowest=TRUE,
                  labels = 1:20)]
+los.cohort[, LOS_in_10_grps := 
+             cut(LoS, breaks=quantile(LoS, probs=seq(0,1, by=0.1), na.rm=TRUE), 
+                 include.lowest=TRUE,
+                 labels = 1:10)]
 los.cohort[, Group_by_10hrs := ceiling((LoS-min(LoS))/10)]
 los.cohort[, Group_by_20hrs := ceiling((LoS-min(LoS))/20)]
 cmg$EncID.new <- as.character(cmg$EncID.new)
 los.cohort$EncID.new <- as.character(los.cohort$EncID.new)
 los.cohort <- merge(los.cohort, cmg, by = "EncID.new", all.x = T, all.y = F)
-
+los.cohort[, mrp.code.new:=NULL]
 
 fwrite(los.cohort[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG,LoS, mrp.code, mrp.GIM = GIM, site, 
-                     Group_by_10hrs, Group_by_20hrs, LOS_in_20_grps)],
-       "H:/GEMINI/Results/LengthofStay/cohort.los.marc30.csv")
-table(los.cohort$mrp.code.new)
+                     Group_by_10hrs, Group_by_20hrs, LOS_in_20_grps, LOS_in_10_grps)],
+       "H:/GEMINI/Results/LengthofStay/cohort.los.april07.csv")
+fwrite(data.table(table(los.cohort[,mrp.code])),
+       "H:/GEMINI/Results/LengthofStay/mrp.freq.april07.csv")
 
-
-table(los.cohort$LOS_in_20_grps)
+table(los.cohort$site)
+table(los.cohort$LOS_in_10_grps)

@@ -111,18 +111,20 @@ cohort$EncID.new[cohort$Diag.Code=="I50"] %>% length
 
 #--------------------------- STROKE --------------------------------------------
 
-# stroke.code <- c("G45", "I61", "I63", "I64", "H341")
-# 
-# stro.inc <- ip.diag[Diagnosis.Type=="M"&
-#                       (startwith.any(Diagnosis.Code, stroke.code)&
-#                          !Diagnosis.Code%in%c("G454", "I636")), EncID.new]
-# 
-# stro.ex <- ip.diag[Diagnosis.Type=="2"&
-#                      (startwith.any(Diagnosis.Code, stroke.code)&
-#                         !Diagnosis.Code%in%c("G454", "I636")), EncID.new]
-# stro.inc <- stro.inc[!stro.inc%in%stro.ex]
-# 
-# stro.inc <- intersect(stro.inc, cohort[Age>=18, EncID.new])
+stroke.code <- c("G45", "I61", "I63", "I64", "H341")
+
+stro.inc <- ip.diag[Diagnosis.Type=="M"&
+                      (startwith.any(Diagnosis.Code, stroke.code)&
+                         !Diagnosis.Code%in%c("G454", "I636")), EncID.new]
+
+stro.ex <- ip.diag[Diagnosis.Type=="2"&
+                     (startwith.any(Diagnosis.Code, stroke.code)&
+                        !Diagnosis.Code%in%c("G454", "I636")), EncID.new]
+stro.inc <- stro.inc[!stro.inc%in%stro.ex]
+
+stro.inc <- intersect(stro.inc, cohort[Age>=18, EncID.new])
+fwrite(data.table(EncID.new= stro.inc), "H:/GEMINI/Results/to.administrator/qbp.stroke.csv")
+
 stro.cohort <- ip.diag[Diagnosis.Type=="M"&startwith.any(Diagnosis.Code,
                                                          c("I63", "I64", "H341")), EncID.new]
 
@@ -149,6 +151,7 @@ cbind(uti.code, all.type, main.only) %>% data.table %>% merge(icd.names, by.x = 
   fwrite("H:/GEMINI/Results/DesignPaper/uti.codes.numbers.csv")
 
 uti.cohort <- ip.diag.main[startwith.any(Diagnosis.Code, uti.code), EncID.new]
+fwrite(data.table(EncID.new = uti.cohort), "H:/GEMINI/Results/to.administrator/qbp.uti.csv")
 
 sum(cohort$Diag.Code=="N39")
 

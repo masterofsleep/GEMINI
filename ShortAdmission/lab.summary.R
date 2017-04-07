@@ -2,12 +2,12 @@
 # --------------------------- 2017-03-16 ---------------------------------------
 library(gemini)
 lib.pa()
-library(knitr)
 rm(list = ls())
 
 smh.lab <- readg(smh, corelabs, dt = T)
 sbk.lab <- rbind(readg(sbk, labs_er, dt = T), readg(sbk, labs_ip, dt = T))
 uhn.lab <- readg(uhn, labs, dt = T)
+msh.lab <- readg(msh, lab, dt = T)
 #msh.lab <- readg(msh, lab, dt= T)
 # msh.lab.freq <- table(msh.lab[,.(Name, TEST_ID)]) %>% data.table 
 # msh.lab.freq <- msh.lab.freq[N!=0]
@@ -20,14 +20,20 @@ smh.lab[str_sub(Result.Value,1,1)%in%c(">", "<")&str_detect(Result.Value, "@"),
         Result.Value := str_replace_all(Result.Value, "[@A-z]","")]
 
 smh.lab <- smh.lab[,.(EncID.new, Test.Name, Test.ID, Result.Value,
-                        Result.Unit, Reference.Range, Collection.DtTm, Site = "SMH")]
+                        Result.Unit, Reference.Range, Collection.DtTm = ymd_hms(Collection.DtTm), Site = "SMH")]
 sbk.lab <- sbk.lab[,.(EncID.new, Test.Name, Test.ID, Result.Value,
-                      Result.Unit, Reference.Range, Collection.DtTm, Site = "SBK")]
+                      Result.Unit, Reference.Range, Collection.DtTm = ymd_hms(Collection.DtTm), Site = "SBK")]
 uhn.lab <- uhn.lab[,.(EncID.new, Test.Name, Test.ID, Test.Item, Result.Value ,
                       Result.Unit = Result.Units, 
                       Collection.DtTm = ymd_hms(paste(Specimen.Col, Specimen.C)),
                       Site = "UHN")]
-
+msh.lab <- msh.lab[,.(EncID.new, Test.Name = Name, Test.ID = TEST_ID, 
+                      Collection.DtTm = ymd_hms(paste(DATE_COLLECT, TIME_COLLECT)),
+                      Site = "MSH", Result.Value = RESULT, Result.Unit = UNITES,
+                      Reference.Range = REFERANCE_LAB)]
+msh.lab[str_sub(Result.Value,1,1)%in%c(0:9)&is.na(as.numeric(Result.Value))&
+          !is.na(Result.Value),
+        Result.Value := str_replace_all(Result.Value, "[@A-z!]","")]
 names(smh.lab)
 names(sbk.lab)
 names(uhn.lab)
@@ -79,22 +85,29 @@ lab.desc <- function(x, y, z){
 hgb.smh <- smh.lab[Test.Name=="HGB"]
 hgb.sbk <- sbk.lab[Test.Name=="Hemoglobin"] %>%data.table
 hgb.uhn <- uhn.lab[Test.Item=="Hb"&Test.Name=="CBC"] %>%data.table
-
+hgb.msh <- msh.lab[Test.ID%in%c("HGB")]
+#hgb.msh[is.na(as.numeric(Result.Value)), Result.Value] %>% table
 # lab.desc(hgb.smh$Result.Value,
 #          hgb.sbk$Result.Value,
 #          hgb.uhn$Result.Value)
 
 hgb <- rbind(hgb.smh, 
              hgb.sbk,
-             hgb.uhn, fill = T)
+             hgb.uhn, 
+             hgb.msh, fill = T)
 
 hgb[is.na(as.numeric(Result.Value)), Result.Value] %>% table
 hgb[Result.Value=="70.0 g/L   specimen is hemolysed", Result.Value:=70]
+fwrite(data.table(table(hgb[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/hgb.csv")
+fwrite(hgb[!is.na(as.numeric(Result.Value))], "H:/GEMINI/Data/GEMINI/Lab/lab.hgb.csv")
+
+
 # ------------------------------- wbc ------------------------------------------
 wbc.smh <- smh.lab[Test.Name=="WBC"]
 wbc.sbk <- sbk.lab[Test.Name=="WBC Count"] 
 wbc.uhn <- uhn.lab[Test.Item=="WBC"&Test.Name=="CBC"]
-
+wbc.msh <- msh.lab[Test.ID=="WBC"]
 # lab.desc(wbc.smh$Result.Value,
 #          wbc.sbk$Result.Value,
 #          wbc.uhn$Result.Value)
@@ -102,19 +115,36 @@ wbc.uhn <- uhn.lab[Test.Item=="WBC"&Test.Name=="CBC"]
 #           !is.na(Result.Value)&str_detect(Result.Value, "@")]
 wbc <- rbind(wbc.smh,
              wbc.sbk,
-             wbc.uhn, fill = T)
-wbc[is.na(as.numeric(Result.Value)), Result.Value] %>% table
+             wbc.uhn, 
+             wbc.msh, fill = T)
+wbc[is.na(as.numeric(Result.Value)), Result.Value] %>% table %>% data.table
 wbc[Result.Value=="< 0.1", Result.Value:= 0.1]
+wbc[Result.Value=="118.53 @?CKD", Result.Value:= 188.53]
+wbc[Result.Value=="7.87.", Result.Value:= 7.87]
+fwrite(data.table(table(wbc[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/wbc.csv")
+fwrite(wbc[!is.na(as.numeric(Result.Value))], "H:/GEMINI/Data/GEMINI/Lab/lab.wbc.csv")
 
 
 # ---------------------------- platelet ----------------------------------------
 plt.smh <- smh.lab[Test.Name=="PLT"]
 plt.sbk <- sbk.lab[Test.Name=="Platelet Count"] 
 plt.uhn <- uhn.lab[Test.Item=="Plt"&Test.Name=="CBC"]
+plt.msh <- msh.lab[Test.ID=="PLT"]
 
 # lab.desc(plt.smh$Result.Value,
 #          plt.sbk$Result.Value,
 #          plt.uhn$Result.Value)
+plt <- rbind(plt.smh,
+             plt.sbk,
+             plt.uhn,
+             plt.msh, fill = T)
+plt[is.na(as.numeric(Result.Value)), Result.Value] %>% table %>% data.table ->check
+plt[startsWith(Result.Value, "<"), Result.Value:=3]
+plt[Result.Value=="93 .", Result.Value:=93]
+fwrite(data.table(table(plt[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/plt.csv")
+fwrite(plt[!is.na(as.numeric(Result.Value))], "H:/GEMINI/Data/GEMINI/Lab/lab.plt.csv")
 
 # ---------------------------- sodium ------------------------------------------
 sodium.smh <- smh.lab[Test.Name=="Sodium"]
@@ -124,15 +154,26 @@ sodium.uhn <- uhn.lab[Test.Item=="Sodium"&
                                        "Electrolytes, Creatinine, Glucose Profile",
                                        "Sodium, Plasma",
                                        "Electrolytes, Creatinine, Profile")]
-
+sodium.msh <- msh.lab[Test.Name%in%c("Sodium plasma", "Sodium blood", "Sodium serum",
+                                     "Sodium, Venous")&Test.ID%in%
+                        c("NAPL", "NAW", "NAS", "NAV")]
+table(sodium.msh[, .(Test.Name, Test.ID)])
+sodium.msh[is.na(as.numeric(Result.Value)), Result.Value] %>% table
 # lab.desc(sodium.smh$Result.Value,
 #          sodium.sbk$Result.Value,
 #          sodium.uhn$Result.Value)
 sodium <- rbind(sodium.smh,
                 sodium.sbk,
-                sodium.uhn, fill = T)
-sodium[as.numeric(Result.Value)<100] %>% 
-  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/sodium.lt100.csv")
+                sodium.uhn, 
+                sodium.msh, fill = T)
+sodium[is.na(as.numeric(Result.Value)), Result.Value] %>% table
+sodium[Result.Value%in%c("<110", "< 100", "<110 "), Result.Value:=110]
+sodium[Result.Value%in%c(">180", "> 200", ">200"), Result.Value:=180]
+
+fwrite(data.table(table(sodium[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/sodium.csv")
+sodium[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.sodium.csv")
+#fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/sodium.lt100.csv")
 
 # ---------------------------- potassium ---------------------------------------
 potassium.smh <- smh.lab[Test.Name=="Potassium"]
@@ -140,14 +181,29 @@ potassium.sbk <- sbk.lab[Test.Name=="Potassium"]
 potassium.uhn <- uhn.lab[Test.Item=="Potassium"&Test.Name%in%c(
   "Electrolytes, Plasma", "Electrolytes, Creatinine, Glucose Profile",
   "Potassium, Plasma", "Electrolytes, Creatinine, Profile")]
-
-lab.desc(potassium.smh$Result.Value,
-         potassium.sbk$Result.Value,
-         potassium.uhn$Result.Value)
-
+potassium.msh <- msh.lab[Test.ID%in%c("KPL", "KW", "KS", "KV")]
+table(potassium.msh$Test.Name)
+# lab.desc(potassium.smh$Result.Value,
+#          potassium.sbk$Result.Value,
+#          potassium.uhn$Result.Value)
+data.table(table(potassium.msh[is.na(as.numeric(Result.Value)), Result.Value])) -> check
 potassium <- rbind(potassium.smh,
                    potassium.sbk,
-                   potassium.uhn, fill = T)
+                   potassium.uhn, 
+                   potassium.msh, fill = T)
+potassium[Result.Value%in%c("<2.0", "<1.0", "<2.0 ", "<2.0  "), Result.Value := "2.0"]
+potassium[Result.Value%in%c(">8.0", "> 10.0", ">10.0 ", ">20.0", ">8.0 ",
+                            ">8.0  ", ">10.0"), Result.Value := "8.0"]
+potassium[Result.Value=="K=6.3", Result.Value := "6.3"]
+potassium[Result.Value=="K=6.4.", Result.Value := "6.4"]
+potassium[Result.Value=="5.1,", Result.Value := "5.1"]
+fwrite(data.table(table(potassium[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/potassium.csv")
+potassium[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.potassium.csv")
+# fwrite(data.table(table(plt[is.na(as.numeric(Result.Value)), Result.Value])),
+       # "H:/GEMINI/Results/DataSummary/nonnum.lab.values/plt.csv")
+
+
 potassium[as.numeric(Result.Value)<1|as.numeric(Result.Value)>10] %>% 
   fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/potassium.lt1orgt10.csv")
 
@@ -156,9 +212,22 @@ troponin.smh <- smh.lab[Test.Name=="Troponin I"]
 troponin.sbk <- sbk.lab[Test.Name%in%c("Troponin T, High Sensitivity","Troponin T")]
 troponin.uhn <- uhn.lab[Test.Item%in%c("Troponin I","Troponin I (HS)")&
                           Test.Name%in%c("Troponin I","Troponin I (HS)")]
-lab.desc(troponin.smh$Result.Value,
-         troponin.sbk$Result.Value,
-         troponin.uhn$Result.Value)
+troponin.msh <- msh.lab[Test.ID%in%c("TNTP4", "TNTP3", "TNTS4", "TNTS3", "TNTQ4", "TNTQ3",
+                                     "TRPQ3", "TNTPP")]
+table(troponin.msh$Test.Name)
+# lab.desc(troponin.smh$Result.Value,
+#          troponin.sbk$Result.Value,
+#          troponin.uhn$Result.Value)
+
+troponin <- rbind(troponin.smh,
+                  troponin.sbk,
+                  troponin.uhn,
+                  troponin.msh, fill = T)
+
+fwrite(data.table(table(troponin[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/troponin.csv")
+troponin[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.troponin.csv")
+
 # ---------------------------- lactate -----------------------------------------
 lactate.smh <- smh.lab[Test.Name%in%c("Lactate Venous", "Lactate Arterial")]
 lactate.sbk <- sbk.lab[Test.Name%in%c("Lactate - Serum", "Lactate, Arterial")]
@@ -239,3 +308,26 @@ glucose[as.numeric(Result.Value)>40] %>%
   fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/glucose.gt40.csv")
 
 glucose[as.numeric(Result.Value)>40, Site] %>% table 
+
+
+
+# -------------------------- creatinine ----------------------------------------
+crea.smh <- smh.lab[Test.Name=="Creatinine"]
+crea.sbk <- sbk.lab[Test.Name=="Creatinine (renal)"]
+crea.uhn <- uhn.lab[Test.Item=="Creatinine"&
+                    Test.Name%in%c("Creatinine, Plasma",
+                                     "Electrolytes, Creatinine, Glucose Profile",
+                                     "Electrolytes, Creatinine, Profile")]
+crea.msh <- msh.lab[Test.Name%in%c("Creatinine Plasma", "Creatinine Serum")&
+                      Test.ID%in%c("CREAP", "CREAS")]
+table(crea.msh[,.(Test.Name, Test.ID)])
+
+crea <- rbind(crea.smh,
+              crea.sbk,
+              crea.uhn, 
+              crea.msh, fill = T)
+#crea.msh[is.na(as.numeric(Result.Value)), Result.Value] %>% table
+crea[is.na(as.numeric(Result.Value)), Result.Value] %>% table %>% data.table
+crea[startsWith(Result.Value, "<"), Result.Value:=20]
+crea[as.numeric(Result.Value)>40, Site] %>% table 
+crea[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.creatinine.csv")

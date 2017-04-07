@@ -1,0 +1,189 @@
+---
+title: "Analyses for presentation to hospital administrators"
+author: "Yishan Guo"
+date: "March 22, 2017"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+```{r, echo=F, message=F, warning=FALSE}
+library(gridExtra)
+library(grid)
+library(gemini)
+lib.pa()
+options(scipen = 999)
+cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv")
+all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
+cohort <- cohort[physician!="thp-m-708"]
+plot.phy <- function(data, leastpatient, title, xlab = "physician", 
+                          ylab, nextreme = 1,
+                     ave.fun){
+  df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
+  names(df)[4] <- "phy.ave"
+  df <- df[N>=leastpatient]
+  site.mean <- ddply(data[physician%in%df$physician], ~Institution.Number, .fun = ave.fun)
+  names(site.mean)[4] <- "site.mean"
+  df <- merge(df, site.mean[,c(1,4)], by.x = "site", by.y = "Institution.Number")
+  for(i in c("smh", "sbk", "uhn-general", "uhn-western" ,"msh", "thp-c", "thp-m")){
+    df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
+  }
+  xstart = -log(max(df$phy.ave))-log(max(df$phy), base = 10) + 1
+  p <- ggplot(df, aes(phy, phy.ave, fill = site)) + 
+    geom_bar(stat = "identity", width = 0.5) + 
+    geom_line(aes(x = phy,
+                  y = site.mean),
+               colour = "red", alpha = 0.5,
+               linetype = 2, size = 0.5) + 
+    facet_grid(.~site, scales = "free_x") + 
+    ggtitle(title) +
+    xlab(xlab) +
+    ylab(ylab) +
+    expand_limits(x = xstart) +
+    geom_text(aes(x = xstart/2, y = site.mean, label = sprintf("%.1f", site.mean)), colour = "#FF6666",
+              size = 3, alpha = 0.3) +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          legend.position="none")
+  del <- ddply(df, ~site, summarise,
+               xm = max(phy),
+               ymi = quantile(phy.ave, probs = 0.1),
+               yma = quantile(phy.ave, probs = 0.9),
+               yav = quantile(phy.ave, probs = 0.1)*0.5 + quantile(phy.ave, probs = 0.9)*0.5,
+               ydiff = sprintf("%.1f", yma - ymi))
+  p <- p + geom_errorbar(data = del, aes(x = xm, y = NULL,ymin = ymi, ymax = yma), 
+                         alpha = 0.3, width = 2) +
+    geom_rect(data = del, aes(x = NULL, y = NULL, xmin = xm-0.8, xmax = xm + 0.8, 
+                              ymin = yav*0.98, ymax = yav*1.02), fill = "#EEEEEE") + 
+    geom_text(data = del, aes(x = xm, y = yav, label = ydiff), size = 3)
+  df <- df %>% arrange(site, phy)
+  extreme.values <- ddply(df, ~site, 
+                          function(x)rbind(head(x, nextreme), tail(x,nextreme)))
+  extreme.values$code.new <- str_replace_all(extreme.values$physician, "[:alpha:]|-", "")
+  extreme.values <- merge(extreme.values, all.name[,.(code.new, first.name, last.name)],
+                          by.x = "code.new", by.y = "code.new")
+  extreme.values <- extreme.values %>% arrange(site, phy)
+  
+  print(p)
+  print(extreme.values[,c(1,2,4,5,7:9)])
+}
+```
+
+# Figure 1. Average length-of-stay per Doctor
+
+
+```{r, message=F, echo = F, ,warning=FALSE}
+ave.los <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$LOS.without.ALC, na.rm = T))
+}
+plot.phy(cohort, 100, "Overall", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+plot.phy(cohort[copd==T], 20, "COPD", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+
+```
+
+
+
+
+
+
+
+# Figure 2. Average ALC Days per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+ave.alc <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$Number.of.ALC.Days, na.rm = T))
+}
+plot.phy(cohort, 100, "Overall", ylab = "Average ALC Days", ave.fun = ave.alc)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "Average ALC Days", ave.fun = ave.alc)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "Average ALC Days", ave.fun = ave.alc)
+plot.phy(cohort[copd==T], 20, "COPD", ylab = "Average ALC Days", ave.fun = ave.alc)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "Average ALC Days", ave.fun = ave.alc)
+
+```
+
+
+# Figure 3. Average Cost per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+ave.cost <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$Cost, na.rm = T))
+}
+plot.phy(cohort, 100, "Overall", ylab = "Average Cost ($)", ave.fun = ave.cost)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "Average Cost ($)", ave.fun = ave.cost)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "Average Cost ($)", ave.fun = ave.cost)
+plot.phy(cohort[copd==T], 20, "COPD", ylab = "Average Cost ($)", ave.fun = ave.cost)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "Average Cost ($)", ave.fun = ave.cost)
+
+```
+
+# Figure 4. Readmission (within 30 days) Rate per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+read.rate <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100)
+}
+plot.phy(cohort, 100, "Overall", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+plot.phy(cohort[copd==T], 20, "COPD", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+```
+
+
+# Figure 5. In-hospital Mortality Rate per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+mort <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$Discharge.Disposition ==7, na.rm = T)*100)
+}
+
+plot.phy(cohort, 100, "Overall", ylab = "In-hospital Mortality (%)", ave.fun = mort)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "In-hospital Mortality (%)", ave.fun = mort)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "In-hospital Mortality (%)", ave.fun = mort)
+plot.phy(cohort[copd==T], 20, "COPD", ylab = "In-hospital Mortality (%)", ave.fun = mort)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "In-hospital Mortality (%)", ave.fun = mort)
+
+```
+
+# Figure 6. Short-admission (<48h) Rate per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+shortadm <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$LOS.without.ALC < 2, na.rm = T)*100)
+}
+plot.phy(cohort, 100, "Overall", ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm)
+plot.phy(cohort[copd==T], 20, "COPD",ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm)
+```
+
+
+# Figure 7. ICU Utilization Rate per Doctor
+```{r, message=F, echo = F, ,warning=FALSE}
+icuadm<- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$SCU.adm, na.rm = T)*100)
+}
+plot.phy(cohort, 100, "Overall", ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
+plot.phy(cohort[cap==T], 20, "Pneumonia", ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
+plot.phy(cohort[chf==T], 20, "CHF", ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
+plot.phy(cohort[copd==T], 20, "COPD",ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
+plot.phy(cohort[stroke==T], 20, "Stroke", ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
+```
+
+
+
+

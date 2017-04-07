@@ -109,3 +109,18 @@ sbk.bb[, ':='(Triage.Date = NULL,
 fwrite(sbk.bb, "H:/GEMINI/Data/SBK/BB/sbk.bb.csv")
 
 sbk.bb <- readg(sbk, bb)
+
+
+# ------------------------------ fix sinai bb time -----------------------------
+msh.bb <- readg(msh, bb)
+time.convert <- function(x){
+  ifelse(str_sub(x, -2,-1)=="PM"&as.numeric(str_sub(x, 1, 2))<12, 
+         paste(as.numeric(str_sub(x, 1, 2)) + 12, str_sub(x, 3, 5), sep = ""),
+         ifelse((str_sub(x, -2,-1)=="AM"&as.numeric(str_sub(x, 1, 2))==12),
+                paste(as.numeric(str_sub(x, 1, 2)) - 12, str_sub(x, 3, 5), sep = ""),
+                paste(as.numeric(str_sub(x, 1, 2)), str_sub(x, 3, 5), sep = "")))
+}
+msh.bb$TIME.new <- time.convert(msh.bb$TIME)
+
+
+fwrite(msh.bb, "H:/GEMINI/Data/MSH/BB/msh.bb.nophi.csv")
