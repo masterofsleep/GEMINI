@@ -109,4 +109,6 @@ cci$EncID.new <- row.names(cci)
 fwrite(cci, "H:/GEMINI/Data/GEMINI/gim.ip_cci.csv")
 
 
-
+ip.diag[duplicated(ip.diag)|duplicated(ip.diag, fromLast = T)] -> check
+ip.diag <- unique(ip.diag)
+fwrite(ip.diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")

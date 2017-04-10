@@ -116,4 +116,4 @@ er.diag <- rbind(smh,
                  thp)
 fwrite(er.diag, "H:/GEMINI/Data/GEMINI/gim.er_diag.csv")
 
-
+# ----------------remove duplciates in er.diag ---------------------------------

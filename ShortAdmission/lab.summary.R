@@ -38,7 +38,7 @@ names(smh.lab)
 names(sbk.lab)
 names(uhn.lab)
 lab.desc <- function(x, y, z){
-  cat("### Summary of numbers\n")
+  cat("### Summary of numbers/n")
   "Numeric Values (N, %)" <- c(
     paste(sum(!is.na(as.numeric(x))),
           " (", round(sum(!is.na(as.numeric(x)))/length(x)*100, 2),")", sep = ""),
@@ -62,7 +62,7 @@ lab.desc <- function(x, y, z){
                      Site = c("SMH", "SBK", "UHN"))
   names(tab1)[c(2,3)] <- c("Numeric Values (N, %)", "Non-numeric Values (N, %)")
   print(kable(tab1))
-  cat("### Summary of numeric values\n")
+  cat("### Summary of numeric values/n")
   tab2 <- cbind(Site = c("SMH", "SBK", "UHN"),
                 rbind(summary(as.numeric(x[!is.na(as.numeric(x))])),
                 summary(as.numeric(y[!is.na(as.numeric(y))])),
@@ -76,7 +76,7 @@ lab.desc <- function(x, y, z){
                 data.table(table(y[is.na(as.numeric(y))], useNA = "ifany"), site = "SBK"),
                 data.table(table(z[is.na(as.numeric(z))], useNA = "ifany"), site = "UHN"))
   names(tab3)[1:2] <- c("Non-numeric Result Value", "N")
-  cat("### Summary of non-numeric values\n")
+  cat("### Summary of non-numeric values/n")
   kable(tab3)
 }
 
@@ -236,78 +236,222 @@ lactate.uhn <- uhn.lab[Test.Item=="Lactate"&
                                         "POCT Blood Gas Arterial",
                                         "Blood Gas, Arterial",
                                         "POCT Blood Gas Venous")]
+lactate.msh <- msh.lab[Test.ID%in%c("LACW", "LACPL", "LACV")]
+lactate <- rbind(lactate.smh,
+                 lactate.sbk,
+                 lactate.uhn, 
+                 lactate.msh, fill = T)
+
 lab.desc(lactate.smh$Result.Value,
          lactate.sbk$Result.Value,
          lactate.uhn$Result.Value)
+data.table(table(lactate[is.na(as.numeric(Result.Value)), Result.Value]))
+lactate[startsWith(Result.Value, "<"), Result.Value:=0.5]
+lactate[startsWith(Result.Value, ">"), Result.Value:=20]
+fwrite(data.table(table(lactate[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/lactate.csv")
+lactate[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.lactate.csv")
+
 # ---------------------------- albumin -----------------------------------------
 albumin.smh <- smh.lab[Test.Name=="Albumin"]
 albumin.sbk <- sbk.lab[Test.Name=="Albumin"]
 albumin.uhn <- uhn.lab[Test.Item=="Albumin"&Test.Name=="Albumin, Plasma"]
-lab.desc(albumin.smh$Result.Value,
-         albumin.sbk$Result.Value,
-         albumin.uhn$Result.Value)
+albumin.msh <- msh.lab[Test.ID%in%c("ALBP","ALBS")]
+table(albumin.msh$Test.Name)
+# lab.desc(albumin.smh$Result.Value,
+#          albumin.sbk$Result.Value,
+#          albumin.uhn$Result.Value)
+albumin <- rbind(albumin.smh,
+                 albumin.sbk,
+                 albumin.uhn, 
+                 albumin.msh, fill = T)
+data.table(table(albumin[is.na(as.numeric(Result.Value)), Result.Value]))
+albumin[startsWith(Result.Value, "<"), Result.Value:=15]
+albumin[startsWith(Result.Value, ">"), Result.Value:=60]
+fwrite(data.table(table(albumin[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/albumin.csv")
+albumin[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.albumin.csv")
 # ---------------------------- calcium -----------------------------------------
 calcium.smh <- smh.lab[Test.Name=="Calcium"]
 calcium.sbk <- sbk.lab[Test.Name=="Calcium"]
 calcium.uhn <- uhn.lab[Test.Item=="Calcium"&
                          Test.Name%in%c("Calcium Total, Plasma",
                                         "Calcium Corrected, Plasma")]
-lab.desc(calcium.smh$Result.Value,
-         calcium.sbk$Result.Value,
-         calcium.uhn$Result.Value)
+calcium.msh <- msh.lab[Test.ID%in%c("CATP", "CATS")]
+table(calcium.msh$Test.Name)
+# lab.desc(calcium.smh$Result.Value,
+#          calcium.sbk$Result.Value,
+#          calcium.uhn$Result.Value)
+
+calcium <- rbind(calcium.smh,
+                 calcium.sbk,
+                 calcium.uhn, 
+                 calcium.msh, fill = T)
+data.table(table(calcium[is.na(as.numeric(Result.Value)), Result.Value]))
+calcium[startsWith(Result.Value, "<"), Result.Value:=1.25]
+range(as.numeric(calcium$Result.Value), na.rm = T)
+
+
+# there is one ">5", set to 5 here
+calcium[startsWith(Result.Value, ">"), Result.Value:=5]
+fwrite(data.table(table(calcium[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/calcium.csv")
+calcium[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.calcium.csv")
+
 # ------------------------------ AST -------------------------------------------
 ast.smh <- smh.lab[Test.Name=="AST"]
 ast.sbk <- sbk.lab[Test.Name=="AST"]
 ast.uhn <- uhn.lab[Test.Item=="AST"&Test.Name=="AST"]
-lab.desc(ast.smh$Result.Value,
-         ast.sbk$Result.Value,
-         ast.uhn$Result.Value)
+ast.msh <- msh.lab[Test.ID%in%c("ASTP", "AST")]
+# lab.desc(ast.smh$Result.Value,
+#          ast.sbk$Result.Value,
+#          ast.uhn$Result.Value)
+
+table(ast.msh$Test.Name)
+
+ast <- rbind(ast.smh,
+                 ast.sbk,
+                 ast.uhn, 
+                 ast.msh, fill = T)
+data.table(table(ast[is.na(as.numeric(Result.Value)), Result.Value]))
+ast[startsWith(Result.Value, "<"), Result.Value:=5]
+range(as.numeric(ast$Result.Value), na.rm = T)
+## there is one ">14000", set to 14000
+ast[startsWith(Result.Value, ">"), Result.Value:=14000]
+fwrite(data.table(table(ast[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/ast.csv")
+ast[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.ast.csv")
+
 # ------------------------------ ALT -------------------------------------------
 alt.smh <- smh.lab[Test.Name=="ALT"]
 alt.sbk <- sbk.lab[Test.Name=="ALT"]
 alt.uhn <- uhn.lab[Test.Item=="ALT"&Test.Name=="ALT"]
-lab.desc(alt.smh$Result.Value,
-         alt.sbk$Result.Value,
-         alt.uhn$Result.Value)
+alt.msh <- msh.lab[Test.ID%in%c("ALTSP", "ALTS")]
+# lab.desc(alt.smh$Result.Value,
+#          alt.sbk$Result.Value,
+#          alt.uhn$Result.Value)
+table(alt.msh$Test.Name)
+
+alt <- rbind(alt.smh,
+             alt.sbk,
+             alt.uhn, 
+             alt.msh, fill = T)
+data.table(table(alt[is.na(as.numeric(Result.Value)), Result.Value]))
+alt[startsWith(Result.Value, "<"), Result.Value:=6]
+range(as.numeric(alt$Result.Value), na.rm = T)
+## there is one ">6600", set to 6600
+alt[startsWith(Result.Value, ">"), Result.Value:=14000]
+fwrite(data.table(table(alt[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/alt.csv")
+alt[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.alt.csv")
+
 # ------------------------------ MCV -------------------------------------------
 mcv.smh <- smh.lab[Test.Name=="MCV"]
 mcv.sbk <- sbk.lab[Test.Name=="MCV"]
 mcv.uhn <- uhn.lab[Test.Item=="MCV"&Test.Name=="CBC"]
-lab.desc(mcv.smh$Result.Value,
-         mcv.sbk$Result.Value,
-         mcv.uhn$Result.Value)
+mcv.msh <- msh.lab[Test.ID=="MCV"]
+# lab.desc(mcv.smh$Result.Value,
+#          mcv.sbk$Result.Value,
+#          mcv.uhn$Result.Value)
+table(mcv.msh$Test.Name)
+
 mcv <- rbind(mcv.smh,
              mcv.sbk,
-             mcv.uhn, fill = T)
-mcv[as.numeric(Result.Value)<40] %>% 
-  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/mcv.lt40.csv")
+             mcv.uhn, 
+             mcv.msh, fill = T)
+data.table(table(mcv[is.na(as.numeric(Result.Value)), Result.Value]))
+fwrite(data.table(table(mcv[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/mcv.csv")
+mcv[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.mcv.csv")
 
 # ------------------------------ ALP -------------------------------------------
 alp.smh <- smh.lab[Test.Name=="ALP"]
 alp.sbk <- sbk.lab[Test.Name=="ALP"]
 alp.uhn <- uhn.lab[Test.Item=="ALP"&Test.Name=="ALP"]
-lab.desc(alp.smh$Result.Value,
-         alp.sbk$Result.Value,
-         alp.uhn$Result.Value)
+alp.msh <- msh.lab[Test.ID%in%c("ALPP", "ALPS")]
+# lab.desc(alp.smh$Result.Value,
+#          alp.sbk$Result.Value,
+#          alp.uhn$Result.Value)
+table(alp.msh$Test.Name)
 
-# ---------------------------- glucose -----------------------------------------
-glucose.smh <- smh.lab[Test.Name=="Glucose Random"]
-glucose.sbk <- sbk.lab[Test.Name=="Glucose- Random"]
-glucose.uhn <- uhn.lab[Test.Item=="Glucose"&
+alp <- rbind(alp.smh,
+             alp.sbk,
+             alp.uhn, 
+             alp.msh, fill = T)
+data.table(table(alp[is.na(as.numeric(Result.Value)), Result.Value]))
+alp[startsWith(Result.Value, "<"), Result.Value:=10]
+range(as.numeric(alp$Result.Value), na.rm = T)
+
+fwrite(data.table(table(alp[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/alp.csv")
+alp[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.alp.csv")
+
+# ---------------------------- glucose random  -----------------------------------------
+glucose.random.smh <- smh.lab[Test.Name=="Glucose Random"]
+glucose.random.sbk <- sbk.lab[Test.Name=="Glucose- Random"]
+glucose.random.uhn <- uhn.lab[Test.Item=="Glucose"&
                          Test.Name%in%c("Glucose, Random-Green",
                                         "Electrolytes, Creatinine, Glucose Profile",
                                         "Glucose, Random-Grey")]
+glucose.random.msh <- msh.lab[Test.ID%in%c("GLUW", "GLRP", "GLUS", "GLUV")]
 lab.desc(glucose.smh$Result.Value,
          glucose.sbk$Result.Value,
          glucose.uhn$Result.Value)
+table(glucose.random.msh$Test.Name)
 
-glucose <- rbind(glucose.smh,
-                 glucose.sbk,
-                 glucose.uhn, fill = T)
-glucose[as.numeric(Result.Value)>40] %>% 
-  fwrite("H:/GEMINI/Results/DataSummary/unlikely lab value/glucose.gt40.csv")
+glucose.random <- rbind(glucose.random.smh,
+             glucose.random.sbk,
+             glucose.random.uhn, 
+             glucose.random.msh, fill = T)
+data.table(table(glucose.random[is.na(as.numeric(Result.Value)), Result.Value]))
+glucose.random[startsWith(Result.Value, "<"), Result.Value:=1]
+range(as.numeric(glucose.random$Result.Value), na.rm = T)
+## there is one "> 42.2" and 21 ">41.6", now removed ">" from both
+glucose.random[startsWith(Result.Value, ">"), Result.Value:= str_replace(Result.Value, ">", "")]
+fwrite(data.table(table(glucose.random[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/glucose.random.csv")
+glucose.random[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.glucose.random.csv")
 
-glucose[as.numeric(Result.Value)>40, Site] %>% table 
+
+# ---------------------------- glucose point of care----------------------------
+glucose.poc.smh <- smh.lab[Test.Name=="Glucose POC (Lifsecan/Abbott)"]
+
+glucose.poc.msh <- msh.lab[Test.ID=="GLUM"]
+
+table(glucose.poc.msh$Test.Name)
+
+glucose.poc <- rbind(glucose.poc.smh,
+                        glucose.poc.msh, fill = T)
+data.table(table(glucose.poc[is.na(as.numeric(Result.Value)), Result.Value]))
+glucose.poc[startsWith(Result.Value, "<"), Result.Value:=1]
+range(as.numeric(glucose.poc$Result.Value), na.rm = T)
+## there are 339 "> 27.8" and 13 ">33.3", now removed ">" from both
+glucose.poc[startsWith(Result.Value, ">"), Result.Value:= str_replace(Result.Value, ">", "")]
+fwrite(data.table(table(glucose.poc[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/glucose.poc.csv")
+glucose.poc[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.glucose.poc.csv")
+
+# ---------------------------- glucose fasting ---------------------------------
+glucose.fasting.smh <- smh.lab[Test.Name=="Glucose Fasting"]
+glucose.fasting.sbk <- sbk.lab[Test.Name=="Glucose - Fasting"]
+glucose.fasting.uhn <- uhn.lab[Test.Item=="Glucose Fasting"&
+                                Test.Name%in%c("Glucose, Fasting-Green",
+                                               "Glucose, Fasting-Grey")]
+glucose.fasting.msh <- msh.lab[Test.ID%in%c("GLFP", "GLUF")]
+
+table(glucose.fasting.msh$Test.Name)
+
+glucose.fasting <- rbind(glucose.fasting.smh,
+                         glucose.fasting.sbk,
+                         glucose.fasting.uhn,
+                         glucose.fasting.msh, fill = T)
+data.table(table(glucose.fasting[is.na(as.numeric(Result.Value)), Result.Value]))
+glucose.fasting[startsWith(Result.Value, "<"), Result.Value:=1]
+range(as.numeric(glucose.fasting$Result.Value), na.rm = T)
+fwrite(data.table(table(glucose.fasting[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/glucose.fasting.csv")
+glucose.fasting[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.glucose.fasting.csv")
+
 
 
 
@@ -330,4 +474,12 @@ crea <- rbind(crea.smh,
 crea[is.na(as.numeric(Result.Value)), Result.Value] %>% table %>% data.table
 crea[startsWith(Result.Value, "<"), Result.Value:=20]
 crea[as.numeric(Result.Value)>40, Site] %>% table 
+fwrite(data.table(table(crea[is.na(as.numeric(Result.Value)), Result.Value])),
+       "H:/GEMINI/Results/DataSummary/nonnum.lab.values/creatinine.csv")
 crea[!is.na(as.numeric(Result.Value))] %>%fwrite("H:/GEMINI/Data/GEMINI/Lab/lab.creatinine.csv")
+
+
+
+gmn.lab <- dbConnect(RSQLite::SQLite(), "C:/Users/guoyi/sqlite/gemini.db")
+dbDisconnect(gmn.lab)
+dbListTables(gmn.lab)

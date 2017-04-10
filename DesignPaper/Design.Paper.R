@@ -8,10 +8,11 @@ smh.adm <- readg(smh, adm)
 sbk.adm <- readg(sbk, adm)
 uhn.adm <- readg(uhn, adm)
 thp.adm <- readg(thp, adm)
-length(unique(c(smh.adm$Hash, sbk.adm$Hash, uhn.adm$Hash, thp.adm$Hash)))       # number of unique patients in cohort
+msh.adm <- readg(msh, adm)
+length(unique(c(smh.adm$Hash, sbk.adm$Hash, uhn.adm$Hash, msh.adm$Hash, thp.adm$Hash)))       # number of unique patients in cohort
 smh.adm$Institution.Number <- "smh"
 sbk.adm$Institution.Number <- "sbk"
-msh.adm <- msh.dad[,.(EncID.new, Institution.Number="msh")]
+msh.adm$Institution.Number <- "msh"
 thp.adm$Institution.Number <- thp.adm$Institution
 adm <- rbind(smh.adm[,.(EncID.new, Institution.Number)],
       sbk.adm[,.(EncID.new, Institution.Number)],
@@ -73,8 +74,8 @@ fwrite(inst.from.by.year, "H:/GEMINI/Results/DesignPaper/instfrom.byyear.csv")
 cbind(table(dad$InstitutionFrom.Type, useNA = "always"),
   table(dad$InstitutionFrom.Type, useNA = "always")/139151)                        # institution from type 
 
-dad[Discharge.Disposition==5, Discharge.Disposition:=4]
-dad[Discharge.Disposition%in%c(3, 8, 9 ,12), Discharge.Disposition:=3]
+#dad[Discharge.Disposition==5, Discharge.Disposition:=4]
+#dad[Discharge.Disposition%in%c(3, 8, 9 ,12), Discharge.Disposition:=3]
 cbind(table(dad$Discharge.Disposition, useNA = "always"),                            # discharge disposition
 table(dad$Discharge.Disposition, useNA = "always")/139151)
 
@@ -87,37 +88,42 @@ dad$Number.of.ALC.Days <- str_replace(dad$Number.of.ALC.Days, ",", "")
 dad$LOS.without.ALC <- dad$LoS - as.numeric(dad$Number.of.ALC.Days)
 median(dad$LOS.without.ALC);IQR(dad$LOS.without.ALC)                            # Length - of - Stay without ALC days
 
-fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
 #---------------------- IP Diag ------------------------------------------------
 rm(list = ls())
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 ip.diag <- readg(gim, ip_diag, 
                  colClasses = list(character = c("EncID.new")))
 #fwrite(ip.diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
 n.comorb <- table(ip.diag$EncID.new)                                          # number of comorbidities
 n.comorb <- data.table(n.comorb)
-dad[, n.comorb:=NULL]
+
 names(n.comorb) <- c("EncID.new", "n.comorb")
 median(n.comorb$n.comorb);IQR(n.comorb$n.comorb)
 dad$EncID.new <- as.character(dad$EncID.new)
 dad <- merge(dad, n.comorb, by = "EncID.new")
 
 library(icd)
-                                                                                # charlson index
-cmd <- icd10_comorbid_quan_deyo(ip.diag, visit_name = "EncID.new",
-                                icd_name = "Diagnosis.Code")
-cci <- data.frame(icd_charlson_from_comorbid(cmd, visit_name = "EncID.new", 
-                                             scoring_system = "charlson"))
-colnames(cci)[1] <- "Charlson.Comorbidity.Index"
-cci$EncID.new <- row.names(cci)
+cci <- readg(gim, cci)
+cci$EncID.new <- as.character(cci$EncID.new)
+dad <- merge(dad, cci, by = "EncID.new", all.x = T, all.y = F)
+                                                                      # charlson index
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
-dad <- merge(dad, cci, by = "EncID.new")
-dad$Charlson.Comorbidity.Index[dad$Charlson.Comorbidity.Index>=3]<-"3+"
-
-fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
-
-cbind(table(dad$Charlson.Comorbidity.Index), table(dad$Charlson.Comorbidity.Index)/139151)
+# cmd <- icd10_comorbid_quan_deyo(ip.diag, visit_name = "EncID.new",
+#                                 icd_name = "Diagnosis.Code")
+# cci <- data.frame(icd_charlson_from_comorbid(cmd, visit_name = "EncID.new", 
+#                                              scoring_system = "charlson"))
+# colnames(cci)[1] <- "Charlson.Comorbidity.Index"
+# cci$EncID.new <- row.names(cci)
+# 
+# dad <- merge(dad, cci, by = "EncID.new")
+# dad$Charlson.Comorbidity.Index[dad$Charlson.Comorbidity.Index>=3]<-"3+"
+# 
+# fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+# 
+# cbind(table(dad$Charlson.Comorbidity.Index), table(dad$Charlson.Comorbidity.Index)/139151)
 # Top Diagnosis Codes
 # ip.diag[Diagnosis.Type=="M", str_sub(Diagnosis.Code, 1, 3)] %>% table %>% 
 #   data.table %>% arrange(desc(N)) -> mrd.freq
@@ -906,3 +912,5 @@ radial.pie(pie3,labels=1:36)
 radial.pie(pie4,labels=1:36)
 # restore the par values
 par(oldpar)
+
+

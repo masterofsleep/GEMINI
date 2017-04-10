@@ -440,4 +440,26 @@ apply(sbk, MARGIN = 2, FUN = function(x) sum(is.na(x)))
 apply(uhn, MARGIN = 2, FUN = function(x) sum(is.na(x)))
 apply(msh, MARGIN = 2, FUN = function(x) sum(is.na(x)))
 apply(thp, MARGIN = 2, FUN = function(x) sum(is.na(x)))
- 
+
+
+# ------------------------- fix dup encounters in msh adm ----------------------
+msh <- readg(msh, adm) %>% unique
+sum(duplicated(msh$EncID.new)) 
+
+msh.adm[duplicated(EncID.new)] -> msh.hcn.ex
+fwrite(msh.hcn.ex, "H:/GEMINI/Results/DataSummary/to.exclude/msh.extra.hcn.csv")
+
+
+msh.adm <- msh.adm[!duplicated(EncID.new)]
+names(msh.adm)[5:8] <- c("Admit.Date", "Admit.Time", "EncID.new", "Hash")
+fwrite(msh.adm, "H:/GEMINI/Data/MSH/CIHI/msh.adm.nophi.csv")
+
+thp.adm <- readg(thp, adm)
+smh.adm <- readg(smh, adm)
+sbk.adm <- readg(sbk, adm)
+uhn.adm <- readg(uhn, adm)
+hcn <- rbind(smh.adm[, .(Hash, EncID.new)],
+             sbk.adm[, .(Hash, EncID.new)],
+             uhn.adm[, .(Hash, EncID.new)],
+             thp.adm[, .(Hash, EncID.new)])
+msh.hcn.ex$newHash%in%hcn$Hash
