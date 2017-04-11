@@ -163,3 +163,21 @@ dev.off()
 png("C:/Users/guoyi/Desktop/to.adm/figures/ICU.uti_cap.png", res = 250, width = 2000, height = 1200)
 plot.phy(cap.co, 20, "Pneumonia", ylab = "ICU Utilization Rate(%)", ave.fun = icuadm)
 dev.off()
+
+
+
+
+
+# -------------------------- median length of stay -----------------------------
+med.los <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = median(x$LOS.without.ALC, na.rm = T))
+}
+png("C:/Users/guoyi/Desktop/to.adm/figures/ave.los_overall.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort, 100, "Overall", ylab = "Average Length-of-Stay (Days)", ave.fun = med.los)
+dev.off()
+png("C:/Users/guoyi/Desktop/to.adm/figures/ave.los_cap.png", res = 250, width = 2000, height = 1200)
+plot.phy(cap.co, 20, "Pneumonia", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
+dev.off()
+
