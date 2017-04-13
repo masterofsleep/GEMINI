@@ -1,29 +1,36 @@
 # ------------------------- final plots ----------------------------------------
+library(gemini)
+library(lme4)
+lib.pa()
+
 cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv")
 all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
 cohort <- cohort[physician!="thp-m-708"]
-cap.co <- cohort[cap==T]
-cap.co[Institution.Number%in%c("thp-m", "thp-c"),
-       ':='(Institution.Number = "thp")]
-cap.co[, physician := paste(Institution.Number, mrp.code.new, sep = "-")]
-plot.phy <- function(data, leastpatient, title, xlab = "physician", 
+# cohort[Institution.Number=="msh", Institution.Number:="A"]
+# cohort[Institution.Number=="sbk", Institution.Number:="B"]
+# cohort[Institution.Number=="smh", Institution.Number:="C"]
+# cohort[Institution.Number=="thp-c", Institution.Number:="D"]
+# cohort[Institution.Number=="thp-m", Institution.Number:="E"]
+# cohort[Institution.Number=="uhn-general", Institution.Number:="F"]
+# cohort[Institution.Number=="uhn-western", Institution.Number:="G"]
+n.pat <- cohort[,.N, by = physician]
+cohort <- cohort[physician%in%n.pat[N>=100, physician]]
+cohort <- cohort[LOS.without.ALC<=30]
+
+
+
+
+plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2){
-  data <- data[!is.na(read.in.30)]
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
-  names(df)[5] <- "phy.ave"
-  df <- df[N>=leastpatient]
+  names(df)[4] <- "phy.ave"
   site.mean <- ddply(data[physician%in%df$physician], ~Institution.Number, .fun = ave.fun)
-  names(site.mean)[5] <- "site.mean"
-  df <- merge(df, site.mean[,c(1,5)], by.x = "site", by.y = "Institution.Number")
+  names(site.mean)[4] <- "site.mean"
+  df <- merge(df, site.mean[,c(1,4)], by.x = "site", by.y = "Institution.Number")
   for(i in unique(df$site)){
     df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
   }
-  mod.read <- lm(phy.ave ~ site + ave.los, df)
-  summary(mod.read)
-  df$phy.ave <- mod.read$residuals + 
-    predict(mod.read, newdata = data.frame(site = df$site, 
-                                           ave.los = df$ave.los))
   p <- ggplot(df, aes(phy, phy.ave, fill = site)) + 
     geom_bar(stat = "identity", width = 0.5) + 
     geom_line(aes(x = phy, y = site.mean), alpha = 0.5,
@@ -49,22 +56,25 @@ plot.phy <- function(data, leastpatient, title, xlab = "physician",
                          alpha = 0.3, width = 2) + 
     # plot the 10% - 90% range
     geom_rect(data = del, aes(x = NULL, y = NULL, xmin = xstart/2 - 1, xmax =  xstart/2 +1, 
-                              ymin = yav-0.4*ave.shift, ymax = yav+0.4*ave.shift), fill = "#EEEEEE") + 
+                              ymin = yav-0.5*ave.shift, ymax = yav+0.5*ave.shift), fill = "#EEEEEE") + 
     geom_text(data = del, aes(x = xstart/2, y = yav, label = ydiff), size = 3) +
     # plot the label for average
-    geom_text(data = del, aes(x = xm-3, y = site.ave + ave.shift, 
+    geom_text(data = del, aes(x = xm-2, y = site.ave + ave.shift, 
                               label = sprintf("%.1f", site.ave)),
               size = 3) 
   print(p)
 }
-
-
-read.rate <- function(x){
+## --------------------------- adjusted AKI ------------------------------------
+inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.csv")
+cohort$aki <- cohort$EncID.new%in%inc[KDIGO%in%c("2", "3"), EncID.new]
+aki.rate <- function(x){
   data.frame(N = nrow(x),
-             ave.los = mean(x$LOS.without.ALC),
              site = x$Institution.Number[1],
-             ave = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100)
+             ave = sum(x$aki, na.rm = T)/nrow(x)*100)
 }
-plot.phy(cohort, 100, "Overall", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
-plot.phy(cap.co, 20, "Pneumonia", ylab = "Re-admission (within 30 days) Rate (%)", ave.fun = read.rate)
+png("aki.rate.overall.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
+         "Proportion of Patients with Hospital-Acquired AKI per Doctor (%)", 
+         ylab = "Proportion of Patients with Hospital-Acquired AKI per Doctor (%)", ave.fun = aki.rate)
+dev.off()
 

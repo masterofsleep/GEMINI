@@ -5,7 +5,14 @@ lib.pa()
 cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv", colClasses = list(character = "EncID.new"))
 all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
 cohort <- cohort[physician!="thp-m-708"]
-n.pat <- cohort[,.N, by = physician]
+n.pat <- cohort[,.N, by = physician]cohort[Institution.Number=="msh", Institution.Number:="A"]
+cohort[Institution.Number=="msh", Institution.Number:="A"]
+cohort[Institution.Number=="sbk", Institution.Number:="B"]
+cohort[Institution.Number=="smh", Institution.Number:="C"]
+cohort[Institution.Number=="thp-c", Institution.Number:="D"]
+cohort[Institution.Number=="thp-m", Institution.Number:="E"]
+cohort[Institution.Number=="uhn-general", Institution.Number:="F"]
+cohort[Institution.Number=="uhn-western", Institution.Number:="G"]
 cohort.100p <- cohort[physician%in%n.pat[N>=100, physician]]
 cohort.100p <- cohort.100p[LOS.without.ALC<=30]
 library(lme4)
@@ -55,9 +62,15 @@ icc <- rbind(icc.age, icc.gender, icc.cci)
 fwrite(icc, "H:/GEMINI/Results/to.administrator/balance.icc.csv")
 
 
+setwd("C:/Users/guoyi/Desktop/to.adm/to.gemini.investigators")
+png("icc.png", res = 200, width = 1600, height = 1000)
 ggplot(icc, aes(x = var, y = (1-icc)*100, fill = site)) + 
   geom_bar(stat = "identity", position = position_dodge(width = 0.5), width = 0.3) +
   #facet_wrap(~site, nrow = 1) + 
   geom_hline(aes(yintercept = 100), linetype = 2) + 
-  theme(axis.title.x = element_blank()) + ylab("")
-       
+  theme(axis.title.x = element_blank()) + 
+  ylab("% of Variation in Patient Characteristic \nUnrelated to Admitting Physician") +
+  xlab("Baseline Characteristics of Patients at Time of Admission") + 
+  annotate(aes("text", x = 2, y = 102, label = "True Tandomization"), 
+           color = "black", alpha = 0.5, size = 3)
+dev.off()       

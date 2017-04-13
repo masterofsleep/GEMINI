@@ -403,14 +403,6 @@ smh.us <- smh.us[!proc_desc_long%in%smh.ir[Interventional==1, Test.Name], EncID.
 smh.ir <- smh.rad[proc_desc_long%in%smh.ir[Interventional==1, Test.Name], EncID.new]
 
 
-
-
-
-
-
-
-
-
 map.sbk <- readxl::read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 1)
 sbk.rad <- readg(sbk.rad, rad.csv)
 
@@ -464,6 +456,8 @@ us.enc <- c(smh.us, sbk.us, uhn.us, msh.us)
 xray.enc <- c(smh.xray, sbk.xray, uhn.xray, msh.xray)
 mri.enc <- c(smh.mri, sbk.mri, uhn.mri, msh.mri)
 ir.enc <- c(smh.ir, sbk.ir, uhn.ir, msh.ir)
+
+
 
 # 104698 from smh, sbk, uhn, msh
 ct.full <- c(ct$N, rep(0, 104698-length(ct$N))) 
