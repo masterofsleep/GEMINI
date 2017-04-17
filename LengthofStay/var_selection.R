@@ -171,11 +171,18 @@ fwrite(data.table(table(los.cohort[,mrp.code])),
 table(los.cohort$site)
 table(los.cohort$LOS_in_10_grps)
 
-
-
+# ---------------------------- 20 group frequency ------------------------------
 los.cohort <- fread("H:/GEMINI/Results/LengthofStay/cohort.los.april07.csv")
 freq.by.20grp <- data.table(table(los.cohort[,.(mrp.code, LOS_in_20_grps)]))[N!=0]
 freq.phy.by.20.grp <- data.table(table(freq.by.20grp$LOS_in_20_grps))
 
 fwrite(freq.by.20grp, "H:/GEMINI/Results/LengthofStay/freq.by.20grp.csv")
 fwrite(freq.phy.by.20.grp, "H:/GEMINI/Results/LengthofStay/freq.phy.by.20.grp.csv")
+
+# ---------------------------- 10 group frequency ------------------------------
+los.cohort <- fread("H:/GEMINI/Results/LengthofStay/cohort.los.april07.csv")
+freq.by.10grp <- data.table(table(los.cohort[,.(mrp.code, LOS_in_10_grps)]))[N!=0]
+freq.phy.by.10.grp <- data.table(table(freq.by.10grp$LOS_in_10_grps))
+
+fwrite(freq.by.10grp, "H:/GEMINI/Results/LengthofStay/freq.by.10grp.csv")
+fwrite(freq.phy.by.10.grp, "H:/GEMINI/Results/LengthofStay/freq.phy.by.10.grp.csv")

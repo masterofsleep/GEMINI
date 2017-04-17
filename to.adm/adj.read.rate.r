@@ -20,14 +20,17 @@ cohort <- cohort[LOS.without.ALC<=30]
 
 
 
-plot.phy <- function(data, title, xlab = "Physician", 
+plot.phy.adj <- function(data, title, xlab = "physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2){
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
-  names(df)[4] <- "phy.ave"
-  site.mean <- ddply(data[physician%in%df$physician], ~Institution.Number, .fun = ave.fun)
-  names(site.mean)[4] <- "site.mean"
-  df <- merge(df, site.mean[,c(1,4)], by.x = "site", by.y = "Institution.Number")
+  names(df)[5] <- "phy.ave"
+  mod <- lm(phy.ave ~ ave.los, df)
+  pred <- predict(mod, newdata = data.frame(ave.los = mean(df$ave.los))) + mod$residuals
+  df$phy.ave <- pred
+  site.mean <- ddply(df, ~site, summarize,
+                     site.mean = mean(phy.ave))
+  df <- merge(df, site.mean, by = "site")
   for(i in unique(df$site)){
     df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
   }
@@ -64,17 +67,43 @@ plot.phy <- function(data, title, xlab = "Physician",
               size = 3) 
   print(p)
 }
+
+
+
+setwd("C:/Users/guoyi/Desktop/to.adm/to.gemini.investigators")
 ## --------------------------- adjusted AKI ------------------------------------
 inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.csv")
 cohort$aki <- cohort$EncID.new%in%inc[KDIGO%in%c("2", "3"), EncID.new]
 aki.rate <- function(x){
   data.frame(N = nrow(x),
+             ave.los = mean(x$LOS.without.ALC),
              site = x$Institution.Number[1],
              ave = sum(x$aki, na.rm = T)/nrow(x)*100)
 }
-png("aki.rate.overall.png", res = 250, width = 2000, height = 1200)
-plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
+png("aki.rate.adjusted.by.los.png", res = 250, width = 2000, height = 1200)
+plot.phy.adj(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
          "Proportion of Patients with Hospital-Acquired AKI per Doctor (%)", 
          ylab = "Proportion of Patients with Hospital-Acquired AKI per Doctor (%)", ave.fun = aki.rate)
 dev.off()
 
+
+# --------------------------- adjusted imaging ---------------------------------
+ctmrius <- fread("C:/Users/guoyi/Desktop/to.adm/n.ctmrius.csv")
+ctmrius$EncID.new <- as.character(ctmrius$EncID.new)
+cohort$EncID.new <- as.character(cohort$EncID.new)
+cohort <- merge(cohort, ctmrius, by = "EncID.new", all.x = T, all.y = F)
+cohort[is.na(N.rad), N.rad:= 0]
+
+n.rad <- function(x){
+  data.frame(N = nrow(x),
+             ave.los = mean(x$LOS.without.ALC), 
+             site = x$Institution.Number[1],
+             ave = sum(x$N.rad)/nrow(x))
+}
+png("n.ctmrius.adjusted.by.los.png", res = 250, width = 2000, height = 1200)
+plot.phy.adj(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
+         "Number of Radiology Tests (CT/MRI/Ultrasound) per Patient per Doctor", 
+         ylab = "Number of Radiology Tests (CT/MRI/Ultrasound) \nper Patient per Doctor", ave.fun = n.rad)
+dev.off()
+
+getwd()
