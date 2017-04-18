@@ -186,3 +186,7 @@ freq.phy.by.10.grp <- data.table(table(freq.by.10grp$LOS_in_10_grps))
 
 fwrite(freq.by.10grp, "H:/GEMINI/Results/LengthofStay/freq.by.10grp.csv")
 fwrite(freq.phy.by.10.grp, "H:/GEMINI/Results/LengthofStay/freq.phy.by.10.grp.csv")
+
+
+
+
