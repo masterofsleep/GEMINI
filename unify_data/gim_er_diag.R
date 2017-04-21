@@ -109,11 +109,15 @@ write.csv(thp, "H:/GEMINI/Data/THP/CIHI/thp.er_diag.nophi.csv",
 #------------------- Jan 13 2017 -----------------------------------------------
 # ------------------------ create merged file ----------------------------------
 
-er.diag <- rbind(smh,
+er_diag <- rbind(smh,
                  sbk,
                  uhn,
                  msh,
-                 thp)
+                 thp) %>% unique
 fwrite(er.diag, "H:/GEMINI/Data/GEMINI/gim.er_diag.csv")
 
-# ----------------remove duplciates in er.diag ---------------------------------
+library(DBI)
+setwd("C:/Users/guoyi/sqlite")
+con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
+dbWriteTable(con, "er_diag", er_diag)
+dbDisconnect(con)

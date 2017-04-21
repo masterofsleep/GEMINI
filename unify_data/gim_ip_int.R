@@ -148,3 +148,68 @@ ddply(uhn.intip, ~EncID.new, summarize,
                              length(Intervention.Episode.Start.Date)))-> count
 sum(count$n.int==count$n.missingdate)
 sum(count$n.no.date.before)/sum(count$n.int)
+
+
+
+#------------------- 2017-04-19 ------------------------------------------------
+# fix intervention date for uhn
+uhn.intip <- readg(uhn, ip_int)[!is.na(Intervention.Occurrence)] %>% 
+  arrange(EncID.new, as.integer(Intervention.Occurrence)) %>% data.table
+uhn.intip.old <- uhn.intip
+for(i in 2:48564){
+  if(!is.na(uhn.intip$Intervention.Episode.Start.Date[i])){
+    last.enc <- uhn.intip$EncID.new[i]
+    last.date <- uhn.intip$Intervention.Episode.Start.Date[i]
+  }else{
+    if(uhn.intip$EncID.new[i]==last.enc)
+      uhn.intip$Intervention.Episode.Start.Date[i] <- last.date
+  }
+}
+
+fwrite(uhn.intip, "H:/GEMINI/Data/UHN/CIHI/uhn.ip_int.nophi.csv")
+# ------------------------ create merged file ----------------------------------
+rm(list = ls())
+
+smh.intip <- readg(smh, ip_int)
+sbk.intip <- readg(sbk, ip_int)[EncID.new!="12NA"]
+uhn.intip <- readg(uhn, ip_int)
+msh.intip <- readg(msh, ip_int)
+thp.intip <- readg(thp, ip_int)
+msh.intip[,Site:=NULL]
+apply(smh.intip, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(sbk.intip, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(uhn.intip, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(msh.intip, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(thp.intip, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+smh.intip[, Intervention.Episode.Start.Date:= mdy(Intervention.Episode.Start.Date)]
+sbk.intip[, Intervention.Episode.Start.Date := mdy(Intervention.Episode.Start.Date)]
+sbk.intip[!is.na(Intervention.Episode.Start.Time), 
+          Intervention.Episode.Start.Time := paste(Intervention.Episode.Start.Time, ":00", sep = "")]
+uhn.intip[,Intervention.Episode.Start.Date:= ymd(Intervention.Episode.Start.Date)]
+msh.intip[, Intervention.Episode.Start.Date:= mdy(Intervention.Episode.Start.Date)]
+thp.intip[!is.na(Intervention.Episode.Start.Date)| !is.na(Intervention.Episode.Start.Time)] -> check
+thp.intip[, Intervention.Episode.Start.Date:= ymd(Intervention.Episode.Start.Date)]
+thp.intip[!is.na(Intervention.Episode.Start.Time), 
+          Intervention.Episode.Start.Time:= 
+            paste(str_sub(Intervention.Episode.Start.Time, 1, 
+                          nchar(Intervention.Episode.Start.Time)-2),
+                  ":", str_sub(Intervention.Episode.Start.Time, -2, -1), sep = "")]
+
+int.ip <- rbind(smh.intip,
+                sbk.intip,
+                uhn.intip,
+                msh.intip,
+                thp.intip) %>% unique
+int.ip <- int.ip[!(is.na(Intervention.Code)&is.na(Intervention.Occurrence))]
+ex <- readg(gim, notgim)
+int.ip <- int.ip[!EncID.new%in%ex$EncID.new]
+int.ip <- int.ip %>% arrange(EncID.new, as.integer(Intervention.Occurrence)) %>% data.table
+int.ip[EncID.new%in%int.ip[is.na(Intervention.Episode.Start.Date), EncID.new]] -> check
+int.ip[duplicated(int.ip[,.(EncID.new, Intervention.Occurrence)])]
+fwrite(int.ip, "H:/GEMINI/Data/GEMINI/gim.ip_int.csv")
+
+library(DBI)
+setwd("C:/Users/guoyi/sqlite")
+con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
+dbWriteTable(con, "ip_int", int.ip)
+dbDisconnect(con)

@@ -163,13 +163,17 @@ fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 
 
 
-# --------------------- scu admission ------------------------------------------
+# --------------------- scu admission ------------------------------------------ # msh need to be marked
 
 library(gemini)
 lib.pa()
 smh.xf <- readg(smh, ip_xfer)[Unit.Code =="1"]
 sbk.xf <- readg(sbk, ip_xfer)[Unit.Code %in%c("1", "2")]
 uhn.xf <- readg(uhn, ip_xfer)[Unit.Code %in%c("1", "2")]
+msh.xf <- readg(msh, xfer)[NURSE_UNIT_DISP=="ICU"]
+table(msh.xf$MED_SERVICE_DISP)
+table(msh.xf$NURSE_UNIT_DISP)
+
 smh.scu <- readg(smh, ip_scu)
 sbk.scu <- readg(sbk, ip_scu)
 uhn.scu <- readg(uhn, ip_scu)
@@ -182,7 +186,8 @@ thp.scu <- thp.scu[SCU.Unit.Number!="99"]
 scu.admit <- unique(c(smh.xf$EncID.new, smh.scu$EncID.new,
                sbk.xf$EncID.new, sbk.scu$EncID.new,
                uhn.xf$EncID.new, uhn.scu$EncID.new,
-               msh.scu$EncID.new, thp.scu$EncID.new))
+               msh.xf$EncID.new, msh.scu$EncID.new, 
+               thp.scu$EncID.new))
 
 
 
@@ -359,21 +364,6 @@ median(xray.int);IQR(xray.int);quantile(xray.int)
 interv[type=="US", EncID.new]%>%table %>% as.numeric-> us.int
 us.int <- c(us.int, rep(0, 139151-length(us.int)))
 median(us.int);IQR(us.int);quantile(us.int)
-
-
-#----------------- Lab (Biochemistry and Hematology) ---------------------------
-rm(list = ls())
-smh <- readg(smh, corelabs)
-sbkip <- readg(sbk, labs_ip)
-sbker <- readg(sbk, labs_er)
-uhn <- readg(uhn.labs, labs.csv)
-
-lab.table <- table(c(smh$EncID.new, sbker$EncID.new, sbkip$EncID.new, uhn$EncID.new))
-lab.table <- c(lab.table, rep(0, 86033-length(lab.table)))
-median(lab.table); IQR(lab.table);                                              # median and IQR of number of lab tests
-
-
-
 
 
 

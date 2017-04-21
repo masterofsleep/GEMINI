@@ -27,7 +27,7 @@ fwrite(msh.er, "H:/GEMINI/Data/MSH/CIHI/msh.er.nophi.csv")
 
 nacrs.ex <- fread("H:/GEMINI/Results/DataSummary/to.exclude/msh.extra.nacrs.csv")
 swdh("MSH/CIHI")
-files <- list.files()
+files <- list.files();files
 for(i in files[c(3, 4, 5, 6)]){
   dat <- fread(i)
   dat <- dat[!paste(EncID.new, NACRSRegistrationNumber)%in%

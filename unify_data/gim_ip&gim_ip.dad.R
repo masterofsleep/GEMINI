@@ -463,3 +463,86 @@ hcn <- rbind(smh.adm[, .(Hash, EncID.new)],
              uhn.adm[, .(Hash, EncID.new)],
              thp.adm[, .(Hash, EncID.new)])
 msh.hcn.ex$newHash%in%hcn$Hash
+
+
+# ------------------------ create merged file for db ---------------------------
+smh.dad <- readg(smh, dad)
+sbk.dad <- readg(sbk, dad)
+uhn.dad <- readg(uhn, dad)
+msh.dad <- readg(msh, dad)
+thp.dad <- readg(thp, dad)
+
+uhn.dad[, Blood.Transfusion.Indicator_DAD:= 
+          ifelse(RBC=="Y"|
+                 Plt=="Y"|
+                 Plasma=="Y"|
+                 Albumin=="Y"|
+                 Other=="Y"|
+                 Auto.Transfusion=="Y", "Y", "N")]
+
+vars <- c("EncID.new", "Gender", "Age",  
+          "Admit.Date", "Admit.Time", "Discharge.Date", 
+          "Discharge.Time", "Admission.Category", "Discharge.Disposition", 
+          "Responsibility.for.Payment", "Number.of.ALC.Days",
+          "InstitutionFrom", "InstitutionFrom.Type", 
+          "InstitutionTo","InstitutionTo.Type", "Readmission", 
+          "Residence.Code", "MostResponsible.DocterService",
+          "Blood.Transfusion.Indicator_DAD")
+dad <- rbind(smh.dad[,vars, with = F],
+             sbk.dad[,vars, with = F],
+             uhn.dad[,vars, with = F],
+             msh.dad[,vars, with = F],
+             thp.dad[,vars, with = F])
+ex <- readg(gim, notgim)
+dad <- dad[!EncID.new%in%ex$EncID.new]
+
+con = dbConnect(SQLite(), dbname = "gemini.db")
+dbWriteTable(con, "dad", dad)
+
+dbListTables(con)
+test <- dbReadTable(con, "dad")
+
+
+
+
+
+thp.adm <- readg(thp, adm)
+smh.adm <- readg(smh, adm)
+sbk.adm <- readg(sbk, adm)
+uhn.adm <- readg(uhn, adm)
+msh.adm <- readg(msh, adm)
+
+
+
+adm <- rbind(smh.adm[,.(EncID.new, NACRSRegistrationNumber,
+                        Total.Direct.Cost, Total.Indirect.Cost, Total.Cost,
+                        Hash)],
+             sbk.adm[,.(EncID.new, NACRSRegistrationNumber,
+                        Total.Direct.Cost, Total.Indirect.Cost, Total.Cost,
+                        Hash)],
+             uhn.adm[,.(EncID.new, NACRSRegistrationNumber,
+                        Total.Direct.Cost, Total.Indirect.Cost, Total.Cost,
+                        Hash)],
+             msh.adm[,.(EncID.new,
+                        Hash)],
+             thp.adm[,.(EncID.new, NACRSRegistrationNumber,
+                        Total.Direct.Cost, Total.Indirect.Cost, Total.Cost,
+                        Hash)], fill = T)
+adm <- adm[!EncID.new%in%ex$EncID.new]
+library(RSQLite)
+library(DBI)
+setwd("C:/Users/guoyi/sqlite")
+con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
+dbListTables(con)
+dbDisconnect(con)
+adm <- dbReadTable(con, "adm")
+fwrite(adm, "H:/GEMINI/Data/GEMINI/gim.adm.csv")
+dad <- dbReadTable(con, "dad") %>% data.table
+dad[, Length.of.Stay := as.numeric(ymd_hm(paste(Discharge.Date, Discharge.Time)) - 
+      ymd_hm(paste(Admit.Date, Admit.Time)))/(3600*24)]
+dad[Number.of.ALC.Days=="1,105", Number.of.ALC.Days:=1105]
+dbWriteTable(con, "dad", dad, overwrite = T)
+fwrite(dad, "H:/GEMINI/Data/GEMINI/gim.dad.csv")
+
+
+apply(dad, 2, function(x)sum(is.na(x)))

@@ -112,3 +112,19 @@ fwrite(cci, "H:/GEMINI/Data/GEMINI/gim.ip_cci.csv")
 ip.diag[duplicated(ip.diag)|duplicated(ip.diag, fromLast = T)] -> check
 ip.diag <- unique(ip.diag)
 fwrite(ip.diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
+
+
+# ------------------- ip_diag --------------------------------------------------
+sbk[, Site:=NULL]
+msh[, Site:= NULL]
+ip_diag <- rbind(smh, sbk, uhn, thp, msh) %>% unique
+ex <- readg(gim, notgim)
+ip_diag <- ip_diag[!EncID.new%in%ex$EncID.new]
+length(unique(ip_diag$EncID.new))
+fwrite(ip_diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
+
+library(DBI)
+setwd("C:/Users/guoyi/sqlite")
+con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
+dbWriteTable(con, "ip_diag", ip_diag)
+dbDisconnect(con)

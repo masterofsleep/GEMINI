@@ -199,3 +199,13 @@ sum(uhn.scu$EncID.new%in%uhn.xf$EncID.new)
 
 
 
+
+
+# -------------------------------- msh -----------------------------------------
+msh.xf <- readg(msh, xfer)
+msh.scu <- readg(msh, ip_scu)
+data.table(table(msh.xf[,.(NURSE_UNIT_DISP, MED_SERVICE_DISP)], useNA = "ifany"))[N!=0]%>%
+  fwrite("H:/GEMINI/Results/Check/msh.xfer.freq.csv")
+
+compare.sets(msh.xf[NURSE_UNIT_DISP=="ICU", EncID.new],
+             msh.scu$EncID.new)

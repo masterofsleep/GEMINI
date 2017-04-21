@@ -325,3 +325,67 @@ vars <- names(cohort)[c(2:4,6:11,13,14:19)]
 
 CreateTableOne(vars = vars, factorVars = cat.var, data = cohort)
 
+
+# ---------------------------- 04-21 -------------------------------------------
+# ------------------- new vars required by Nikki -------------------------------
+table(str_sub(cohort$EncID.new, 1, 2))
+
+table(cohort$EncID.new) %>% table
+smh.echo <- readg(smh, echo, dt = T)[EncID.new%in%cohort$EncID.new]
+sbk.echo <- readg(sbk, echo, dt = T)[EncID.new%in%cohort$EncID.new]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="AM"&
+           str_sub(`Test Performed Date/time`, 13, 14)<12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20))]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="AM"&
+           str_sub(`Test Performed Date/time`, 13, 14)==12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20)) - hours(12)]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
+           str_sub(`Test Performed Date/time`, 13, 14)<12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20)) + hours(12)]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
+           str_sub(`Test Performed Date/time`, 13, 14)==12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20))]
+table(smh.echo$ProcedureName)
+table(sbk.echo$TestName)
+
+# number of people got TEE
+smh.echo[ProcedureName=="Transesophageal Echo", EncID.new] %>% unique %>% length
+sbk.echo[TestName=="Echo (Transesophageal)", EncID.new] %>% unique %>% length
+
+# counts of how many people got 0, 1, 2, 3, 4, echos
+table(smh.echo$EncID.new) %>% table
+table(sbk.echo$EncID.new) %>% table
+
+smh.echo[ProcedureName=="UNK"]
+
+
+
+# calculate time to first echo
+smh.echo[, time.to.first.echo :=  as.numeric(dmy(StudyStartDateTime)- dmy(ADMITDATE))]
+sbk.echo[, time.to.first.echo := as.numeric(Performed.DtTm-
+                           ymd_hm(paste(Admit.Date, Admit.Time)))/(24*60)]
+smh.firstecho <- smh.echo %>% arrange(EncID.new, dmy(StudyStartDateTime)) %>% 
+  filter(!duplicated(EncID.new))
+sbk.firstecho <- sbk.echo %>% arrange(EncID.new, 
+                                      mdy(str_sub(`Test Performed Date/time`, 1, 11))) %>%
+  filter(!duplicated(EncID.new))
+summary(smh.firstecho$time.to.first.echo)                                        
+summary(sbk.firstecho$time.to.first.echo)                                        
+
+
+# Track readmission
+hcn <- rbind(readg(smh, adm)[,.(Hash, EncID.new)],
+             readg(sbk, adm)[,.(Hash, EncID.new)])
+cohort <- merge(cohort, hcn, by = "EncID.new")
+multi.adm <- cohort[, .N, by = Hash]
+
+cohort[Hash%in%multi.adm$Hash] %>% arrange(Hash)-> check
+table(multi.adm$N)
+
+# track death
+smh.death <- fread("R:/GEMINI-DREAM/processed_030117/SMH chart pulls COMBINED_processed.csv")[afib == 500]
+sbk.death <- fread("R:/GEMINI-DREAM/processed_030117/Combined SBK Chart Pulls Deidentified_processed NG.csv")[afib==500]
+smh.death[,EncID.new := paste("11", EncID.new, sep = "")]
+sbk.death[,EncID.new := paste("12", `encoutner ID`, sep = "")]
+
+cohort[EncID.new%in%smh.death$EncID.new]
