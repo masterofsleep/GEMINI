@@ -5,7 +5,8 @@ lib.pa()
 cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv", colClasses = list(character = "EncID.new"))
 all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
 cohort <- cohort[physician!="thp-m-708"]
-n.pat <- cohort[,.N, by = physician]cohort[Institution.Number=="msh", Institution.Number:="A"]
+n.pat <- cohort[,.N, by = physician]
+cohort[Institution.Number=="msh", Institution.Number:="A"]
 cohort[Institution.Number=="msh", Institution.Number:="A"]
 cohort[Institution.Number=="sbk", Institution.Number:="B"]
 cohort[Institution.Number=="smh", Institution.Number:="C"]
@@ -114,3 +115,17 @@ ggplot(diag.icc, aes(x = var, y = (1-icc)*100, fill = site)) +
   xlab("Diagnosis Defined by Quality-Based Procedures") + 
   geom_text(aes(x = 2.5, y = 102, label = "True Randomization"))
 dev.off()
+
+
+
+# weekday vs weekend
+# weekday vs weekend
+cohort$weekday <- wday(ymd(cohort$Admit.Date))
+cohort[, wkd := ifelse(weekday%in%c(2:6), 1, 0)]
+
+find.icc(cohort, "wkd")
+
+
+cohort[, dtime := as.numeric(str_sub(cohort$Admit.Time, -5, -4))>=7&
+                           as.numeric(str_sub(cohort$Admit.Time, -5, -4))<17]
+find.icc(cohort, "dtime")

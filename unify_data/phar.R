@@ -284,3 +284,6 @@ unique(uhn.old[,.(Order_No, AHFS, Route_Code)]) -> check
 
 msh <- readg(msh, phar)
 apply(msh, 2, function(x)sum(is.na(x)))
+
+uhn <- readg(uhn, phar)
+apply(uhn, 2, function(x)sum(is.na(x)))

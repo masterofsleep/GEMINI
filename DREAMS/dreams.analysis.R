@@ -269,9 +269,21 @@ sum(check$coronary.artery.disease)
 setwd("R:/GEMINI-DREAM/DATA FINAL")
 smh.chart <- fread("SMH chart pulls COMBINED_processed_newvar March 25.csv")
 sbk.chart <- fread("Combined SBK Chart Pulls Deidentified_processed NG_newvar.csv")
+
+# track death
+smh.death <- fread("R:/GEMINI-DREAM/processed_030117/SMH chart pulls COMBINED_processed.csv")[afib == 500]
+sbk.death <- fread("R:/GEMINI-DREAM/processed_030117/Combined SBK Chart Pulls Deidentified_processed NG.csv")[afib==500]
+names(sbk.death) <- names(sbk.chart)[1:12]
+smh.chart <- rbind(smh.chart, smh.death, fill = T)
+sbk.chart <- rbind(sbk.chart, sbk.death, fill = T)
 #check number of dups
 sum(duplicated(smh.chart$EncID.new))
 sum(duplicated(sbk.chart$encoutnerID))
+smh.chart[, ACNEW := ifelse(Acprior==10&ACDC%in%c(1:9),
+                            1, 2)]
+sbk.chart[, ACNEW := ifelse(ACprior==10&ACDC%in%c(1:9),
+                            1, 2)]
+
 
 unique(smh.chart[,c(1:11,15), with = F])[duplicated(EncID.new)|duplicated(EncID.new, fromLast = T)]
 unique(sbk.chart[,c(1:10,13), with = F])[duplicated(encoutnerID)|duplicated(encoutnerID, fromLast = T)]
@@ -318,12 +330,39 @@ cohort$EncID.new <- as.character(cohort$EncID.new)
 cohort <- merge(cohort, chartpull, by = "EncID.new")
 
 
+
+hcn <- rbind(fread("H:/GEMINI/DataBackup/Data170214/SMH/CIHI/smh.adm.nophi.csv")[,.(Hash, EncID.new)],
+             fread("H:/GEMINI/DataBackup/Data170214/SBK/CIHI/sbk.adm.nophi.csv")[,.(Hash, EncID.new)])
+
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+
+cohort <- merge(cohort, hcn, by = "EncID.new", all.x = T, all.y = F)
+dad$EncID.new <- as.character(dad$EncID.new)
+cohort <- merge(cohort, dad[,.(Admit.Date, EncID.new, Discharge.Disposition)],by = "EncID.new", all.x = T, all.y = F)
+cohort <- cohort %>% arrange(Hash, ymd(Admit.Date)) %>% data.table
+cohort[,.N, by = Hash][N>5]
+
+cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
+
+table(cohort[,.(ACDC, Discharge.Disposition)])
+
+fwrite(cohort, "H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
+
+
+cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
+
 library(tableone)
 names(cohort)
 cat.var <- names(cohort)[c(4,6:11,13,14:19)]
-vars <- names(cohort)[c(2:4,6:11,13,14:19)]
+vars <- names(cohort)[c(2:4,6:11,13,14:19, 23)]
+cohort$site <- str_sub(cohort$EncID.new, 1, 2)
 
-CreateTableOne(vars = vars, factorVars = cat.var, data = cohort)
+cohort[,':='(antipltprior = ifelse(antipltprior<10, 1, antipltprior),
+             antipltDC = ifelse(antipltDC<10, 1, antipltDC),
+             ACprior = ifelse(ACprior<10, 1, ACprior),
+             ACDC = ifelse(ACDC<10, 1, ACDC),
+             ACNEW = factor(ACNEW, levels = c("2", "1")))]
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort, strata = 'site')
 
 
 # ---------------------------- 04-21 -------------------------------------------
@@ -382,10 +421,80 @@ multi.adm <- cohort[, .N, by = Hash]
 cohort[Hash%in%multi.adm$Hash] %>% arrange(Hash)-> check
 table(multi.adm$N)
 
-# track death
-smh.death <- fread("R:/GEMINI-DREAM/processed_030117/SMH chart pulls COMBINED_processed.csv")[afib == 500]
-sbk.death <- fread("R:/GEMINI-DREAM/processed_030117/Combined SBK Chart Pulls Deidentified_processed NG.csv")[afib==500]
-smh.death[,EncID.new := paste("11", EncID.new, sep = "")]
-sbk.death[,EncID.new := paste("12", `encoutner ID`, sep = "")]
+table(str_sub(cohort$EncID.new, 1, 2), cohort$afib.y)
 
-cohort[EncID.new%in%smh.death$EncID.new]
+
+
+
+
+# ------------------ new variables required by Mike ----------------------------
+setwd("R:/GEMINI-DREAM/DATA FINAL")
+smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
+sum(duplicated(smh.echo$EncID.new))
+df1<- unique(smh.echo[,c(1:19, 24:34), with = F])
+df1[duplicated(df1[,.(EncID.new, Conclusions)])|duplicated(df1[,.(EncID.new, Conclusions)], fromLast = T)]
+
+sbk.echo <- readxl::read_excel("SBK ECHO COMBINED_YG_march14_NG March 15.xlsx")%>%data.table
+df2<- unique(sbk.echo[,-5, with = F])
+df[duplicated(df[,.(EncID.new, Report)])|duplicated(df[,.(EncID.new, Report)], fromLast = T)]
+df1[, EncID.new := paste("11", EncID.new, sep = "")]
+df2[, EncID.new := paste("12", EncID.new, sep = "")]
+names(df1)
+names(df2)
+# numbers with PFO
+name <- "number with PFO"
+smh <- sum(cohort$EncID.new%in%
+      c(df1[PFOy=="1", EncID.new]))
+sbk <- sum(cohort$EncID.new%in%
+      c(df2[PFO=="1", EncID.new]))
+
+# PFO clos?
+
+
+# number of DVT
+name <- c(name, "number with DVT diagnosed")
+smh <- c(smh, sum(cohort$EncID.new%in%
+      c(df1[DVTdop=="1", EncID.new])))
+sbk <- c(sbk, sum(cohort$EncID.new%in%
+      c(df2[DVTdop=="1", EncID.new])))
+
+# number of thrombus
+name <- c(name, "number with thrombus")
+smh <- c(smh, sum(cohort$EncID.new%in%
+      c(df1[LALVTHROMBY=="1", EncID.new])))
+sbk <- c(sbk, sum(cohort$EncID.new%in%
+      c(df2[LALVTHROMBY=="1", EncID.new])))
+
+# number of anticoagulation initiated
+table(cohort$ACNEW)
+name <- c(name, "number with anticoagulation initiated")
+smh <- c(smh, sum(cohort$site=="11"&cohort$ACNEW=="1"))
+sbk <- c(sbk, sum(cohort$site=="12"&cohort$ACNEW=="1"))
+
+# veg
+name <- c(name, "number with vegetation")
+smh <- c(smh, sum(cohort$EncID.new%in%df1[VegY=="1", EncID.new]))
+sbk <- c(sbk, sum(cohort$EncID.new%in%df2[VegY=="1", EncID.new]))
+
+# antibiotic started
+name <- c(name, "number with antibiotics started")
+smh <- c(smh, sum(cohort$EncID.new%in%df1[IVAB=="1", EncID.new]))
+sbk <- c(sbk, sum(cohort$EncID.new%in%df2[IVAB=="1", EncID.new]))
+
+smh <- paste(smh, " (", sprintf("%.1f", smh/649*100), ")")
+sbk <- paste(sbk, " (", sprintf("%.1f", sbk/845*100), ")")
+
+df <- data.table(name, smh, sbk)
+names(df) <- c("variable", "smh (%)", "sbk (%)")
+df %>%
+  fwrite("H:/GEMINI/Results/DREAM/201704/numbers.for.mike.csv")
+
+table(df1$IVAB)
+table(df2$IVAB)
+
+
+cohort[afib.y=="500", EncID.new]
+all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+compare.sets(cohort[afib.y=="500", EncID.new], all.dad[Discharge.Disposition=="7"&EncID.new%in%cohort$EncID.new, EncID.new])
+
+sum(cohort$EncID.new%in%all.dad$EncID.new)

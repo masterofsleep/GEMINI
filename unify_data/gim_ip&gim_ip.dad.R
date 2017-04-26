@@ -546,3 +546,11 @@ fwrite(dad, "H:/GEMINI/Data/GEMINI/gim.dad.csv")
 
 
 apply(dad, 2, function(x)sum(is.na(x)))
+
+
+# ----------------------- check hash for missing values ------------------------
+adm <- readg(gim, adm)
+nvisit = adm[,.N, by = Hash]
+nvisit <- nvisit[order(N, decreasing = T)]
+
+fwrite(nvisit[N>10], "H:/GEMINI/Results/Check/hash.freq.csv")
