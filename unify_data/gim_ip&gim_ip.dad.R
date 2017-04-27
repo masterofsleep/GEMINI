@@ -554,3 +554,20 @@ nvisit = adm[,.N, by = Hash]
 nvisit <- nvisit[order(N, decreasing = T)]
 
 fwrite(nvisit[N>10], "H:/GEMINI/Results/Check/hash.freq.csv")
+
+nvisit <- fread("H:/GEMINI/Results/Check/hash.freq.csv")
+dad <- readg(gim, dad)
+demo<- merge(adm, dad, by = "EncID.new")
+
+demo[Hash%in%nvisit$Hash[3]] -> check
+for(i in nvisit$Hash){
+  print(max(demo[Hash==i, Age])-min(demo[Hash==i, Age]))
+  if(length(unique(demo[Hash==i, Gender]))>1)
+    print(i)
+}
+adm[Hash%in%nvisit$Hash[c(1,2,4)], Hash := NA]
+setwd("C:/Users/guoyi/sqlite")
+con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
+dbListTables(con)
+dbDisconnect(con)
+fwrite(adm, "H:/GEMINI/Data/GEMINI/gim.adm.csv")

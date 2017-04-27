@@ -90,6 +90,8 @@ median(dad$LOS.without.ALC);IQR(dad$LOS.without.ALC)                            
 
 fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
+
+
 #---------------------- IP Diag ------------------------------------------------
 rm(list = ls())
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
@@ -165,11 +167,12 @@ fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
 
 # --------------------- scu admission ------------------------------------------ # msh need to be marked
 
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 library(gemini)
 lib.pa()
 smh.xf <- readg(smh, ip_xfer)[Unit.Code =="1"]
-sbk.xf <- readg(sbk, ip_xfer)[Unit.Code %in%c("1", "2")]
-uhn.xf <- readg(uhn, ip_xfer)[Unit.Code %in%c("1", "2")]
+sbk.xf <- readg(sbk, ip_xfer)[Unit.Code %in%c("1")]
+uhn.xf <- readg(uhn, ip_xfer)[Unit.Code %in%c("1")]
 msh.xf <- readg(msh, xfer)[NURSE_UNIT_DISP=="ICU"]
 table(msh.xf$MED_SERVICE_DISP)
 table(msh.xf$NURSE_UNIT_DISP)
@@ -192,8 +195,68 @@ scu.admit <- unique(c(smh.xf$EncID.new, smh.scu$EncID.new,
 
 
 dad$SCU.adm <- as.numeric(dad$EncID.new%in%scu.admit)
-names(dad)[17] <- "Diag.Code"
-fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+
+
+
+
+
+# remove palliative care from los
+
+xfer.smh <- readg(smh, xfer)
+palli <- xfer.smh[Unit.Code == 7]
+palli <- palli %>% arrange(EncID.new, ymd_hm(paste(Date.Check.in, Time.Check.in))) %>% data.table
+palli <- palli[!duplicated(EncID.new)]
+dad <- merge(dad, palli[,.(EncID.new = as.integer(EncID.new), Date.Check.in, Time.Check.in)],
+             by = "EncID.new", all.x = T)
+dad[!is.na(Date.Check.in)] -> check
+check <- check[,c(1,3:10, 18,19), with = F]
+check1 <- check[Number.of.ALC.Days>0, .(Number.of.ALC.Days,
+                              as.numeric(ymd(Discharge.Date) - ymd(Date.Check.in)),
+                              as.numeric(ymd(Discharge.Date) - ymd(Admit.Date))+Number.of.ALC.Days,
+                              Discharge.Disposition)]
+
+# ALC days - days in PCU 
+# Ignore ALC, just use admitting date to transfer to PCU
+
+
+dad[!is.na(Date.Check.in)], ":="(LOS.without.ALC = as.numeric( 
+  ymd_hm(paste(Date.Check.in, Time.Check.in)) - 
+    ymd_hm(paste(Admit.Date, Admit.Time)))/(3600*24)
+)]
+dad[,':='(Date.Check.in = NULL,
+          Time.Check.in = NULL)]
+
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+
+
+
+# ----------------------- readmission in 30 days -------------------------------
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+adm <- readg(gim, adm)
+dad <- merge(dad, adm[,.(Hash, EncID.new)], by = "EncID.new")
+dad <- dad %>% arrange(Hash, ymd_hm(paste(Discharge.Date, Discharge.Time)))
+dad <- data.table(dad)
+dad <- dad[!duplicated(EncID.new)]
+
+time.to.next.admission<- c(as.numeric(dad[2:136389, ymd_hm(paste(Admit.Date, Admit.Time))]-
+                                        dad[1:136388, ymd_hm(paste(Discharge.Date, Discharge.Time))])/(3600*24))
+dad$time.to.next.admission <- c(time.to.next.admission, NA)
+
+dad[(!duplicated(Hash, fromLast = T))|is.na(Hash), time.to.next.admission :=NA]
+dad[,.(Hash, Admit.Date, time.to.next.admission)] -> check
+
+
+dad[time.to.next.admission<=30, read.in.30 := TRUE]
+dad[is.na(read.in.30), read.in.30 := FALSE]
+dad[(ymd(Discharge.Date)>=(ymd("2015-04-01")-days(30)))|is.na(Hash), read.in.30:=NA]
+
+table(dad$read.in.30, useNA = "ifany")
+
+table(dad[is.na(Hash), Institution.Number])
+
+dad[ymd(Discharge.Date)>=(ymd("2015-04-01")-days(30)), Discharge.Date]
+dad[read.in.30==T, time.to.next.admission]
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
 #----------------------- table 3 -----------------------------------------------
 

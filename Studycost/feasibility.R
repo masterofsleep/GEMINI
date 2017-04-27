@@ -231,3 +231,41 @@ lab.notinlist.new <- lab.notinlist.new[(is.na(`Listed Test Name`)|`Listed Test N
 
 fwrite(lab.notinlist.new[order(N, decreasing = T)], 
        "H:/GEMINI/Results/Studycost/lab.cannot.be.identified.in.pricelist.csv")
+
+
+
+
+
+
+# ---------------------------- 2017-04-27 --------------------------------------
+price_lab <- fread("H:/GEMINI/Results/Studycost/coded/lab cost_ASW.csv")
+price_rad <- fread("H:/GEMINI/Results/Studycost/coded/rad cost_ASW.csv")
+
+sum(price_lab[unit.cost!="", N])/sum(price_lab[, N])
+sum(price_rad[!is.na(unit.cost), N])/sum(price_rad[, N])
+
+sbk.rad <- readg(sbk, rad.csv)
+sbk.lab <- rbind(readg(sbk, labs_ip),
+                 readg(sbk, labs_er))
+
+price_lab[is.na(total.cost)&!is.na(as.numeric(unit.cost)), total.cost:=unit.cost*N]
+price_rad[is.na(total.cost)&!is.na(as.numeric(unit.cost)), total.cost:=unit.cost*N]
+
+
+rad.nhos <- sbk.rad[, .(n_hospitalization = length(unique(EncID.new))), by = .(Test.Name, Test.Code)]
+lab.nhos <- sbk.lab[, .(n_hospitalization = length(unique(EncID.new))), by = .(Test.Name, Test.ID)]
+
+price_lab <- merge(price_lab, lab.nhos, by = c("Test.Name", "Test.ID"))
+price_rad <- merge(price_rad, rad.nhos, by = c("Test.Name", "Test.Code"))
+
+price_lab <- price_lab[order(total.cost, decreasing = T), 
+                       .(Test.Name, Test.ID, N, n_hospitalization,
+                         listed.name, listed.id,
+                         unit.cost, total.cost)]
+price_rad <- price_rad[order(total.cost, decreasing = T), 
+                       .(Test.Name, Test.Code, N, n_hospitalization,
+                         listed.name, listed.code,
+                         unit.cost, total.cost)]
+
+fwrite(price_lab, "H:/GEMINI/Results/Studycost/coded/feasibility.lab.csv")
+fwrite(price_rad, "H:/GEMINI/Results/Studycost/coded/feasibility.rad.csv")

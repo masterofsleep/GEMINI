@@ -428,6 +428,7 @@ table(str_sub(cohort$EncID.new, 1, 2), cohort$afib.y)
 
 
 # ------------------ new variables required by Mike ----------------------------
+cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
 setwd("R:/GEMINI-DREAM/DATA FINAL")
 smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
 sum(duplicated(smh.echo$EncID.new))
@@ -449,7 +450,11 @@ sbk <- sum(cohort$EncID.new%in%
       c(df2[PFO=="1", EncID.new]))
 
 # PFO clos?
-
+name <- c(name, "number with PFO closure")
+smh <- c(smh, sum(cohort$EncID.new%in%
+             df1[repair=="1", EncID.new]))
+sbk <- c(sbk, sum(cohort$EncID.new%in%
+             df2[repair=="1", EncID.new]))
 
 # number of DVT
 name <- c(name, "number with DVT diagnosed")
@@ -468,8 +473,8 @@ sbk <- c(sbk, sum(cohort$EncID.new%in%
 # number of anticoagulation initiated
 table(cohort$ACNEW)
 name <- c(name, "number with anticoagulation initiated")
-smh <- c(smh, sum(cohort$site=="11"&cohort$ACNEW=="1"))
-sbk <- c(sbk, sum(cohort$site=="12"&cohort$ACNEW=="1"))
+smh <- c(smh, sum(cohort$site=="11"&cohort$ACNEW==1))
+sbk <- c(sbk, sum(cohort$site=="12"&cohort$ACNEW==1))
 
 # veg
 name <- c(name, "number with vegetation")
@@ -486,6 +491,7 @@ sbk <- paste(sbk, " (", sprintf("%.1f", sbk/845*100), ")")
 
 df <- data.table(name, smh, sbk)
 names(df) <- c("variable", "smh (%)", "sbk (%)")
+df
 df %>%
   fwrite("H:/GEMINI/Results/DREAM/201704/numbers.for.mike.csv")
 
