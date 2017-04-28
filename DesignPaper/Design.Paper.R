@@ -258,9 +258,37 @@ dad[ymd(Discharge.Date)>=(ymd("2015-04-01")-days(30)), Discharge.Date]
 dad[read.in.30==T, time.to.next.admission]
 fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+
+#
+dad[Institution.Number=="M", Institution.Number:="THP-M"]
+dad[Institution.Number=="C", Institution.Number:="THP-C"]
+dad[Institution.Number=="54265", Institution.Number:="UHN-TG"]
+dad[Institution.Number=="54266", Institution.Number:="UHN-TW"]
+dad[Institution.Number=="sbk", Institution.Number:="SHSC"]
+dad[Institution.Number=="msh", Institution.Number:="SHS"]
+dad[Institution.Number=="smh", Institution.Number:="SMH"]
+dad[ymd(Discharge.Date)>=ymd("2010-04-01")&ymd(Discharge.Date)<ymd("2011-04-01"),
+    fiscal.year := "2010"]
+dad[ymd(Discharge.Date)>=ymd("2011-04-01")&ymd(Discharge.Date)<ymd("2012-04-01"),
+    fiscal.year := "2011"]
+dad[ymd(Discharge.Date)>=ymd("2012-04-01")&ymd(Discharge.Date)<ymd("2013-04-01"),
+    fiscal.year := "2012"]
+dad[ymd(Discharge.Date)>=ymd("2013-04-01")&ymd(Discharge.Date)<ymd("2014-04-01"),
+    fiscal.year := "2013"]
+dad[ymd(Discharge.Date)>=ymd("2014-04-01")&ymd(Discharge.Date)<ymd("2015-04-01"),
+    fiscal.year := "2014"]
+dad[ymd(Discharge.Date)>=ymd("2015-04-01")&ymd(Discharge.Date)<ymd("2016-04-01"),
+    fiscal.year := "2015"]
+
+table(dad$fiscal.year, dad$Institution.Number)
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+
+
+# find fiscal year of discharge
 #----------------------- table 3 -----------------------------------------------
 
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 dad$EncID.new <- as.character(dad$EncID.new)
 
 # Find Cost
