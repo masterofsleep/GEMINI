@@ -174,4 +174,46 @@ fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")
 write.csv(c(watson.enc.sbk, watson.enc.smh, watson.enc.uhn), 
           "H:/GEMINI/Results/WATSON/watson.enc.csv")
 
+# ---------------------------- MSH ---------------------------------------------
+msh <- readg(msh, adm)
+set.seed(100)
+watson.enc.msh <- sample(msh$EncID.new, 1000)
+write.csv(watson.enc.msh, "H:/GEMINI/Results/delirium/msh.enc1000.csv")
+
+
+msh.ctpe.names <- c("Angiography Body Diagnostic",
+                    "Angiography Body Angiogram Venous Subclavian",
+                    "Angiography Body Angiogram Thoracic/Abdominal/Pelvic",
+                    "CT Angiography Pulmonary Arteries",
+                    "CT Angiography Dissection Chest",
+                    "CT Chest")
+
+msh.vq.names <- c("NM Perfusion Lung Scan",
+                  "NM Quantitative Perfusion Lung Scan",
+                  "NM Quantitative Ventilation Perfusion Lung Scan",
+                  "NM V/Q Ventilation Perfusion Lung Scan")
+
+
+msh.du.names <- c("US Vascular Peripheral Vein Doppler",
+                  "US Vascular Peripheral Vein Doppler Lower Extremity",
+                  "US Vascular Peripheral Vein Doppler Upper Extremity",
+                  "US Calf",
+                  "US Extremity",
+                  "US Thigh",
+                  "US Vascular Jugular Vein Doppler")
+
+msh.radip <- readg(msh, rad_ip, dt = T)
+msh.rader <- readg(msh, rad_er, dt = T)
+msh.rad <- rbind(msh.rader, msh.radip)
+msh.rad[,after72 := ymd_hm(OrderDateTime)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
+msh.ctpa <- msh.rad[ProcedureName%in%msh.ctpe.names&EncID.new%in%watson.enc.msh,
+                    .(EncID.new, ProcedureName, ReportText, after72)]
+msh.du <- msh.rad[ProcedureName%in%msh.du.names&EncID.new%in%watson.enc.msh,
+                  .(EncID.new, ProcedureName, ReportText,  after72)]
+msh.vq <- msh.rad[ProcedureName%in%msh.vq.names&EncID.new%in%watson.enc.msh,
+                  .(EncID.new, ProcedureName, ReportText, after72)]
+
+fwrite(msh.ctpa, "H:/GEMINI/Results/WATSON/msh.ctpa.csv")
+fwrite(msh.du, "H:/GEMINI/Results/WATSON/msh.du.csv")
+fwrite(msh.vq, "H:/GEMINI/Results/WATSON/msh.vq.csv")
 

@@ -384,12 +384,14 @@ sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
 sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
            str_sub(`Test Performed Date/time`, 13, 14)==12, 
          Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20))]
-table(smh.echo$ProcedureName)
-table(sbk.echo$TestName)
+data.table(table(smh.echo$EncID.new))
+
 
 # number of people got TEE
-smh.echo[ProcedureName=="Transesophageal Echo", EncID.new] %>% unique %>% length
-sbk.echo[TestName=="Echo (Transesophageal)", EncID.new] %>% unique %>% length
+smh.echo[ProcedureName=="Transesophageal Echo", EncID.new] %>% table %>% table
+649 - 26
+sbk.echo[TestName=="Echo (Transesophageal)", EncID.new] %>% table %>% table
+845 - 16
 
 # counts of how many people got 0, 1, 2, 3, 4, echos
 table(smh.echo$EncID.new) %>% table
@@ -397,7 +399,7 @@ table(sbk.echo$EncID.new) %>% table
 
 smh.echo[ProcedureName=="UNK"]
 
-
+str_sub(cohort[afib.y==500, EncID.new], 1, 2) %>% table
 
 # calculate time to first echo
 smh.echo[, time.to.first.echo :=  as.numeric(dmy(StudyStartDateTime)- dmy(ADMITDATE))]
@@ -442,56 +444,83 @@ df1[, EncID.new := paste("11", EncID.new, sep = "")]
 df2[, EncID.new := paste("12", EncID.new, sep = "")]
 names(df1)
 names(df2)
-# numbers with PFO
-name <- "number with PFO"
-smh <- sum(cohort$EncID.new%in%
-      c(df1[PFOy=="1", EncID.new]))
-sbk <- sum(cohort$EncID.new%in%
-      c(df2[PFO=="1", EncID.new]))
 
-# PFO clos?
-name <- c(name, "number with PFO closure")
-smh <- c(smh, sum(cohort$EncID.new%in%
-             df1[repair=="1", EncID.new]))
-sbk <- c(sbk, sum(cohort$EncID.new%in%
-             df2[repair=="1", EncID.new]))
+table(df1$newAC, useNA = "ifany")
+table(df2$NewAC, useNA = "ifany")
 
-# number of DVT
-name <- c(name, "number with DVT diagnosed")
-smh <- c(smh, sum(cohort$EncID.new%in%
-      c(df1[DVTdop=="1", EncID.new])))
-sbk <- c(sbk, sum(cohort$EncID.new%in%
-      c(df2[DVTdop=="1", EncID.new])))
+cohort[, ACNEW2 := ifelse(ACprior==10&ACDC%in%c(1:9),
+                         1, 2)]
+sum(cohort$ACNEW==cohort$ACNEW2)
 
-# number of thrombus
-name <- c(name, "number with thrombus")
-smh <- c(smh, sum(cohort$EncID.new%in%
-      c(df1[LALVTHROMBY=="1", EncID.new])))
-sbk <- c(sbk, sum(cohort$EncID.new%in%
-      c(df2[LALVTHROMBY=="1", EncID.new])))
-
-# number of anticoagulation initiated
-table(cohort$ACNEW)
-name <- c(name, "number with anticoagulation initiated")
-smh <- c(smh, sum(cohort$site=="11"&cohort$ACNEW==1))
-sbk <- c(sbk, sum(cohort$site=="12"&cohort$ACNEW==1))
-
-# veg
-name <- c(name, "number with vegetation")
-smh <- c(smh, sum(cohort$EncID.new%in%df1[VegY=="1", EncID.new]))
-sbk <- c(sbk, sum(cohort$EncID.new%in%df2[VegY=="1", EncID.new]))
-
-# antibiotic started
-name <- c(name, "number with antibiotics started")
-smh <- c(smh, sum(cohort$EncID.new%in%df1[IVAB=="1", EncID.new]))
-sbk <- c(sbk, sum(cohort$EncID.new%in%df2[IVAB=="1", EncID.new]))
-
-smh <- paste(smh, " (", sprintf("%.1f", smh/649*100), ")")
-sbk <- paste(sbk, " (", sprintf("%.1f", sbk/845*100), ")")
-
-df <- data.table(name, smh, sbk)
-names(df) <- c("variable", "smh (%)", "sbk (%)")
-df
+smh
+sbk
+find_numbers <- function(){
+  # numbers with PFO
+  name <- "number with PFO"
+  smh <- sum(cohort$EncID.new%in%
+        c(df1[PFOy=="1", EncID.new]))
+  sbk <- sum(cohort$EncID.new%in%
+        c(df2[PFO=="1", EncID.new]))
+  
+  # PFO clos?
+  name <- c(name, "number with PFO closure")
+  smh <- c(smh, sum(cohort$EncID.new%in%
+               df1[repair=="1", EncID.new]))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%
+               df2[repair=="1", EncID.new]))
+  
+  # number of DVT
+  name <- c(name, "number with DVT diagnosed")
+  smh <- c(smh, sum(cohort$EncID.new%in%
+        c(df1[DVTdop=="1", EncID.new])))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%
+        c(df2[DVTdop=="1", EncID.new])))
+  
+  # number of thrombus
+  name <- c(name, "number with thrombus")
+  smh <- c(smh, sum(cohort$EncID.new%in%
+        c(df1[LALVTHROMBY=="1", EncID.new])))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%
+        c(df2[LALVTHROMBY=="1", EncID.new])))
+  
+  # number of anticoagulation initiated
+  table(cohort$ACNEW)
+  name <- c(name, "number with anticoagulation initiated")
+  smh <- c(smh, sum(str_sub(cohort$EncID.new, 1, 2)=="11"&cohort$ACNEW=="1"))
+  sbk <- c(sbk, sum(str_sub(cohort$EncID.new, 1, 2)=="12"&cohort$ACNEW=="1"))
+  
+  # number of anticoagulation on discharge
+  table(cohort$ACNEW)
+  name <- c(name, "number with anticoagulation on discharge")
+  smh <- c(smh, sum(str_sub(cohort$EncID.new, 1, 2)=="11"&cohort$ACDC%in%c(1:9)))
+  sbk <- c(sbk, sum(str_sub(cohort$EncID.new, 1, 2)=="12"&cohort$ACDC%in%c(1:9)))
+  
+  # veg
+  name <- c(name, "number with vegetation")
+  smh <- c(smh, sum(cohort$EncID.new%in%df1[VegY=="1", EncID.new]))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%df2[VegY=="1", EncID.new]))
+  
+  # antibiotic started
+  name <- c(name, "number with antibiotics started")
+  smh <- c(smh, sum(cohort$EncID.new%in%df1[IVAB=="1", EncID.new]))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%df2[IVAB=="1", EncID.new]))
+  
+  # numbers with NEWAC
+  name <- c(name, "number with NEWAC")
+  smh <- c(smh, sum(cohort$EncID.new%in%
+               df1[newAC=="1", EncID.new]))
+  sbk <- c(sbk, sum(cohort$EncID.new%in%
+               df2[NewAC=="1", EncID.new]))
+  
+  
+  smh <- paste(smh, " (", sprintf("%.1f", smh/649*100), ")")
+  sbk <- paste(sbk, " (", sprintf("%.1f", sbk/845*100), ")")
+  
+  df <- data.table(name, smh, sbk)
+  names(df) <- c("variable", "smh (%)", "sbk (%)")
+  df
+}
+find_numbers()
 df %>%
   fwrite("H:/GEMINI/Results/DREAM/201704/numbers.for.mike.csv")
 
@@ -504,3 +533,16 @@ all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 compare.sets(cohort[afib.y=="500", EncID.new], all.dad[Discharge.Disposition=="7"&EncID.new%in%cohort$EncID.new, EncID.new])
 
 sum(cohort$EncID.new%in%all.dad$EncID.new)
+
+
+
+cohort[EncID.new%in%c(df1[LALVTHROMBY=="1", EncID.new],
+                      df2[LALVTHROMBY=="1", EncID.new])] ->check
+fwrite(check, "H:/GEMINI/Results/DREAM/201704/thrombus.csv")
+
+fwrite(df1[LALVTHROMBY=="1"], "H:/GEMINI/Results/DREAM/201704/thrombus.smh.csv")
+fwrite(df2[LALVTHROMBY=="1"], "H:/GEMINI/Results/DREAM/201704/thrombus.sbk.csv")
+
+
+
+# number of all the variables in the echo (JUST TTE, only the first Echo)
