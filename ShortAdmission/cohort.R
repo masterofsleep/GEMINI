@@ -4,9 +4,11 @@ rm(list = ls())
 library(gemini)
 lib.pa()
 #find cohort
+adm <- readg(gim, adm)
 smh.adm <- readg(smh, adm)
 sbk.adm <- readg(sbk, adm)
 uhn.adm <- readg(uhn, adm)
+msh.adm <- readg(msh, adm)
 table(smh.adm$Admitting.Service)
 table(sbk.adm$Admitting.Service)
 table(uhn.adm$Admitting.Service)
@@ -20,6 +22,7 @@ sbk.er <- readg(sbk.er, .er.nophi,
 uhn.er <- readg(uhn.er, .er.nophi,
              colClasses = list(character = c("NACRSRegistrationNumber",
                                              "EncID.new")))
+msh.er <- readg(msh, er.nophi)
 
 smh.adm <- smh.adm[startsWith(Admitting.Service, "TM")&EncID.new%in%smh.er$EncID.new]
 sbk.adm <- sbk.adm[Admitting.Service == "GM"&EncID.new%in%sbk.er$EncID.new]

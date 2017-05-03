@@ -266,3 +266,22 @@ data.table(table(msh.rad[str_sub(ProcedureName, 1, 2)=="XR", ProcedureName])) %>
   rename(ProcedureName = V1) %>%
   fwrite("H:/GEMINI/Results/DataSummary/clinical freq tables/xr.msh.csv")
 
+
+
+# ---------------------------- THP Rad Data ------------------------------------
+setwd("R:/GEMINI/_RESTORE/THP/Radiology")
+rad_m <- readxl::read_excel("M_RAD_DeIdentified.xlsx")
+rad_c <- readxl::read_excel("CVH_RAD_DeIdentified.xlsx")
+
+apply(rad_m, 2, function(x)sum(is.na(x))/length(x))
+apply(rad_c, 2, function(x)sum(is.na(x))/length(x))
+
+thp <- readg(thp, dad)
+thp$rad_m <- str_sub(thp$EncID.new, 3,8)%in%rad_m$EncIDnew
+thp$rad_c <- str_sub(thp$EncID.new, 3,8)%in%rad_c$EncIDnew
+
+ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_m)) + 
+  geom_histogram(binwidth = 10)
+
+ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_c)) + 
+  geom_histogram(binwidth = 10)

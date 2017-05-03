@@ -86,33 +86,44 @@ find_cohort <- function(x){
 }
 cohort <- find_cohort()
 
-# phy.sum <- ddply(cohort, ~physician, function(x)
-#       data.frame(N = nrow(x),
-#                  code.new = x$mrp.code.new[1],
-#                  GIM = x$GIM[1],
-#                  site = x$Institution.Number[1],
-#                  n.patient = nrow(x)/length(unique(x$physician)),
-#                  ave.acute.los = mean(x$LOS.without.ALC, na.rm = T),
-#                  ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
-#                  read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
-#                  mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
-#                  short.adm = mean(x$LOS.without.ALC < 2, na.rm = T)*100,
-#                  icu.rate = mean(x$SCU.adm, na.rm = T)*100,
-#                  cbc.per.patientday = sum(x$n.bloodtest)/sum(x$LOS.without.ALC),
-#                  trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
-#                  aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100
-#                  ))
-# all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
-# phy.sum <- merge(phy.sum, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], by.x = "code.new",
-#                  by.y = "code.new", all.x = T, all.y = F)
-# table(phy.sum$GIM)
-# phy.sum$phy.name <- paste(phy.sum$first.name, phy.sum$last.name)
-# fwrite(phy.sum, "C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
+phy.sum <- ddply(cohort, ~physician, function(x)
+      data.frame(N = nrow(x),
+                 code.new = x$mrp.code.new[1],
+                 GIM = x$GIM[1],
+                 site = x$Institution.Number[1],
+                 n.patient = nrow(x)/length(unique(x$physician)),
+                 ave.acute.los = mean(x$LOS.without.ALC, na.rm = T),
+                 ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
+                 read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
+                 mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
+                 short.adm = mean(x$LOS.without.ALC < 2, na.rm = T)*100,
+                 icu.rate = mean(x$SCU.adm, na.rm = T)*100,
+                 cbc.per.patientday = sum(x$n.bloodtest)/sum(x$LOS.without.ALC),
+                 trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
+                 aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
+                 weekday = mean(x$weekday, na.rm = T),
+                 daytime = mean(x$daytime, na.rm = T)
+                 ))
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+phy.sum <- merge(phy.sum, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], by.x = "code.new",
+                 by.y = "code.new", all.x = T, all.y = F)
+table(phy.sum$GIM)
+phy.sum$phy.name <- paste(phy.sum$first.name, phy.sum$last.name)
+fwrite(phy.sum, "C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
+
+#add phy name to cohort
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+cohort <- merge(cohort, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], 
+                by.x = "mrp.code.new", by.y = "code.new", all.x = T, all.y = F)
+table(cohort$GIM)
+cohort$phy.name <- paste(cohort$first.name, cohort$last.name)
+fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.new.withname.csv")
+
 
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  data <- hide_site(data)
+  #data <- hide_site(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -136,8 +147,8 @@ plot.phy <- function(data, title, xlab = "Physician",
           axis.ticks.x=element_blank(),
           legend.position="none")
   del <- ddply(df, ~site, summarise,
-               #site.ave = sum(phy.ave * N)/sum(N),
-               site.ave = mean(phy.ave), # for patient sum only
+               site.ave = sum(phy.ave * N)/sum(N),
+               #site.ave = mean(phy.ave), # for patient sum only
                xm = max(phy),
                ymi = quantile(phy.ave, probs = 0.25),
                yma = quantile(phy.ave, probs = 0.75),
@@ -157,7 +168,7 @@ plot.phy <- function(data, title, xlab = "Physician",
   print(p)
 }
 
-setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3/with_sitename")
 N.patient <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
@@ -266,3 +277,97 @@ plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],
          ylab = "Proportion of Patients with Hospital-Acquired AKI (%)", ave.fun = aki.rate)
 dev.off()
 
+
+
+
+
+# --------------------------- create plot based on phy_sum ---------------------
+phy.sum <- fread("C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
+plot.phy2 <- function(df, phy.ave, title, xlab = "Physician", 
+                     ylab, nextreme = 1,
+                     xstart = -2, digit = 1, hide_site = F){
+  if(hide_site) df <- hide_site(df)
+  phy.ave.col <- which(names(df)==phy.ave)
+  digitform <- paste("%.", digit, "f", sep = "")
+  df$phy.ave <- df[, phy.ave.col, with = F]
+  for(i in unique(df$site)){
+    df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
+  }
+  p <- ggplot(df, aes(phy, phy.ave, fill = site)) + 
+    geom_bar(stat = "identity", width = 0.5) + 
+    facet_grid(.~site, scales = "free_x") + 
+    ggtitle(title) +
+    xlab(xlab) +
+    ylab(ylab) +
+    expand_limits(x = xstart) +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          legend.position="none")
+  del <- ddply(df, ~site, summarise,
+               site.ave = sum(phy.ave * N)/sum(N),
+               #site.ave = mean(phy.ave), # for patient sum only
+               xm = max(phy),
+               ymi = quantile(phy.ave, probs = 0.25),
+               yma = quantile(phy.ave, probs = 0.75),
+               yav = quantile(phy.ave, probs = 0.5),
+               ydiff = sprintf(digitform , yma - ymi))
+  ave.shift <- max(df$phy.ave) * 0.02
+  p <- p + geom_errorbar(data = del, aes(x = xstart/2, y = NULL,ymin = ymi, ymax = yma), 
+                         alpha = 0.3, width = 2) + 
+    # plot the 25% - 75% range
+    geom_rect(data = del, aes(x = NULL, y = NULL, xmin = xstart/2 - 1, xmax =  xstart/2 +1, 
+                              ymin = yav-0.5*ave.shift, ymax = yav+0.5*ave.shift), fill = "#EEEEEE") + 
+    geom_text(data = del, aes(x = xstart/2, y = yav, label = ydiff), size = 3) +
+    # plot the label for average
+    geom_segment(data = del, aes(x = 0, xend = xm, y = site.ave, yend = site.ave), alpha = 0.5,
+              linetype = 2, size = 0.5) + 
+    geom_text(data = del, aes(x = xm-2, y = site.ave + ave.shift, 
+                              label = sprintf(digitform , site.ave)),
+              size = 3) 
+  print(p)
+}
+hide_site <- function(data){
+  ninst <- length(unique(data$site))
+  newcode <- data.frame(site = unique(data$site), 
+                        new.inst = sample(c("A", "B", "C", "D", "E", "F", "G")[1:ninst]))
+  data <- merge(data, newcode, by = "site")
+  data$site <- data$new.inst
+  return(data)
+}
+
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3/with_sitename")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3")
+# ------------------------ Adjust Mortality ------------------------------------
+fit.mor <- lm(mortality ~   weekday + daytime, data = phy.sum)
+phy.sum$adj.mortality <- summary(fit.mor)$residuals + predict(fit.mor,
+                                                              newdata = data.frame(weekday = mean(phy.sum$weekday),
+                                                                                   daytime = mean(phy.sum$daytime)))
+png("adj.mortality.png", res = 250, width = 2000, height = 1200)
+plot.phy2(phy.sum, "adj.mortality", title = "Adjusted In-Hospital Mortality (%)", 
+          ylab = "Adjusted In-Hospital Mortality (%)", hide_site = T)
+dev.off()
+
+# ----------------------- Adjusted Length-of-Stay ------------------------------
+fit.los <- lm(ave.acute.los ~ weekday + daytime, data = phy.sum)
+phy.sum$adj.acute.los <- summary(fit.los)$residuals + 
+  predict(fit.los,data.frame(weekday = mean(phy.sum$weekday),
+                             daytime = mean(phy.sum$daytime)))
+png("adj.acute.los.png", res = 250, width = 2000, height = 1200)
+plot.phy2(phy.sum, "adj.acute.los", title = "Adjusted Average Acute Length-of-Stay (Days)", 
+          ylab = "Adjusted Average Acute Length-of-Stay (Days)", hide_site = T)
+dev.off()
+
+# ----------------------- Adjusted ICU utilization -----------------------------
+fit.icu <- lm(icu.rate ~ weekday + daytime, data = phy.sum[!site%in%c("THP-C", "THP-M")])
+summary(fit.icu)
+phy.sum$adj.icu[!phy.sum$site%in%c("THP-C", "THP-M")] <- summary(fit.icu)$residuals + 
+  predict(fit.icu,
+          data.frame(weekday = mean(phy.sum$weekday),
+                     daytime = mean(phy.sum$daytime)))
+png("adj.icu.uti.png", res = 250, width = 2000, height = 1200)
+plot.phy2(phy.sum[!site%in%c("THP-C", "THP-M")], 
+          "adj.icu", title = "Adjusted ICU Utilization Rate (%)", 
+          ylab = "Adjusted ICU Utilization Rate (%)", hide_site = T)
+dev.off()
+f
