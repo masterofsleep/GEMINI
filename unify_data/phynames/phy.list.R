@@ -105,3 +105,11 @@ all.name[str_detect(first.name, "Temp")|
 
 fwrite(all.name, 
        "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+
+
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+gemini.phy <- readg(gim, all.phy)
+apply(gemini.phy, 2, function(x)sum(is.na(x)))
+gemini.phy[is.na(dis.code.new)]
+
+all.name[code.new%in%c(gemini.phy$adm.code.new, gemini.phy$dis.code.new, gemini.phy$mrp.code.new)]

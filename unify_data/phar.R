@@ -287,3 +287,15 @@ apply(msh, 2, function(x)sum(is.na(x)))
 
 uhn <- readg(uhn, phar)
 apply(uhn, 2, function(x)sum(is.na(x)))
+
+
+# -------------------- UHN: sample of missing route data -----------------------
+# --------------------            2017-05-04             -----------------------
+
+uhn <- readg(uhn, phar)
+no_route <- uhn[is.na(Route_Code)]
+ggplot(no_route, aes(x = dmy(Order_Sta))) + geom_histogram(binwidth = 10)
+uhn$route <- ifelse(!is.na(uhn$Route_Code), "with Route", "missing Route")
+ggplot(uhn, aes(x = dmy(Order_Sta), fill = route)) + geom_histogram(binwidth = 10)
+
+fwrite(no_route, "R:/GEMINI/Check/uhn_phar_without_route.csv")

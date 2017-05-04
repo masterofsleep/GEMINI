@@ -30,12 +30,7 @@ picc.names1%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureNam
 
 
 
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
-dad <- dad[ymd(Discharge.Date) < ymd("2015-04-01")]
-dad$Institution.Number[dad$Institution.Number=="54265"] <- "uhn-general"
-dad$Institution.Number[dad$Institution.Number=="54266"] <- "uhn-western"
-dad$Institution.Number[dad$Institution.Number=="M"] <- "thp-m"
-dad$Institution.Number[dad$Institution.Number=="C"] <- "thp-c"
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
 
 any.picc.enc <- c(
@@ -128,6 +123,14 @@ int.any.picc <- c(picc.im$EncID.new, picc.rm$EncID.new)
 dad$picc.rad <- dad$EncID.new%in%any.picc.enc& !dad$EncID.new%in%picc.im$EncID.new
 dad$picc.int <- dad$EncID.new%in%picc.im$EncID.new & !dad$EncID.new%in%any.picc.enc
 dad$picc.both <- dad$EncID.new%in%any.picc.enc&dad$EncID.new%in%picc.im$EncID.new
+
+dad$picc <- ifelse(dad$picc.both, "picc.both", ifelse(dad$picc.int, "int.only",
+                                                 ifelse(dad$picc.rad, "rad.only", "No picc")))
+ggplot(dad[Institution.Number%in%c("UHN-TW", "UHN-TG")&picc!="No picc"], 
+       aes(x = ymd(Admit.Date), fill = picc)) + geom_histogram(binwidth = 10)
+
+ggplot(dad[Institution.Number%in%c("UHN-TW", "UHN-TG")&picc.int], 
+       aes(x = ymd(Admit.Date))) + geom_histogram(binwidth = 10)
 
 library(plyr)
 ddply(dad, ~Institution.Number, summarize, 

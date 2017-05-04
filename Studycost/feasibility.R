@@ -6,7 +6,7 @@ library(gemini)
 lib.pa()
 
 sbk.rad <- readg(sbk, rad.csv)
-sbk.echo <- readg(sbk, echo)
+
 sbk.lab <- rbind(readg(sbk, labs_ip),
                  readg(sbk, labs_er))
 price.list1 <- readxl::read_excel("H:/GEMINI/Results/Studycost/PriceList Labs DI Pharmacy FY1516.xlsx",
@@ -269,3 +269,32 @@ price_rad <- price_rad[order(total.cost, decreasing = T),
 
 fwrite(price_lab, "H:/GEMINI/Results/Studycost/coded/feasibility.lab.csv")
 fwrite(price_rad, "H:/GEMINI/Results/Studycost/coded/feasibility.rad.csv")
+
+
+
+# ----------------------- feasibility table for 2015 rad only -------------------
+sbk.rad <- readg(sbk, rad.csv)
+# new 2015-05-04 look only at 
+sbk.rad <- sbk.rad[ymd_hms(Ordered.DtTm)>=ymd_hms("2014-04-01 00:00:00")]
+
+
+freq.rad15 <- sbk.rad[,.N, by = c("Test.Name", "Test.Code")]
+price_rad <- fread("H:/GEMINI/Results/Studycost/coded/rad cost_ASW.csv")
+
+freq.rad15 <- freq.rad15[,.(Test.Name, Test.Code, N)]
+freq.rad15 <- merge(freq.rad15, price_rad[,.(Test.Name, Test.Code, listed.name,
+                                             listed.code, unit.cost)],
+                    by = c("Test.Name", "Test.Code"), all.x = T, all.y = F)
+
+freq.rad15[, total.cost := unit.cost * N]
+
+
+rad.nhos <- sbk.rad[, .(n_hospitalization = length(unique(EncID.new))), by = .(Test.Name, Test.Code)]
+freq.rad15 <- merge(freq.rad15, rad.nhos, by = c("Test.Name", "Test.Code"), 
+                    all.x = T, all.y = F)
+
+feasi.rad15 <- freq.rad15[order(total.cost, decreasing = T), 
+                         .(Test.Name, Test.Code, N, n_hospitalization,
+                           listed.name, listed.code,
+                           unit.cost, total.cost)]
+fwrite(price_rad, "H:/GEMINI/Results/Studycost/coded/feasibility.rad15.csv")
