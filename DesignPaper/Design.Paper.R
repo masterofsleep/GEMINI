@@ -303,18 +303,21 @@ ip_cmg <- rbind(smh.cmg[,.(EncID.new, RIW.15)],
                 msh.cmg[,.(EncID.new, RIW.15)],
                 thp.cmg[,.(EncID.new, RIW.15)])
 
-dad <- merge(dad, ip_cmg, by = "EncID.new",all.x = T)
+dad <- merge(dad, ip_cmg, by = "EncID.new",all.x = T, all.y = F)
 table(dad$Institution.Number)
-dad[Institution.Number=="smh",CPWC:= 6541] 
-dad[Institution.Number=="sbk",CPWC:= 5960] 
-dad[Institution.Number=="msh",CPWC:= 6397] 
-dad[Institution.Number=="C",CPWC:= 4912] 
-dad[Institution.Number=="M",CPWC:= 5259] 
-dad[Institution.Number=="54265",CPWC:= 6521] 
-dad[Institution.Number=="54266",CPWC:= 6521] 
+dad[Institution.Number=="SMH",CPWC:= 6541] 
+dad[Institution.Number=="SHSC",CPWC:= 5960] 
+dad[Institution.Number=="SHS",CPWC:= 6397] 
+dad[Institution.Number=="THP-C",CPWC:= 4912] 
+dad[Institution.Number=="THP-M",CPWC:= 5259] 
+dad[Institution.Number=="UHN-TG",CPWC:= 6521] 
+dad[Institution.Number=="UHN-TW",CPWC:= 6521] 
 dad$Cost <- as.numeric(dad$RIW.15) * dad$CPWC
 dad[is.na(as.numeric(RIW.15))]
 summary(dad$Cost)
+
+fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+
 
 ip.diag[Diagnosis.Type=="M", str_sub(Diagnosis.Code, 1, 3)] %>% table %>% 
   data.table %>% arrange(desc(N)) -> mrd.freq

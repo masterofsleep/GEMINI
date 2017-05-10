@@ -347,7 +347,7 @@ cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862
 table(cohort[,.(ACDC, Discharge.Disposition)])
 
 fwrite(cohort, "H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
-
+cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
 
 cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
 
@@ -431,6 +431,8 @@ table(str_sub(cohort$EncID.new, 1, 2), cohort$afib.y)
 
 # ------------------ new variables required by Mike ----------------------------
 cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
+cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
+
 setwd("R:/GEMINI-DREAM/DATA FINAL")
 smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
 sum(duplicated(smh.echo$EncID.new))
@@ -540,9 +542,90 @@ cohort[EncID.new%in%c(df1[LALVTHROMBY=="1", EncID.new],
                       df2[LALVTHROMBY=="1", EncID.new])] ->check
 fwrite(check, "H:/GEMINI/Results/DREAM/201704/thrombus.csv")
 
+
 fwrite(df1[LALVTHROMBY=="1"], "H:/GEMINI/Results/DREAM/201704/thrombus.smh.csv")
 fwrite(df2[LALVTHROMBY=="1"], "H:/GEMINI/Results/DREAM/201704/thrombus.sbk.csv")
-
+# none of the thrombus people died
 
 
 # number of all the variables in the echo (JUST TTE, only the first Echo)
+smh.echo <- readg(smh, echo, dt = T)[EncID.new%in%cohort$EncID.new]
+sbk.echo <- readg(sbk, echo, dt = T)[EncID.new%in%cohort$EncID.new]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="AM"&
+           str_sub(`Test Performed Date/time`, 13, 14)<12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20))]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="AM"&
+           str_sub(`Test Performed Date/time`, 13, 14)==12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20)) - hours(12)]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
+           str_sub(`Test Performed Date/time`, 13, 14)<12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20)) + hours(12)]
+sbk.echo[str_sub(`Test Performed Date/time`, -2, -1)=="PM"&
+           str_sub(`Test Performed Date/time`, 13, 14)==12, 
+         Performed.DtTm := mdy_hms(str_sub(`Test Performed Date/time`, 1, 20))]
+
+df1 <- df1[EncID.new%in%cohort$EncID.new]
+df2 <- df2[EncID.new%in%cohort$EncID.new]
+df1 <- df1 %>% filter(echodone==1) %>% 
+  arrange(EncID.new, Conclusions) %>% data.table
+df2 <- df2 %>%  filter(echotype!=100) %>%
+  arrange(EncID.new, Report) %>% data.table
+smh.echo <- smh.echo %>% filter(((dmy(StudyStartDateTime)-dmy(ADMITDATE))<=14)) %>%
+  arrange(EncID.new, Conclusions) %>% data.table
+sbk.echo$TestDate <- 
+  mdy(str_sub(sbk.echo$`Test Performed Date/time`, 1, 11))
+sbk.echo <- sbk.echo %>% filter(((`TestDate`-ymd(Admit.Date))<=14)) %>%
+  filter(EncID.new!="12738947") %>% 
+  arrange(EncID.new, Report) %>% data.table
+
+
+sbk.echo$EncID.new == df2$EncID.new
+smh.echo$EncID.new == df1$EncID.new
+
+
+df1 <- cbind(df1, StudyStartDateTime= smh.echo[,StudyStartDateTime])
+df2 <- cbind(df2, sbk.echo[,.(Performed.DtTm)])
+
+df1 <- df1%>% arrange(EncID.new, dmy(StudyStartDateTime)) %>% data.table
+df2 <- df2 %>% arrange(EncID.new, Performed.DtTm) %>% data.table
+
+smh.firstecho <- df1[!duplicated(EncID.new)]
+sbk.firstecho <- df2[!duplicated(EncID.new)]
+
+setwd("H:/GEMINI/Results/DREAM/201705")
+fwrite(smh.firstecho, "smh_firstecho.csv")
+fwrite(sbk.firstecho, "sbk_firstecho.csv")
+
+names(smh.firstecho)
+names(sbk.firstecho)
+
+vars <- intersect(
+  names(smh.firstecho),
+  names(sbk.firstecho)
+)[c(1, 5:14)]
+
+
+firstecho <- rbind(smh.firstecho[, vars, with = F],
+                   sbk.firstecho[, vars, with = F])
+
+apply(firstecho, 2, table)
+
+
+
+
+# ------------------------------ CI for table 4 --------------------------------
+v1 <- c(32, 2, 2, 2,3, 1)
+v2 <- c(33, 2, 2, 2, 9, 5)
+prev.ci <- function(x, n){
+  prev <- x/n
+  se <- sqrt(prev*(1-prev)/n)
+  z <- qnorm(0.975)
+  res <- cbind(prev, prev-z*se, prev+z*se) * 100
+  cbind(prev * 100, 
+        paste(sprintf("%.2f", res[,2]), ", ",
+        sprintf("%.2f", res[,3])))
+}
+
+cbind(prev.ci(v1, 513),
+      prev.ci(v2, 561)) %>% data.table %>% fwrite("H:/GEMINI/Results/DREAM/201705/table4ci.csv")
+# the original numbers by mike seem weird, need to be clarified

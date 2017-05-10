@@ -273,9 +273,17 @@ setwd("R:/GEMINI/_RESTORE/THP/Radiology")
 rad_m <- readxl::read_excel("M_RAD_DeIdentified.xlsx")
 rad_c <- readxl::read_excel("CVH_RAD_DeIdentified.xlsx")
 
-apply(rad_m, 2, function(x)sum(is.na(x))/length(x))
-apply(rad_c, 2, function(x)sum(is.na(x))/length(x))
 
+# -------------- 2017-05-08 ----- new files came from Terence
+rad_m <- fread("mRad_deidentified.csv")
+rad_c <- fread("cvhRad_deidentified.csv")
+apply(rad_m, 2, function(x)sum(is.na(x)|x=="")/length(x))
+apply(rad_c, 2, function(x)sum(is.na(x)|x=="")/length(x))
+rad_m[TimeTestPerformed==""] -> check
+table(check$DateTestPerformed) 
+
+rad_c[is.na(TimeTestOrdered)|TimeTestOrdered==""] -> check_c1
+rad_c[is.na(DateTestPerformed)|DateTestPerformed==""] -> check_c2
 thp <- readg(thp, dad)
 thp$rad_m <- str_sub(thp$EncID.new, 3,8)%in%rad_m$EncIDnew
 thp$rad_c <- str_sub(thp$EncID.new, 3,8)%in%rad_c$EncIDnew
@@ -285,3 +293,36 @@ ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_m)) +
 
 ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_c)) + 
   geom_histogram(binwidth = 10)
+
+
+
+rad_m <- fread("mRad_deidentified.csv")
+rad_c <- fread("cvhRad_deidentified.csv")
+rad_m$EncID.new <- as.character(rad_m$EncID.new)
+rad_c$EncID.new <- as.character(rad_c$EncID.new)
+
+thp <- readg(thp, dad)
+thp$EncID.new <- str_sub(thp$EncID.new, 3, 8)
+
+rad_m <- merge(rad_m, thp[,.(EncID.new, Admit.Date, Admit.Time)], all.x = T,
+               all.y = F)
+rad_c <- merge(rad_c, thp[,.(EncID.new, Admit.Date, Admit.Time)], all.x = T,
+               all.y = F)
+
+rad_c[is.na(TimeTestOrdered)|TimeTestOrdered==""] -> check
+check[, (dmy(DateTestOrdered) - ymd(Admit.Date))]
+
+ggplot(rad_c, aes(x = ymd(Admit.Date), fill = is.na(TimeTestOrdered)|TimeTestOrdered=="")) +
+  geom_histogram(binwidth = 20)
+
+(dmy(DateTestOrdered) - ymd(Admit.Date))
+ggplot(rad_c, aes(x = as.numeric(dmy(DateTestOrdered) - ymd(Admit.Date)), 
+                  fill = is.na(TimeTestOrdered)|TimeTestOrdered=="")) +
+  geom_histogram(binwidth = 1)
+
+ggplot(rad_m, aes(x = ymd(Admit.Date), 
+                  fill = is.na(TimeTestPerformed)|TimeTestPerformed=="")) +
+  geom_histogram(binwidth = 1)
+ggplot(rad_m, aes(x = as.numeric(mdy(DateTestOrdered) - ymd(Admit.Date)), 
+                  fill = is.na(TimeTestPerformed)|TimeTestPerformed=="")) +
+  geom_histogram(binwidth = 1)

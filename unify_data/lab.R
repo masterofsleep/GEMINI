@@ -223,18 +223,22 @@ range(sbker$Collection.DtTm)
 
 
 #formatting all data
+# 2017-05-09
 smh <- readg(smh, corelabs)
 smh[,Collection.DtTm:=NULL]
-smh[str_sub(CollectedDtTm, -2, -1)=="PM"&str_sub(CollectedDtTm, -8, -7)<"12",
-    Collection.DtTm:=(mdy_hm(str_sub(CollectedDtTm, 1, 13)) + hours(12))]
-smh[!(str_sub(CollectedDtTm, -2, -1)=="PM"&str_sub(CollectedDtTm, -8, -7)=="12"), 
-    Collection.DtTm:=mdy_hm(str_sub(CollectedDtTm, 1, 13))]
+smh[str_sub(CollectedDtTm, -2, -1)=="PM"&as.numeric(str_sub(CollectedDtTm, -8, -7))<12,
+    Collection.DtTm:=(mdy_hm(str_sub(CollectedDtTm, 1, -4)) + hours(12))]
+smh[str_sub(CollectedDtTm, -2, -1)=="PM"&str_sub(CollectedDtTm, -8, -7)=="12", 
+    Collection.DtTm:=mdy_hm(str_sub(CollectedDtTm, 1, -4))]
 smh[str_sub(CollectedDtTm, -2, -1)=="AM"&str_sub(CollectedDtTm, -8, -7)=="12", 
-Collection.DtTm:=mdy_hm(str_sub(CollectedDtTm, 1, 13))-hours(12)]
+    Collection.DtTm:=mdy_hm(str_sub(CollectedDtTm, 1, -4))-hours(12)]
+smh[str_sub(CollectedDtTm, -2, -1)=="AM"&as.numeric(str_sub(CollectedDtTm, -8, -7))<12, 
+    Collection.DtTm:=mdy_hm(str_sub(CollectedDtTm, 1, -4))]
+smh[str_sub(CollectedDtTm, -1, -1)!="M", 
+    Collection.DtTm := mdy_hm(CollectedDtTm)]
 sum(is.na(smh$Collection.DtTm))
 check <- smh[is.na(Collection.DtTm)]
-smh[is.na(Collection.DtTm), Collection.DtTm := mdy_hm(str_sub(CollectedDtTm, 1, 15))]
-smh[is.na(Collection.DtTm)] ->check
+range(smh$Collection.DtTm, na.rm = T)
 smh$Collection.DtTm <- as.character(smh$Collection.DtTm)
 fwrite(smh, "H:/GEMINI/Data/SMH/Lab/smh.corelabs-linked.csv", row.names = F,
        na = "")

@@ -102,7 +102,8 @@ phy.sum <- ddply(cohort, ~physician, function(x)
                  trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
                  aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
                  weekday = mean(x$weekday, na.rm = T),
-                 daytime = mean(x$daytime, na.rm = T)
+                 daytime = mean(x$daytime, na.rm = T),
+                 ave.cost = mean(x$Cost, na.rm = T)
                  ))
 all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
 phy.sum <- merge(phy.sum, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], by.x = "code.new",
