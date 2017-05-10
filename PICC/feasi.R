@@ -8,7 +8,7 @@ er.int <- readg(gim, er_int)
 names(er.int)[3] <- "Intervention.Code"
 interv <- rbind(ip.int[,.(EncID.new, Intervention.Code)], 
                 er.int[,.(EncID.new, Intervention.Code)])
-interv <- interv[str_sub(EncID.new, 1, 2)%in%c("11", "12", "13")]
+interv <- interv[str_sub(EncID.new, 1, 2)%in%c("11", "12", "13", "14")]
 picc.im <- interv[startsWith(Intervention.Code, "1IS53GRLF")]
 picc.rm <- interv[startsWith(Intervention.Code, "1IS55GRKA")]
 
@@ -17,6 +17,9 @@ sbk.rad <- readg(sbk.rad, rad.csv)
 uhn.radip <- readg(uhn, rad_ip)
 uhn.rader <- readg(uhn, rad_er)
 uhn.rad <- rbind(uhn.radip, uhn.rader)
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
+fwrite(msh.rad[,.N, by = ProcedureName], "H:/GEMINI/Results/DataSummary/clinical freq tables/rad.msh.csv")
 
 picc.names1 <- c("Angiography Line PICC CCM", "Angiography Line PICC Insertion",
                 "PIC line insertion-1 lumen",
@@ -27,7 +30,7 @@ picc.names1 <- c("Angiography Line PICC CCM", "Angiography Line PICC Insertion",
                 "PICC INSERT VENOGRAM", "PICC INSERT SINGLE LUMEN",
                 "PICC INSERT DOUBLE LUMEN", "PICC EXCHANGE (Z456,Z457)", "PICC EXCH")
 picc.names1%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureName)
-
+sum(msh.rad$ProcedureName%in%picc.names1)
 
 
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
@@ -36,7 +39,8 @@ dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 any.picc.enc <- c(
   smh.rad[proc_desc_long%in%picc.names1, EncID.new],
   sbk.rad[Test.Name%in%picc.names1, EncID.new],
-  uhn.rad[ProcedureName%in%picc.names1, EncID.new]
+  uhn.rad[ProcedureName%in%picc.names1, EncID.new],
+  msh.rad[ProcedureName%in%picc.names1, EncID,new]
 )
 multi.picc.enc <- any.picc.enc[duplicated(any.picc.enc)]
 

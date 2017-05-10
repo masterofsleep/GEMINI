@@ -56,3 +56,27 @@ smh.check <- smh[is.na(Methodology.Year)]
 sbk <- sbk[!is.na(EncID.new)]
 write.csv(sbk, "H:/GEMINI/Data/SBK/CIHI/sbk.ip_hig.nophi.csv",
           row.names = F, na = "")
+
+# -------------------------- Check HIG 15 --------------------------------------
+smh <- readg(smh, ip_hig)
+sbk <- readg(sbk, ip_hig)
+uhn <- readg(uhn, ip_hig)
+msh <- readg(msh, ip_hig)
+thp <- readg(thp, ip_hig)
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+
+hig <- rbind(smh[,.(EncID.new, HIG.Weight.15)],
+             sbk[,.(EncID.new, HIG.Weight.15)],
+             uhn[,.(EncID.new, HIG.Weight.15)],
+             msh[,.(EncID.new, HIG.Weight.15)],
+             thp[,.(EncID.new, HIG.Weight.15)])[EncID.new%in%dad$EncID.new]
+
+dad[!EncID.new%in%hig$EncID.new] -> check
+sum(is.na(hig$HIG.Weight.15))
+
+ggplot(dad[!EncID.new%in%hig$EncID.new],
+       aes(x = ymd(Discharge.Date))) + geom_histogram(binwidth = 5)
+
+compare.sets(dad[is.na(RIW.15), EncID.new], hig[is.na(HIG.Weight.15), EncID.new])
+
+

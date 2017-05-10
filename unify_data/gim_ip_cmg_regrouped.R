@@ -44,3 +44,15 @@ apply(thp, MARGIN = 2, FUN = function(x)sum(is.na(x)))
 
 smh.check <- smh[is.na(Methodology.Year)]
 check.sbk <- sbk[is.na(EncID.new)]
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+sbkdad <- readg(sbk, dad)
+sbkdad[!EncID.new%in%sbk$EncID.new]
+sbk[EncID.new=="12NA"]
+
+ipdiag <- readg(gim, ip_diag)
+ipdiag[EncID.new=="12351059"]
+# the CMG assignment for the row with missing encounter id is the same as the one
+# that is not in the CMG file
+sbk[EncID.new=="12NA", EncID.new:="12351059"]
+write.csv(sbk, "H:/GEMINI/Data/SBK/CIHI/sbk.ip_cmg.nophi.csv",
+          row.names = F, na = "")

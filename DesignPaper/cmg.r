@@ -62,3 +62,23 @@ treemap(top20diag,
         mapping = c(2000, 6000, 10000)
 )
 dev.off()
+
+
+
+
+ip_diag <- readg(gim, ip_diag)
+ip_diag$EncID.new <- as.character(ip_diag$EncID.new)
+dad <- merge(dad, ip_diag[Diagnosis.Type=="M"],
+             by = "EncID.new", all.x = T, all.y = F)
+icd.names <- fread("R:/GEMINI/Coding/CIHI/ICD_header.csv")
+
+dad <- merge(dad, icd.names[, .(Code, Desc1)], by.x = "Diagnosis.Code",
+             by.y = "Code", all.x = T, all.y = F)
+
+cmg.freq <- dad[,.N, by = CMG]
+names(cmg.freq)[2] <- "CMG_freq"
+diag.freq.by.cmg <- dad[, .N, by = .(CMG, `CMG Description`, Diagnosis.Code, Desc1)]
+diag.freq.by.cmg <- merge(cmg.freq, diag.freq.by.cmg, by = "CMG", all.x = T, all.y = F)
+
+diag.freq.by.cmg <- diag.freq.by.cmg %>% arrange(desc(CMG_freq), `CMG Description`, desc(N))
+fwrite(diag.freq.by.cmg, "H:/GEMINI/Results/DesignPaper/diag_freq_by_cmg.csv")
