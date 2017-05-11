@@ -153,3 +153,10 @@ pr.ci2(804, 1721)  # delirium
 pr.ci2(1053, 2226) # sepsis
 
 pr.ci2(1083, 1804)
+
+pr.ci2(1616, 4650) # pneumonia
+pr.ci2(1581, 4023) # COPD
+pr.ci2(815, 1971)  # Electrolyte disorders
+
+
+

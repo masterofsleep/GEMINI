@@ -456,7 +456,7 @@ sum(cohort$ACNEW==cohort$ACNEW2)
 
 smh
 sbk
-find_numbers <- function(){
+find_numbers <- function(cohort){
   # numbers with PFO
   name <- "number with PFO"
   smh <- sum(cohort$EncID.new%in%
@@ -523,6 +523,8 @@ find_numbers <- function(){
   df
 }
 find_numbers()
+
+
 df %>%
   fwrite("H:/GEMINI/Results/DREAM/201704/numbers.for.mike.csv")
 
@@ -583,8 +585,25 @@ sbk.echo$EncID.new == df2$EncID.new
 smh.echo$EncID.new == df1$EncID.new
 
 
-df1 <- cbind(df1, StudyStartDateTime= smh.echo[,StudyStartDateTime])
-df2 <- cbind(df2, sbk.echo[,.(Performed.DtTm)])
+df1 <- cbind(df1, smh.echo[,.(StudyStartDateTime, Test.Name = ProcedureName)])
+df2 <- cbind(df2, sbk.echo[,.(Performed.DtTm, Test.Name = TestName)])
+
+# number of people got TEE
+df1[Test.Name=="Transesophageal Echo", EncID.new] %>% table %>% table
+c(649 - 25, 25)/649
+df2[Test.Name=="Echo (Transesophageal)", EncID.new] %>% table %>% table
+c(845 - 12, 12)/845
+# number of people got TTE
+df1$EncID.new %>% table %>% table
+
+df1$EncID.new %>% table %>% table
+c(649 - 515 - 34, 515, 34)/649
+
+df2$EncID.new %>% table %>% table /845
+c(278, 553, 14)/845
+
+
+
 
 df1 <- df1%>% arrange(EncID.new, dmy(StudyStartDateTime)) %>% data.table
 df2 <- df2 %>% arrange(EncID.new, Performed.DtTm) %>% data.table
@@ -611,21 +630,95 @@ firstecho <- rbind(smh.firstecho[, vars, with = F],
 apply(firstecho, 2, table)
 
 
-
+c(33, 0, 20, 24, 2, 0 ,0, 16, 13, 10)/1114
 
 # ------------------------------ CI for table 4 --------------------------------
 v1 <- c(32, 2, 2, 2,3, 1)
 v2 <- c(33, 2, 2, 2, 9, 5)
+n1 <- c(513, 32, 513, 2, 513, 3)
+n2 <- c(561, 33, 561, 2, 561, 9)
 prev.ci <- function(x, n){
   prev <- x/n
   se <- sqrt(prev*(1-prev)/n)
   z <- qnorm(0.975)
   res <- cbind(prev, prev-z*se, prev+z*se) * 100
   cbind(prev * 100, 
-        paste(sprintf("%.2f", res[,2]), ", ",
-        sprintf("%.2f", res[,3])))
+        paste(sprintf("%.1f", res[,2]), ", ",
+        sprintf("%.1f", res[,3])))
 }
 
-cbind(prev.ci(v1, 513),
-      prev.ci(v2, 561)) %>% data.table %>% fwrite("H:/GEMINI/Results/DREAM/201705/table4ci.csv")
+cbind(prev.ci(v1, n1),
+      prev.ci(v2, n2)) %>% data.table %>% fwrite("H:/GEMINI/Results/DREAM/201705/table4ci.csv")
 # the original numbers by mike seem weird, need to be clarified
+
+
+
+
+# -------------------------- check ER diag for the cohort ----------------------
+er.diag <- readg(gim, er.diag)
+er.diag[EncID.new%in%cohort$EncID.new&ER.Diagnosis.Type=="M"] -> check
+icd.names <- fread("R:/GEMINI/Coding/CIHI/ICD_header.csv")
+
+check <- merge(check, icd.names[,.(Code, Desc1)], by.x = "ER.Diagnosis.Code",
+               by.y = "Code", all.x= T, all.y = F)
+
+check[,.N, by = .(ER.Diagnosis.Code, Desc1)] %>%
+  fwrite("H:/GEMINI/Results/DREAM/201705/ER_mrd_freq.csv")
+
+
+
+
+# ----------------------  summary for TEE findings -----------------------------
+cat.var <- names(cohort)[c(4,5, 6:11,13,14:19)]
+vars <- names(cohort)[c(4, 3, 5, 13,6:8, 14, 9:11,15, 17, 16, 18, 19, 23)]
+cohort$site <- str_sub(cohort$EncID.new, 1, 2)
+library(tableone)
+cohort[,':='(antipltprior = ifelse(antipltprior<10, 1, antipltprior),
+             antipltDC = ifelse(antipltDC<10, 1, antipltDC),
+             ACprior = ifelse(ACprior<10, 1, ACprior),
+             ACDC = ifelse(ACDC<10, 1, ACDC),
+             ACNEW = factor(ACNEW, levels = c("2", "1")))]
+
+
+
+pfo <- c(df1[PFOy=="1", EncID.new],
+         df2[PFO=="1", EncID.new])
+veg <- c(df1[VegY=="1", EncID.new],
+         df2[VegY=="1", EncID.new])
+thrombus <- c(df1[LALVTHROMBY=="1", EncID.new],
+              df2[LALVTHROMBY=="1", EncID.new])
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort, strata = "site")
+
+
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort[EncID.new%in%pfo])
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort[EncID.new%in%veg])
+CreateTableOne(vars = vars, factorVars = cat.var, data = cohort[EncID.new%in%thrombus])
+
+
+
+
+# ----------------------------- two by two -------------------------------------
+inc_diag <- c("G450","G451", "G452", "G453", "G458, G459", "H341", "I63", "I64")
+ip_diag <- fread("H:/GEMINI/DataBackup/Data170214/GEMINI/gim.ip_diag.csv")[
+  EncID.new%in%cohort$EncID.new&Diagnosis.Type =="M"]
+er_diag <- fread("H:/GEMINI/DataBackup/Data170214/GEMINI/gim.er_diag.csv")[
+  EncID.new%in%cohort$EncID.new&ER.Diagnosis.Type =="M"]
+sum(cohort$EncID.new%in%ip_diag$EncID.new)
+sum(cohort$EncID.new%in%er_diag$EncID.new)
+
+cohort[,':='(IP_stroke = EncID.new%in%ip_diag[startwith.any(Diagnosis.Code, inc_diag), EncID.new],
+             ER_stroke = EncID.new%in%er_diag[startwith.any(ER.Diagnosis.Code, inc_diag), EncID.new])]
+cohort[!EncID.new%in%er_diag$EncID.new, ER_stroke:=NA]
+
+xtabs(~IP_stroke + ER_stroke, data = cohort)
+table(cohort$IP_stroke, cohort$ER_stroke, useNA = "ifany")
+
+
+# within gemini cohort
+ip.diag <- readg(gim, ip_diag)[Diagnosis.Type =="M"&str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+er.diag <- readg(gim, er_diag)[ER.Diagnosis.Type =="M"&str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+
+ip.diag[, IP_stroke := startwith.any(Diagnosis.Code, inc_diag)]
+ip.diag[EncID.new%in%er.diag$EncID.new, 
+        ER_stroke := EncID.new%in%er_diag[startwith.any(ER.Diagnosis.Code, inc_diag), EncID.new]]
+table(ip.diag[,.(ER_stroke, IP_stroke)], useNA = "ifany")
