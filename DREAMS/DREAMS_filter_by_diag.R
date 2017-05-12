@@ -15,11 +15,14 @@ sum(!diagno$Diagnosis.Code %in% icd$Code)
 
 xtable(data.frame(table(diagno[!diagno$Diagnosis.Code %in% icd$Code, Diagnosis.Code])))
 #including chriteria
-inc_diag <- c("G450","G451", "G452", "G453", "G458, G459", "H341", "I63", "I64")
+# wrong one inc_diag <- c("G450","G451", "G452", "G453", "G458, G459", "H341", "I63", "I64")
+inc_diag <- c("G450","G451", "G452", "G453", "G458", "G459", "H341", "I63", "I64")
 inc_id <- diagno[(str_sub(Diagnosis.Code, 1, 4)%in%inc_diag|
                     (str_sub(Diagnosis.Code, 1, 3)%in%inc_diag))&
                    Diagnosis.Type == "M", EncID.new]
 length(unique(inc_id))
+
+
 #****
 #682 included
 

@@ -433,6 +433,11 @@ table(str_sub(cohort$EncID.new, 1, 2), cohort$afib.y)
 cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
 cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
 
+dad <- readg(gim, dad)
+cohort[!EncID.new%in%dad$EncID.new, str_sub(EncID.new, 1, 2)] %>% table
+sum(!cohort$EncID.new%in%dad$EncID.new)
+
+
 setwd("R:/GEMINI-DREAM/DATA FINAL")
 smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
 sum(duplicated(smh.echo$EncID.new))
@@ -711,14 +716,38 @@ cohort[,':='(IP_stroke = EncID.new%in%ip_diag[startwith.any(Diagnosis.Code, inc_
 cohort[!EncID.new%in%er_diag$EncID.new, ER_stroke:=NA]
 
 xtabs(~IP_stroke + ER_stroke, data = cohort)
-table(cohort$IP_stroke, cohort$ER_stroke, useNA = "ifany")
+table( cohort$ER_stroke, cohort$IP_stroke, useNA = "ifany")
 
 
 # within gemini cohort
+inc_diag <- c("G450","G451", "G452", "G453", "G458", "G459", "H341", "I63", "I64")
+
 ip.diag <- readg(gim, ip_diag)[Diagnosis.Type =="M"&str_sub(EncID.new, 1, 2)%in%c("11", "12")]
 er.diag <- readg(gim, er_diag)[ER.Diagnosis.Type =="M"&str_sub(EncID.new, 1, 2)%in%c("11", "12")]
 
 ip.diag[, IP_stroke := startwith.any(Diagnosis.Code, inc_diag)]
 ip.diag[EncID.new%in%er.diag$EncID.new, 
-        ER_stroke := EncID.new%in%er_diag[startwith.any(ER.Diagnosis.Code, inc_diag), EncID.new]]
+        ER_stroke := EncID.new%in%er.diag[startwith.any(ER.Diagnosis.Code, inc_diag), EncID.new]]
 table(ip.diag[,.(ER_stroke, IP_stroke)], useNA = "ifany")
+ip.diag[ER_stroke==T&IP_stroke==F]
+icd.names <- fread("R:/GEMINI/Coding/CIHI/ICD_header.csv")
+ip.diag <- merge(ip.diag, icd.names[,.(Code, Desc1)], by.x = "Diagnosis.Code",
+                 by.y = "Code", all.x = T, all.y = F)
+ip.diag[ER_stroke&!IP_stroke, .N, by = .(Diagnosis.Code, Desc1)] %>% arrange(desc(N)) %>% fwrite(
+  "H:/GEMINI/Results/Ad hoc/er_stroke_dad_not_stroke_freq.csv"
+)
+# check number of patients affected by the mistake
+ip.diag[Diagnosis.Code%in%c("G458", "G459")&Diagnosis.Type=="M"] -> check
+
+
+ip.diag[EncID.new%in%er.diag[ER_stroke&!IP_stroke, EncID.new]]
+
+dad <- readg(gim, dad)
+cohort <- merge(cohort, dad[,.(EncID.new, Dischar)])
+
+
+# --------------------- LV thrombus in ip diag ---------------------------------
+ip.diag <- readg(gim, ip_diag)#[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+ip.diag[Diagnosis.Type=="M"&startsWith(Diagnosis.Code, "I513"), .(str_sub(EncID.new, 1, 2))] %>% table
+ip.diag[startsWith(Diagnosis.Code, "I51"),.(str_sub(EncID.new, 1, 2))] %>% table
+ip.diag[Diagnosis.Type=="M"&startsWith(Diagnosis.Code, "I51"),.(str_sub(EncID.new, 1, 2))] %>% table

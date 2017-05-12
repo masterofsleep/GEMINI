@@ -39,8 +39,7 @@ dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 any.picc.enc <- c(
   smh.rad[proc_desc_long%in%picc.names1, EncID.new],
   sbk.rad[Test.Name%in%picc.names1, EncID.new],
-  uhn.rad[ProcedureName%in%picc.names1, EncID.new],
-  msh.rad[ProcedureName%in%picc.names1, EncID,new]
+  uhn.rad[ProcedureName%in%picc.names1, EncID.new]
 )
 multi.picc.enc <- any.picc.enc[duplicated(any.picc.enc)]
 
@@ -87,9 +86,10 @@ picc.insert <- merge(picc.insert,
                             Institution.Number)], by = "EncID.new",
                      all.x = F, all.y = F)
 
-picc.insert[, post.picc.time := 
-              as.numeric(ymd_hm(paste(Discharge.Date, Discharge.Time))-
-                           ymd_hms(picc.dt))/3600]
+picc.insert[, post.picc.time := as.numeric(ymd_hm(paste(Discharge.Date, Discharge.Time))-
+                           picc.dt)/3600]
+sum(picc.insert$EncID.new%in%dad$EncID.new)
+
 ddply(picc.insert, ~Institution.Number, summarise,
       g5 = sum(post.picc.time>24*5))
 library(plyr)
@@ -99,6 +99,15 @@ ddply(picc.insert, ~Institution.Number, summarize,
       median = round(median(post.picc.time), 1),
       iqr = round(IQR(post.picc.time), 1))
 
+# Number of physicians with at least ** PICC lines and discharge > 5 days
+phy.all <- readg(gim, all.phy)
+phy.all$EncID.new <- as.character(phy.all$EncID.new)
+picc.insert <- merge(picc.insert, phy.all[,.(EncID.new, mrp.code.new)],
+                     all.x = T, all.y = F)
+picc.insert[, mrp.code.new := paste(str_sub(EncID.new, 1, 2), mrp.code.new, sep = "-")]
+phy.picc.insert <- picc.insert[post.picc.time>24*5,.N, by = .(mrp.code.new, Institution.Number)]
+table(phy.picc.insert[N>=20, Institution.Number])
+table(phy.picc.insert[N>=10, Institution.Number])
 
 picc.insert[post.picc.time<0]
 
