@@ -34,7 +34,7 @@ cat1.prop <- function(x, cat){
 }
 
 
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 # dad$xray <- dad$EncID.new%in%xray.enc
 # dad[str_sub(EncID.new, 1, 2)=="15", xray:=NA]
 # dad$ir <- dad$EncID.new%in%ir.enc

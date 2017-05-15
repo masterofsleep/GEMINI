@@ -299,3 +299,16 @@ uhn$route <- ifelse(!is.na(uhn$Route_Code), "with Route", "missing Route")
 ggplot(uhn, aes(x = dmy(Order_Sta), fill = route)) + geom_histogram(binwidth = 10)
 
 fwrite(no_route, "R:/GEMINI/Check/uhn_phar_without_route.csv")
+
+
+
+# -------------------- MSH: sample of missing DIN data -------------------------
+# --------------------            2017-05-15             -----------------------
+msh <- readg(msh, phar, dt = T)
+apply(msh, 2, function(x)sum(is.na(x)))
+no_din <- msh[is.na(DIN)]
+set.seed(10)
+sample_enc <- sample(unique(no_din$EncID.new),20,  replace = F)
+
+sample_no_din <- msh[EncID.new%in%sample_enc]
+fwrite(sample_no_din, "R:/GEMINI/Check/msh_phar_missing_din.csv")

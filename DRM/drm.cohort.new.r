@@ -157,6 +157,14 @@ antibio.inc <- fread("H:/GEMINI/Results/DRM/new_170424/abx.new.csv")
 ns.cul <- fread("H:/GEMINI/Results/DRM/new_170424/drm.cul.ns.new.csv")
 drm.cohort <- intersect(antibio.inc[n.abx>=3, EncID.new], ns.cul$EncID.new)
 all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+# ---------- Sample for Chart review ---------------
+smh.drm <- all.dad[EncID.new%in%drm.cohort&Institution.Number=="SMH", 
+                   .(EncID.new, Admit.Date, Admit.Time,
+                     Discharge.Date, Discharge.Time)]
+smh.drm <- add_smh_mrn(smh.drm)
+fwrite(smh.drm, "H:/GEMINI/Results/DRM/chart_review/DRM.smh.csv")
+
+
 all.dad[EncID.new%in%antibio.inc[n.abx>=3, EncID.new], 
         Institution.Number] %>% table
 all.dad[EncID.new%in%ns.cul$EncID.new, Institution.Number] %>% table

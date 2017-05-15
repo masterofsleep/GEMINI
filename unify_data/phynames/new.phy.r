@@ -7,8 +7,8 @@ sbk <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")
 uhn <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/uhn.link.csv")
 msh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/msh.link.csv")
 thp <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")
-exclude <- readg(gim, notgim)
-all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+#exclude <- readg(gim, notgim)
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new.csv")
 
 # add the information for two encounters that are missing in the physician list
 # encounters 13303103, 13177105
@@ -37,16 +37,18 @@ find.new.code <- function(df, code.type.adm, code.type.mrp){
   df$adm.code = as.character(df$adm.code)
   df$dis.code = as.character(df$dis.code)
   df$mrp.code = as.character(df$mrp.code)
-  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new)], 
+  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new, GIM)], 
               by.x = "adm.code",by.y = "Code",
               all.x = T, all.y = F)
-  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new)], 
+  df <- merge(df, all.name[code.type == code.type.adm, .(Code, code.new, GIM)], 
               by.x = "dis.code",by.y = "Code",
               all.x = T, all.y = F)
   df <- merge(df, all.name[code.type == code.type.mrp, .(Code, code.new, GIM)], 
               by.x = "mrp.code",by.y = "Code",
               all.x = T, all.y = F)
-  names(df)[5:7] <- c("adm.code.new", "dis.code.new", "mrp.code.new")
+  names(df)[5:10] <- c("adm.code.new", "adm.GIM", 
+                      "dis.code.new", "dis.GIM",
+                      "mrp.code.new", "mrp.GIM")
   df
 }
 smh <- find.new.code(smh, "smh", "smh")
@@ -55,14 +57,15 @@ uhn <- find.new.code(uhn, "uhn.adm", "uhn.mrp")
 msh <- find.new.code(msh, "msh", "msh")
 thp <- find.new.code(thp, "thp", "thp")
 sum(thp$mrp.code.new==thp$dis.code.new)
-cohort <- rbind(smh, sbk, uhn, msh, thp, fill = T)[!EncID.new%in%exclude$EncID.new] %>% unique
+cohort <- rbind(smh, sbk, uhn, msh, thp, fill = T) %>% unique#[!EncID.new%in%exclude$EncID.new] %>% unique
+
 
 
 
 dad <- fread("H:/GEMINI/DataBackup/Data170214/UHN/CIHI/uhn.ip_dad.nophi.csv")
 extra.enc <- dad[mdy(Discharge.Date)>ymd("20150331"), EncID.new]
 cohort <- cohort[!EncID.new%in%extra.enc]
-
+table(cohort[,.(adm.GIM, dis.GIM)])
 
 
 fwrite(cohort, "H:/GEMINI/Data/GEMINI/gim.all.phy.csv")
