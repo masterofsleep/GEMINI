@@ -112,7 +112,6 @@ cohort$EncID.new[cohort$Diag.Code=="I50"] %>% length
 #--------------------------- STROKE --------------------------------------------
 
 stroke.code <- c("G45", "I61", "I63", "I64", "H341")
-
 stro.inc <- ip.diag[Diagnosis.Type=="M"&
                       (startwith.any(Diagnosis.Code, stroke.code)&
                          !Diagnosis.Code%in%c("G454", "I636")), EncID.new]

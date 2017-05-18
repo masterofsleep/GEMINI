@@ -35,7 +35,7 @@ apply(uhn.abx, 2, function(x)sum(is.na(x)))
 # data.table(table(uhn.abx[,Frequency])) %>%
 #   fwrite("H:/GEMINI/Results/DRM/uhn.abx.freq.csv")
 
-# antibiotic in 48
+
 abx.inc <- rbind(smh.abx[,.(abx.dttm = ymd_hm(paste(start_date, start_time)),
                             abx.stop.dttm = ymd_hm(paste(stop_date, stop_time)),
                            adm.dttm = ymd_hm(paste(Admit.Date, Admit.Time)),
@@ -155,23 +155,46 @@ fwrite(drm.cul, "H:/GEMINI/Results/DRM/new_170424/drm.cul.ns.new.csv")
 rm(list = ls())
 antibio.inc <- fread("H:/GEMINI/Results/DRM/new_170424/abx.new.csv")
 ns.cul <- fread("H:/GEMINI/Results/DRM/new_170424/drm.cul.ns.new.csv")
-drm.cohort <- intersect(antibio.inc[n.abx>=3, EncID.new], ns.cul$EncID.new)
-all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+drm.cohort <- intersect(antibio.inc[n.abx>=2, EncID.new], ns.cul$EncID.new)
+all.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+
 # ---------- Sample for Chart review ---------------
-smh.drm <- all.dad[EncID.new%in%drm.cohort&Institution.Number=="SMH", 
-                   .(EncID.new, Admit.Date, Admit.Time,
-                     Discharge.Date, Discharge.Time)]
-smh.drm <- add_smh_mrn(smh.drm)
-fwrite(smh.drm, "H:/GEMINI/Results/DRM/chart_review/DRM.smh.csv")
+# smh.drm <- all.dad[EncID.new%in%drm.cohort&Institution.Number=="SMH", 
+#                    .(EncID.new, Admit.Date, Admit.Time,
+#                      Discharge.Date, Discharge.Time)]
+# smh.drm <- add_smh_mrn(smh.drm)
+# fwrite(smh.drm, "H:/GEMINI/Results/DRM/chart_review/DRM.smh.csv")
+# 
+# 
+# all.dad[EncID.new%in%antibio.inc[n.abx>=3, EncID.new], 
+#         Institution.Number] %>% table
+# all.dad[EncID.new%in%ns.cul$EncID.new, Institution.Number] %>% table
+# 
+# drm.cohort <- drm.cohort[!drm.cohort%in%all.dad[Discharge.Disposition=="7"&LoS<=3, EncID.new]]
+
+# ---------------------- CREATE LIST FOR CHART REVIEW --------------------------
+drm.cohort <- all.dad[EncID.new%in%drm.cohort]
+table(drm.cohort$Institution.Number)
+for(i in unique(drm.cohort$Institution.Number)){
+  dat <- drm.cohort[Institution.Number==i,
+                    .(EncID.new, Admit.Date, Admit.Time,
+                      Discharge.Date, Discharge.Time)]
+  if(i =="SMH"){
+    link <- fread("R:/GEMINI/_RESTORE/SMH/CIHI/SMH.LINKLIST_NEWHASH.csv")
+    link$EncID.new <- paste("11", link$EncID.new, sep = "")
+    dat$EncID.new <- as.character(dat$EncID.new)
+    dat <- merge(dat, link[,.(MRN, FIRSTNAME, LASTNAME,EncID.new)], by = "EncID.new",
+                 all.x = T, all.y = F)
+    dat <- dat[,.(MRN, EncID.new, 
+                  First.Name =  FIRSTNAME, Last.Name = LASTNAME,
+                  Admit.Date, Admit.Time,
+                  Discharge.Date, Discharge.Time)]
+  }
+  fwrite(dat, paste("R:/GEMINI-DRM-TEAM/DRM-TEAM/cohort_", i, ".csv", sep = ""))
+}
 
 
-all.dad[EncID.new%in%antibio.inc[n.abx>=3, EncID.new], 
-        Institution.Number] %>% table
-all.dad[EncID.new%in%ns.cul$EncID.new, Institution.Number] %>% table
-all.dad[EncID.new%in%drm.cohort, Institution.Number] %>% table
-all.dad[Institution.Number=="54265", Institution.Number := "tgh"]
-all.dad[Institution.Number=="54266", Institution.Number := "twh"]
-drm.cohort <- drm.cohort[!drm.cohort%in%all.dad[Discharge.Disposition=="7"&LoS<=3, EncID.new]]
+
 
 sepsis <- "A41"
 fever <- "R50"

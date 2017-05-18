@@ -366,3 +366,23 @@ ymd_hm(paste(check$Date.of.Physician.Initial.Assessment,
               check$Time.of.Physician.Initial.Assessment, sep = " ")) - 
   ymd_hm(paste(check$Triage.Date, 
                 check$Triage.Time, sep = " "))
+
+
+
+
+smh <- readg(smh.er, .er.nophi)
+sbk <- readg(sbk.er, .er.nophi,
+             colClasses = list(character = c("NACRSRegistrationNumber",
+                                             "EncID.new")))
+uhn <- readg(uhn.er, .er.nophi,
+             colClasses = list(character = c("NACRSRegistrationNumber",
+                                             "EncID.new")))
+msh <- readg(msh, .er.nophi)
+thp <- readg(thp, .er.nophi)
+
+
+apply(smh, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(sbk, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(uhn, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(msh, MARGIN = 2, FUN = function(x)sum(is.na(x)))
+apply(thp, MARGIN = 2, FUN = function(x)sum(is.na(x)))

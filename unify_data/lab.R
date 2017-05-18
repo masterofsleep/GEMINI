@@ -277,3 +277,13 @@ sbk.lab.er[str_sub(Collection.Date, -2, -1)=="AM"&str_sub(Collection.Date, -14, 
 sbk.lab.er[str_sub(Collection.Date, -2, -1)=="AM"&str_sub(Collection.Date, -14, -13)==12, 
       Collection.DtTm:= mdy_hms(str_sub(Collection.Date, 1, 20))-hours(12)]
 fwrite(sbk.lab.er, "H:/GEMINI/Data/SBK/Lab/sbk.labs_er.csv")
+
+
+
+
+# ----------------- may 16 SBK lab frequency table -----------------------------
+sbk.lab <- rbind(readg(sbk, labs_ip),
+                 readg(sbk, labs_er))
+
+sbk.lab.freq <- sbk.lab[,.N, by = .(Test.Name, Test.ID)]
+fwrite(sbk.lab.freq, "H:/GEMINI/Results/DataSummary/clinical freq tables/lab.sbk.csv")

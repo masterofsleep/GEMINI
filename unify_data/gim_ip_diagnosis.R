@@ -102,8 +102,9 @@ ip.diag <- readg(gim, ip_diag)
 library(icd)
 cmd <- icd10_comorbid_quan_deyo(ip.diag, visit_name = "EncID.new",
                                 icd_name = "Diagnosis.Code")
+# updated to "quan" on 2017-05-16
 cci <- data.frame(icd_charlson_from_comorbid(cmd, visit_name = "EncID.new", 
-                                             scoring_system = "charlson"))
+                                             scoring_system = "quan"))
 colnames(cci)[1] <- "Charlson.Comorbidity.Index"
 cci$EncID.new <- row.names(cci)
 fwrite(cci, "H:/GEMINI/Data/GEMINI/gim.ip_cci.csv")
@@ -118,8 +119,8 @@ fwrite(ip.diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
 sbk[, Site:=NULL]
 msh[, Site:= NULL]
 ip_diag <- rbind(smh, sbk, uhn, thp, msh) %>% unique
-ex <- readg(gim, notgim)
-ip_diag <- ip_diag[!EncID.new%in%ex$EncID.new]
+#ex <- readg(gim, notgim)
+#ip_diag <- ip_diag[!EncID.new%in%ex$EncID.new]
 length(unique(ip_diag$EncID.new))
 fwrite(ip_diag, "H:/GEMINI/Data/GEMINI/gim.ip_diag.csv")
 

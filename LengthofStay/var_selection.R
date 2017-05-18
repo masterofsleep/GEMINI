@@ -129,11 +129,11 @@ ggsave("H:/GEMINI/Results/LengthofStay/hist.los.png")
 
 # ---------------------- NEW Cohort selection ----------------------------------
 all.phy <- readg(gim, all.phy)
-los.cohort <- all.phy[adm.code.new==dis.code.new&GIM=="y"]
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.csv")
+los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM=="y"]
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv") # update 2017-05-18
 
-los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM)], 
-                    unique(dad[,.(EncID.new, Age, Gender, LoS)]),by = "EncID.new")
+los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM= mrp.GIM)], 
+                    unique(dad[,.(EncID.new, Age, Gender, LoS= Acute.LoS)]),by = "EncID.new")
 
 cci <- readg(gim, cci)
 los.cohort <- merge(los.cohort, cci, by = "EncID.new", all.x = T, all.y = F)
@@ -164,9 +164,9 @@ los.cohort[, mrp.code.new:=NULL]
 
 fwrite(los.cohort[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG,LoS, mrp.code, mrp.GIM = GIM, site, 
                      Group_by_10hrs, Group_by_20hrs, LOS_in_20_grps, LOS_in_10_grps)],
-       "H:/GEMINI/Results/LengthofStay/cohort.los.april07.csv")
+       "H:/GEMINI/Results/LengthofStay/cohort.los.may18.csv")
 fwrite(data.table(table(los.cohort[,mrp.code])),
-       "H:/GEMINI/Results/LengthofStay/mrp.freq.april07.csv")
+       "H:/GEMINI/Results/LengthofStay/mrp.freq.may18.csv")
 
 table(los.cohort$site)
 table(los.cohort$LOS_in_10_grps)
@@ -188,5 +188,7 @@ fwrite(freq.by.10grp, "H:/GEMINI/Results/LengthofStay/freq.by.10grp.csv")
 fwrite(freq.phy.by.10.grp, "H:/GEMINI/Results/LengthofStay/freq.phy.by.10.grp.csv")
 
 
-
-
+# ----------------------------- new table --------------------------------------
+los.cohort[, .(mean.los = mean(LoS),
+              sd.los = sd(LoS),
+              .N), by = mrp.code] %>% fwrite("H:/GEMINI/Results/LengthofStay/mrp.los.summary.may18.csv")

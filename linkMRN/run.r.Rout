@@ -19,26 +19,8 @@ Type 'q()' to quit R.
 
 > require(shiny)
 Loading required package: shiny
-> folder_address = 'H://GEMINI//Code//linkMRN'
+> folder_address = 'C://Users//guoyi//Documents//Code//gemini//linkMRN'
 > runApp(folder_address, launch.browser=TRUE)
 
-Listening on http://127.0.0.1:6941
+Listening on http://127.0.0.1:6227
 ERROR: [on_request_read] connection reset by peer
-Read 0.0% of 18792 rowsRead 18792 rows and 35 (of 35) columns from 0.007 GB file in 00:00:03
-Read 0.0% of 18792 rowsRead 18792 rows and 35 (of 35) columns from 0.007 GB file in 00:00:05
-Read 0.0% of 18792 rowsRead 18792 rows and 28 (of 28) columns from 0.002 GB file in 00:00:03
-Warning: Error in fread: embedded nul in string: 'ê?ã\004\036Ù:aM¦™„’.\177›ªeòM\005¶ùm ªGÛ:FÍGCw\025mXõéùİ{`¶V\020O¯\030g\036üéJíª\037Pc\005\0325¾÷„m¢^zF”zjë¢;\027İ#Úˆ¦¼\0319¸èÑEÅ\vô\031›Ûõk\037.•R\017¿‰ûÑ\v£\027¸\017ş$\177¨\027„âµ\027\024CÎ\003¹.bôpş‚\f \024P-\023L"Ï\034\030å»\0zšHÃµâq™0‘\020\vóé}‚ù)ù2\035\027w¯xí‹xV• Ïä:Ü"\031©`-hèÃH6¼¢e‚d\031ĞõuSÑeüA¨ê\tbıA£\031\177¨\023\001sş c­?¤TÀœ?@ ÊC8÷ºÁöÅ€FÅİÑ\rŸ0˜ĞgD?hj¾=Ù¹±{DiÂ\035\\ôè¢â\017Ğ'
-Stack trace (innermost first):
-    93: fread
-    92: <reactive:datasetInput> [H:\GEMINI\Code\linkMRN/server.R#20]
-    81: datasetInput
-    80: head
-    79: renderTable [H:\GEMINI\Code\linkMRN/server.R#31]
-    78: func
-    77: origRenderFunc
-    76: output$table
-     1: runApp
-Warning in if (nchar(dat$EncID.new) == 6) { :
-  the condition has length > 1 and only the first element will be used
-Warning in if (nchar(dat$EncID.new) == 6) { :
-  the condition has length > 1 and only the first element will be used

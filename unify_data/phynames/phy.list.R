@@ -160,7 +160,7 @@ table(phy.list$code.new)
 phy.list[code.new==1500, code.new:=214]
 sum(is.na(phy.list$code.new))
 phy.list[is.na(code.new), code.new:= 216: (216+1590)]
-all.name <- phy.list[,.(Code, code.type, last.name, first.name, code.new, GIM)] %>% unique
+all.name <- phy.list[,.(Code, N, code.type, last.name, first.name, code.new, GIM)] %>% unique
 
 all.name[str_detect(first.name, "Temp")|
            str_detect(first.name, "Resident")|
@@ -200,6 +200,10 @@ phy.ncat <- ddply(all.name, ~code.new, summarize,
 all.name[code.new%in%phy.ncat[phy.ncat$n.cat>1, "code.new"]][order(code.new)]
 table(all.name[code.type=="thp", GIM])
 
-all.name[GIM=="u", GIM=="n"]
+#all.name[GIM=="u", GIM:="n"]
+all.name[GIM=="n"&N>50] -> check
+
+
 fwrite(all.name, 
        "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new.csv")
+

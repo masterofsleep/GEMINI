@@ -339,6 +339,7 @@ cor.test(dad$cost_riw, dad$cost_hig, method = "pearson")
 cor.test(dad$cost_riw, dad$cost_hig, method = "spearman")
 
 
+
 fwrite(dad, "H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
 
 
