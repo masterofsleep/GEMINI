@@ -172,12 +172,38 @@ dev.off()
 # --------------------------- Figure 3 -----------------------------------------
 fig3 <- function(dad){
   cmg.freq <- dad[, .N, by = .(CMG, CMG.Diagnosis)][order(N, decreasing = T)]
-  dad[, top20.diag := ifelse(CMG%in%cmg.freq$CMG[1:20], CMG.Diagnosis, "Other")]
+  cmg.freq$top20.diag <- c("Pneumonia",
+                               "Heart Failure",
+                               "COPD", "UTI",
+                               "Stroke",
+                               "General Symptom",
+                               "GI Bleed",
+                               "Electrolyte Abnormality",
+                               "GI Symptom",
+                            "Kidney Injury",
+                           "Sepsis",
+                           "Delirium",
+                           "Non-severe Enteritis",
+                           "Diabetes",
+                           "Aspiration Pneumonia",
+                           "Cellulitis",
+                           "Syncope",
+                           "Poisoning",
+                           "Seizure",
+                           "Cirrhosis/\nHepatitis",
+                           "Arrhythmia",
+                           "Palliative Care",
+                           "Severe Enteritis",
+                           rep("Other", 426))
+  dad <- merge(dad, cmg.freq[,.(CMG, top20.diag)],
+               by = "CMG", all.x = T, all.y = F)
   top20diag  <- ddply(dad, ~top20.diag, summarize,
                       N = length(EncID.new),
                       Cost = median(Cost, na.rm = T)) %>% arrange(desc(N))
   names(top20diag)[1] <- "Diagnosis"
-  top20diag$ID <-c(21, 1:20)
+  top20diag$Diagnosis <- paste(top20diag$Diagnosis, "\n",
+                               sprintf("%.1f", top20diag$N/136208*100), "%", sep = "")
+  top20diag$ID <-c(24, 1:23)
   library(treemap)
   reds <- c(rgb(255/255, 255/255, 255/255, 1),
             rgb(255/255, 204/255, 204/255, 1),
@@ -204,7 +230,7 @@ fig3 <- function(dad){
   )
 }
 fig3(dad)
-png("H:/GEMINI/Results/DesignPaper/result.v4/figure3.png", res = 250, width = 2000, height = 2000)
+png("H:/GEMINI/Results/DesignPaper/result.v5/figure3.png", res = 250, width = 2000, height = 2000)
 fig3(dad)
 dev.off()
 
@@ -213,11 +239,11 @@ dev.off()
 # ------------------------------- Figure 4 -------------------------------------
 fig4 <- function(dad){
   df <- ddply(dad, ~fiscal.year, summarize,
-              "Number of Hospitalization" = length(EncID.new),
+              "Number of Hospitalizations" = length(EncID.new),
               "Median Acute Length-of-Stay" = median(Acute.LoS),
-              "Rate of Readmission in 30 Days" = sum(read.in.30==T, na.rm = T)/sum(!is.na(read.in.30))*100,
+              "30-day Readmission" = sum(read.in.30==T, na.rm = T)/sum(!is.na(read.in.30))*100,
               "Median Cost" = median(Cost, na.rm = T),
-              "Rate of Radiology Test.\n(CT/MRI/Ultrasound)" = sum(ctmrius==1, na.rm = T)/sum(!is.na(ctmrius))*100)
+              "Advanced Imaging" = sum(ctmrius==1, na.rm = T)/sum(!is.na(ctmrius))*100)
   df[2, 2:6] <- (df[2, 2:6] - df[1, 2:6])/df[1, 2:6] * 100
   df[3, 2:6] <- (df[3, 2:6] - df[1, 2:6])/df[1, 2:6] * 100
   df[4, 2:6] <- (df[4, 2:6] - df[1, 2:6])/df[1, 2:6] * 100
@@ -226,6 +252,11 @@ fig4 <- function(dad){
   df <- melt(df, id.var = "fiscal.year")
   names(df)[2] <- " "
   df$` ` <- str_replace_all(df$` `, "[.]", " ")
+  df$` ` <- factor(df$` `, levels = c("Number of Hospitalizations",
+                                          "30-day Readmission",
+                                          "Median Cost",
+                                          "Median Acute Length-of-Stay",
+                                          "Advanced Imaging"))
   ggplot(df, aes(fiscal.year, value, group = ` `,
                  color = ` `)) + 
     geom_point(size = 3, shape = 16) + geom_line(size = 1, alpha = 0.5) + 
@@ -235,7 +266,7 @@ fig4 <- function(dad){
     ylab("Change From Baseline (%)") +
     xlab("Fiscal Year")
 }
-png("H:/GEMINI/Results/DesignPaper/result.v4/figure4.png", res = 250, width = 2000, height = 1200)
+png("H:/GEMINI/Results/DesignPaper/result.v5/figure4.png", res = 250, width = 2000, height = 1200)
 fig4(dad)
 dev.off()
 
@@ -284,10 +315,9 @@ summary(lm(number.of.hospitalization ~ fiscal.year, data = df))
 lm(Acute.LoS ~ fiscal.year, dad) %>% summary
 
 glm(read.in.30 ~ fiscal.year, dad, family = binomial) %>% summary
-
+lrtest(glm(read.in.30 ~ fiscal.year, dad, family = binomial))
 lm(Cost ~ fiscal.year, dad) %>% summary
 
-glm(read.in.30 ~ fiscal.year, dad, family = binomial) %>% summary
 lrtest(glm(ctmrius ~ fiscal.year, dad, family = binomial))
 glm(ctmrius ~ fiscal.year, dad, family = binomial) %>% summary
 lrtest(glm(ct ~ fiscal.year, dad, family = binomial))
@@ -405,3 +435,30 @@ df <- dad[,.N, by = .(site = str_sub(EncID.new, 1, 2), fiscal.year)]
 library(reshape2)
 nbysiteyear <- dcast(df, site~ fiscal.year, value.var = "N")
 fwrite(nbysiteyear, "H:/GEMINI/Results/DesignPaper/result.v4/table6.csv")
+
+
+# ----------------------- update paper -----------------------------------------
+# number of unique patient
+sum(dad$Hash=="")
+dad[Hash==""]
+dad[Hash!="", Hash] %>% unique %>% length 
+
+# ER admission and Bed-days by year
+smh <- readg(smh.er, .er.nophi)
+sbk <- readg(sbk.er, .er.nophi,
+             colClasses = list(character = c("NACRSRegistrationNumber",
+                                             "EncID.new")))
+uhn <- readg(uhn.er, .er.nophi,
+             colClasses = list(character = c("NACRSRegistrationNumber",
+                                             "EncID.new")))
+msh <- readg(msh, .er.nophi)
+thp <- readg(thp, .er.nophi)
+er <- c(smh$EncID.new, sbk$EncID.new, uhn$EncID.new, msh$EncID.new, thp$EncID.new)
+dad$er.adm <- dad$EncID.new%in%er
+dad[str_sub(EncID.new, 1, 2)=="15", sum(er.adm), by = fiscal.year][order(fiscal.year)]
+dad[str_sub(EncID.new, 1, 2)=="14", sum(LoS), by = fiscal.year]
+
+# cmg freq
+cmg.freq <- dad[, .N, by = .(CMG, CMG.Diagnosis)][order(N, decreasing = T)]
+cmg.freq$prop <- cmg.freq$N/136208
+sum(cmg.freq$prop[1:10])

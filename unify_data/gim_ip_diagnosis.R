@@ -129,3 +129,19 @@ setwd("C:/Users/guoyi/sqlite")
 con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
 dbWriteTable(con, "ip_diag", ip_diag)
 dbDisconnect(con)
+
+
+# --------------------- compare two methods for CCI ----------------------------
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+ip.diag <- readg(gim, ip_diag)[EncID.new%in%dad$EncID.new]
+library(icd)
+cmd <- icd10_comorbid_quan_deyo(ip.diag, visit_name = "EncID.new",
+                                icd_name = "Diagnosis.Code")
+# updated to "quan" on 2017-05-16
+cci_quan <- data.frame(icd_charlson_from_comorbid(cmd, visit_name = "EncID.new", 
+                                             scoring_system = "quan"))
+cci_charlson <- data.frame(icd_charlson_from_comorbid(cmd, visit_name = "EncID.new", 
+                                                      scoring_system = "charlson"))
+
+table(cci_quan)
+table(cci_charlson)

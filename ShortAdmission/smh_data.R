@@ -57,7 +57,18 @@ for(i in lab){
 # ymd_hms("2060-02-22 00:07:00")
 # smh.lab[Collection.DtTm=="2060-02-22 00:07:00"]
 
+# full lab 
+smh.lab <- readg(smh, labs, dt = T)
+smh.lab <- smh.lab[,.(EncID.new, Test.Name, Test.ID, 
+                      Order.Number = Order., Result.Value,
+                      Result.Unit, Reference.Range, Collection.DtTm = ymd_hms(Collection.DtTm), Site = "SMH")]
+smh.lab <- smh.lab[EncID.new%in%smh.inc]
+fwrite(smh.lab, "R:/GEMINI-Short_Admission_Project/Data/Clinical/lab_all.csv")
 
+
+
+
+# medication
 smh.phar <- readg(smh, phar, dt = T)
 smh.phar <- smh.phar[EncID.new%in%smh.inc]
 smh.phar <- smh.phar[ymd(start_date)==ymd(Admit.Date)]
@@ -66,3 +77,23 @@ smh.phar[,':='(ADMITDATE = NULL,
                      DISCHARGE.DATE = NULL,
                      DISCHARGE.TIME = NULL)]
 fwrite(smh.phar, "R:/GEMINI-Short_Admission_Project/Data/Clinical/medication_sameday.csv")
+
+
+# physician
+gim.phy <- readg(gim, all.phy)
+smh.phy <- gim.phy[str_sub(EncID.new, 1, 2)=="11"&EncID.new%in%smh.inc]
+smh.phy[, ':='(mrp.code = NULL,
+               adm.code = NULL,
+               dis.code = NULL)]
+fwrite(smh.phy, "R:/GEMINI-Short_Admission_Project/Data/CIHI/physicians.csv")
+
+
+# bronchoscopy and endoscopy
+smh.er.int <- readg(smh, er_int)
+int.map <- readxl::read_excel("H:/GEMINI/Results/DesignPaper/int.freq_AV.xlsx", 
+                              sheet = 2, col_names = F)
+endo.code <- int.map$X2[4:171]
+
+smh.er.int_endo <- smh.er.int[Occurrence.Type%in%endo.code]
+smh.ip_int <- readg(smh, ip_int)
+smh.ip_int[Intervention.Code%in%endo.code]
