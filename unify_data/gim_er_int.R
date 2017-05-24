@@ -158,8 +158,8 @@ int.er[is.na(Occurrence.Type)&is.na(Occurrence.Code)] -> check
 apply(check, 2, function(x)sum(is.na(x)))
 int.er <- int.er[!(is.na(Occurrence.Type)&is.na(Occurrence.Code))]
 apply(int.er, 2, function(x)sum(is.na(x))) 
-ex <- readg(gim, notgim)
-int.er <- int.er[!EncID.new%in%ex$EncID.new]
+# ex <- readg(gim, notgim)
+# int.er <- int.er[!EncID.new%in%ex$EncID.new]
 int.er[EncID.new%in%int.er[is.na(Occurrence.Type), EncID.new]] -> check
 fwrite(int.er, "H:/GEMINI/Data/GEMINI/gim.er_int.csv")
 

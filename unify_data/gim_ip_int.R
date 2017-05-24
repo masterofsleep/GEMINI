@@ -201,8 +201,8 @@ int.ip <- rbind(smh.intip,
                 msh.intip,
                 thp.intip) %>% unique
 int.ip <- int.ip[!(is.na(Intervention.Code)&is.na(Intervention.Occurrence))]
-ex <- readg(gim, notgim)
-int.ip <- int.ip[!EncID.new%in%ex$EncID.new]
+#ex <- readg(gim, notgim)
+#int.ip <- int.ip[!EncID.new%in%ex$EncID.new]
 int.ip <- int.ip %>% arrange(EncID.new, as.integer(Intervention.Occurrence)) %>% data.table
 int.ip[EncID.new%in%int.ip[is.na(Intervention.Episode.Start.Date), EncID.new]] -> check
 int.ip[duplicated(int.ip[,.(EncID.new, Intervention.Occurrence)])]

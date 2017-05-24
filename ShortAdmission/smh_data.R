@@ -61,7 +61,10 @@ for(i in lab){
 smh.lab <- readg(smh, labs, dt = T)
 smh.lab <- smh.lab[,.(EncID.new, Test.Name, Test.ID, 
                       Order.Number = Order., Result.Value,
-                      Result.Unit, Reference.Range, Collection.DtTm = ymd_hms(Collection.DtTm), Site = "SMH")]
+                      Result.Unit, Reference.Range, 
+                      Collection.DtTm = ymd_hms(Collection.DtTm), 
+                      Admit.Date, Admit.Time,
+                      Discharge.Date, Discharge.Time)]
 smh.lab <- smh.lab[EncID.new%in%smh.inc]
 fwrite(smh.lab, "R:/GEMINI-Short_Admission_Project/Data/Clinical/lab_all.csv")
 

@@ -33,7 +33,7 @@ picc.names1%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureNam
 sum(msh.rad$ProcedureName%in%picc.names1)
 
 
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
 
 
 any.picc.enc <- c(
@@ -122,7 +122,8 @@ picc.names.all <- c("Angiography Line PICC CCM", "Angiography Line PICC Insertio
                 "PICC INSERTION US GUIDED (Z456)",
                 "PICC INSERT VENOGRAM", "PICC INSERT SINGLE LUMEN",
                 "PICC INSERT DOUBLE LUMEN", "PICC EXCHANGE (Z456,Z457)", "PICC EXCH")
-picc.names.all%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureName)
+picc.names.all%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureName,
+                    msh.rad$ProcedureName)
 
 any.picc.enc <- c(
   smh.rad[proc_desc_long%in%picc.names1, EncID.new],
@@ -164,3 +165,33 @@ dad[picc.rad == T&picc.int == F&Institution.Number=="smh", .(EncID.new, Institut
   fwrite("H:/GEMINI/Results/PICC/smh.picc.rad.only.csv")
 dad[picc.int ==T&picc.rad ==F&Institution.Number=="smh", .(EncID.new, Institution.Number)] %>% 
   fwrite("H:/GEMINI/Results/PICC/smh.picc.int.only.csv")
+
+# ------------------------- 2017 05 24 -----------------------------------------
+# sample result for unknown test names
+uhn.rad <- rbind(readg(UHN, rad_ip),
+                 readg(UHN, rad_er))
+uhn_ccm <- uhn.rad[ProcedureName=="Angiography Line PICC CCM"]
+fwrite(uhn_ccm, "H:/GEMINI/Results/PICC/check/uhn_angiography_line_picc_ccm.csv")
+
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
+msh_insertion <- msh.rad[ProcedureName=="Angiography Body Line Insertion"]
+fwrite(msh_insertion, "H:/GEMINI/Results/PICC/check/msh_angiography_body_line_insertion.csv")
+
+
+
+# find frequency table for those in Intervention but not in Radiology files
+picc.insert.names <- c("Angiography Line PICC CCM",
+                       "Angiography Line PICC Insertion",
+                       "PIC line insertion-1 lumen",
+                       "PIC line insertion-2 lumen",
+                       "PIC line insertion-3 lumen",
+                       "PICC Line Single Lumen-Nursing Unit",
+                       "PICC Line Double Lumen-Nursing Unit",
+                       "PICC INSERTION US GUIDED",
+                       "PICC INSERT VENOGRAM",
+                       "PICC INSERT SINGLE LUMEN",
+                       "PICC INSERT DOUBLE LUMEN",
+                       "Angiography Peripheral Line Insertion",
+                       "Angiography Body Line Insertion")
+length(unique(ip.int$EncID.new))
