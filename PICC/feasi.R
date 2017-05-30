@@ -179,7 +179,13 @@ msh_insertion <- msh.rad[ProcedureName=="Angiography Body Line Insertion"]
 fwrite(msh_insertion, "H:/GEMINI/Results/PICC/check/msh_angiography_body_line_insertion.csv")
 
 
-
+# read in all the radiology data
+smh.rad <- readg(smh, rad)
+sbk.rad <- readg(sbk, rad.csv)
+uhn.rad <- rbind(readg(UHN, rad_ip),
+                 readg(UHN, rad_er))
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
 # find frequency table for those in Intervention but not in Radiology files
 picc.insert.names <- c("Angiography Line PICC CCM",
                        "Angiography Line PICC Insertion",
@@ -188,10 +194,49 @@ picc.insert.names <- c("Angiography Line PICC CCM",
                        "PIC line insertion-3 lumen",
                        "PICC Line Single Lumen-Nursing Unit",
                        "PICC Line Double Lumen-Nursing Unit",
-                       "PICC INSERTION US GUIDED",
+                       "PICC INSERTION US GUIDED (Z456)",
                        "PICC INSERT VENOGRAM",
                        "PICC INSERT SINGLE LUMEN",
                        "PICC INSERT DOUBLE LUMEN",
                        "Angiography Peripheral Line Insertion",
                        "Angiography Body Line Insertion")
-length(unique(ip.int$EncID.new))
+picc.insert.names%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureName,
+                    msh.rad$ProcedureName)
+
+picc.insertion.rad <- c(
+  smh.rad[proc_desc_long%in%picc.insert.names, EncID.new],
+  sbk.rad[Test.Name%in%picc.insert.names, EncID.new],
+  uhn.rad[ProcedureName%in%picc.insert.names, EncID.new],
+  msh.rad[ProcedureName%in%picc.insert.names, EncID.new]
+)
+# PICC in intervention codes 
+ip.int <- readg(gim, ip_int)
+er.int <- readg(gim, er_int)
+names(er.int)[3] <- "Intervention.Code"
+interv <- rbind(ip.int[,.(EncID.new, Intervention.Code)], 
+                er.int[,.(EncID.new, Intervention.Code)])
+interv <- interv[str_sub(EncID.new, 1, 2)%in%c("11", "12", "13", "14")]
+picc.im <- interv[startsWith(Intervention.Code, "1IS53GRLF")]
+picc.rm <- interv[startsWith(Intervention.Code, "1IS55GRKA")]
+
+# compare
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+dad[, ':='(picc.insert.rad = EncID.new%in%picc.insertion.rad,
+           picc.insert.int = EncID.new%in%picc.im$EncID.new)]
+
+ddply(dad, ~str_sub(EncID.new, 1, 2), function(x) compare.sets(x$picc.insert.rad,
+                                                   x$picc.insert.inc))
+table(dad[, .(picc.insert.rad, picc.insert.int, str_sub(EncID.new, 1, 2) )])
+
+int.only <- dad[str_sub(EncID.new,1,2)!="15"&picc.insert.int==T&picc.insert.rad==F]
+rad.only <- dad[str_sub(EncID.new,1,2)!="15"&picc.insert.int==F&picc.insert.rad==T]
+
+smh.rad[EncID.new%in%int.only$EncID.new, .N, by = proc_desc_long][order(N, decreasing = T)]%>%
+  fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_smh.csv")
+sbk.rad[EncID.new%in%int.only$EncID.new, .N, by = Test.Name][order(N, decreasing = T)]%>%
+  fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_sbk.csv")
+uhn.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decreasing = T)]%>%
+  fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_uhn.csv")
+msh.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decreasing = T)]%>%
+  fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_msh.csv")
+

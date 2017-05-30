@@ -208,3 +208,80 @@ simu.res <- ddply(cohort.100p, ~Institution.Number, summarize,
 )
 
 fwrite(simu.res, "C:/Users/guoyi/Desktop/to.adm/simu.los.comparison.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ------------------------------ simu Radiology --------------------------------
+cohort <- find_cohort()
+ctmrius <- fread("C:/Users/guoyi/Desktop/to.adm/n.ctmrius.csv")
+ctmrius$EncID.new <- as.character(ctmrius$EncID.new)
+cohort <- merge(cohort, ctmrius, by = "EncID.new", all.x = T, all.y = F)
+cohort[is.na(N.rad), N.rad:= 0]
+table(cohort$N.rad)
+n.rad <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$N.rad)/nrow(x),
+             stringsAsFactors = F)
+}
+nrad.sum <- ddply(cohort[!startsWith(Institution.Number, "THP")], ~physician, n.rad)
+
+
+simu_rad <- function(percentile){
+  target.rad <- ddply(nrad.sum, ~site, summarize,
+                      targ_nrad = quantile(ave, probs = percentile))
+  nrad.sum <- merge(nrad.sum, target.rad, by = "site") %>% data.table
+  nrad.sum[, ave.diff:= ifelse(ave > targ_nrad,
+                               ave - targ_nrad,
+                               0)]
+  saved.prop <- ddply(nrad.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_rad(0.75),
+      simu_rad(0.5),
+      simu_rad(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+site_total_rad <- function(){
+  dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+  ctmrius <- fread("C:/Users/guoyi/Desktop/to.adm/n.ctmrius.csv")
+  dad <- merge(dad, ctmrius, by = "EncID.new",
+               all.x = T, all.y = F)
+  dad[is.na(N.rad), N.rad:=0]
+  site.total <- ddply(dad[!startsWith(Institution.Number, "THP")], 
+                      ~Institution.Number, summarize,
+        total.ctmrius = sum(N.rad))
+  names(site.total)[1] <- "site"
+  return(site.total)
+}
+
+site_total <- site_total_rad()
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total.ctmrius * prop_saved_75,
+                   n_saved_50 = total.ctmrius * prop_saved_50,
+                   n_saved_25 = total.ctmrius * prop_saved_25)]
+
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.nrad.csv")

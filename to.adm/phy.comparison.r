@@ -120,7 +120,9 @@ adj_site <- function(x){
 
 phy.sum[,':='(
   adj_ave.acute.los = adj_site(ave.acute.los),
-  adj_read.rate = adj_site(read.rate)
+  adj_read.rate = adj_site(read.rate),
+  adj_cost = adj_site(ave.cost),
+  adj_mort = adj_site(mortality)
 )]
 cor.test(adj_site(phy.sum$ave.acute.los), adj_site(phy.sum$read.rate),
          method = "pearson")
@@ -130,3 +132,48 @@ p1 <- qplot(ave.acute.los, read.rate,  color = site, data = phy.sum, size=I(2), 
 p2 <- qplot(adj_ave.acute.los, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point")
 library(cowplot)
 plot_grid(p1, p2, labels = c("Unadjusted", "Adjusted by Site"))
+
+
+
+
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/correlation scatter plot")
+cor.test(phy.sum$adj_cost, phy.sum$adj_mort)
+p1 <- qplot(ave.cost, mortality,  color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Cost", ylab = "Mortality")
+p2 <- qplot(adj_cost, adj_mort, color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Cost", ylab = "Mortality") + theme_bw()
+library(cowplot)
+
+png("cost_vs_mort.png", res = 250, width = 2000, height = 1200)
+qplot(adj_cost, adj_mort, color = site, data = phy.sum, size=I(2), geom = "point",
+      xlab = "Cost", ylab = "Mortality") + theme_bw()
+dev.off()
+
+cor.test(phy.sum$adj_cost, phy.sum$adj_read.rate)
+p1 <- qplot(ave.cost, read.rate,  color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Cost", ylab = "Re-admission in 30 days")
+p2 <- qplot(adj_cost, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Cost", ylab = "Re-admission in 30 days")
+
+png("cost_vs_read.png", res = 250, width = 2000, height = 1200)
+qplot(adj_cost, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
+      xlab = "Cost", ylab = "Re-admission in 30 days") + theme_bw()
+dev.off()
+
+cor.test(phy.sum$adj_ave.acute.los, phy.sum$adj_read.rate)
+p1 <- qplot(ave.acute.los, read.rate,  color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Acute Length-of-Stay", ylab = "Re-admission in 30 days")
+p2 <- qplot(adj_ave.acute.los, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
+            xlab = "Acute Length-of-Stay", ylab = "Re-admission in 30 days")
+#library(cowplot)
+png("los_vs_read.png", res = 250, width = 2000, height = 1200)
+qplot(adj_ave.acute.los, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
+      xlab = "Acute Length-of-Stay", ylab = "Re-admission in 30 days") + theme_bw()
+dev.off()
+
+cor.test(phy.sum$adj_cost, phy.sum$adj_mort)
+cor.test(phy.sum$adj_cost, phy.sum$adj_read.rate)
+cor.test(phy.sum$adj_ave.acute.los, phy.sum$adj_mort)
+
+
+

@@ -1,11 +1,11 @@
-# --------------------------- To adm v3 ----------------------------------------
+# --------------------------- To adm v4 ----------------------------------------
 library(gemini)
 lib.pa()
 # a function to generate random labels for sites
 hide_site <- function(data){
   ninst <- length(unique(data$Institution.Number))
   newcode <- data.frame(Institution.Number = unique(data$Institution.Number), 
-                   new.inst = sample(c("A", "B", "C", "D", "E", "F", "G")[1:ninst]))
+                        new.inst = sample(c("A", "B", "C", "D", "E", "F", "G")[1:ninst]))
   data <- merge(data, newcode, by = "Institution.Number")
   data$Institution.Number <- data$new.inst
   return(data)
@@ -14,25 +14,20 @@ hide_site <- function(data){
 hide_site(cohort)
 
 find_cohort <- function(x){
-  #phy <- readg(gim, all.phy)
-  dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+  phy <- readg(gim, all.phy)
+  dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
   cohort <- phy[(adm.code.new==dis.code.new&adm.code.new==mrp.code.new)]
   cohort[,':='(mrp.code = NULL,
                adm.code = NULL,
                dis.code = NULL)]
-                                                                                  # keep only y or not ??
-  
-  dad[Institution.Number=="M", Institution.Number:="THP-M"]
-  dad[Institution.Number=="C", Institution.Number:="THP-C"]
-  dad[Institution.Number=="54265", Institution.Number:="UHN-TG"]
-  dad[Institution.Number=="54266", Institution.Number:="UHN-TW"]
-  dad[Institution.Number=="sbk", Institution.Number:="SHSC"]
-  dad[Institution.Number=="msh", Institution.Number:="SHS"]
-  dad[Institution.Number=="smh", Institution.Number:="SMH"]
-  
-
-    
-  
+  # keep only y or not ??
+  # dad[Institution.Number=="M", Institution.Number:="THP-M"]
+  # dad[Institution.Number=="C", Institution.Number:="THP-C"]
+  # dad[Institution.Number=="54265", Institution.Number:="UHN-TG"]
+  # dad[Institution.Number=="54266", Institution.Number:="UHN-TW"]
+  # dad[Institution.Number=="sbk", Institution.Number:="SHSC"]
+  # dad[Institution.Number=="msh", Institution.Number:="SHS"]
+  # dad[Institution.Number=="smh", Institution.Number:="SMH"]
   setwd("H:/GEMINI/Results/to.administrator")
   copd <- fread("qbp.copd.csv")
   cap <- fread("qbp.cap.csv")
@@ -51,10 +46,10 @@ find_cohort <- function(x){
   #cohort <- cohort[!GIM%in%c("Geriatrics", "u", "family.md")]
   n.pat <- cohort[,.N, by = physician]
   cohort <- cohort[physician%in%n.pat[N>=100, physician]]
-  cohort <- cohort[LOS.without.ALC<=30]
+  cohort <- cohort[Acute.LoS<=30]
   
   # 69558 hospitalizations, if select physicians first
-  cohort <- cohort[LOS.without.ALC<=30]
+  cohort <- cohort[Acute.LoS<=30]
   n.pat <- cohort[,.N, by = physician]
   cohort <- cohort[physician%in%n.pat[N>=100, physician]]
   
@@ -87,24 +82,24 @@ find_cohort <- function(x){
 cohort <- find_cohort()
 
 phy.sum <- ddply(cohort, ~physician, function(x)
-      data.frame(N = nrow(x),
-                 code.new = x$mrp.code.new[1],
-                 GIM = x$GIM[1],
-                 site = x$Institution.Number[1],
-                 n.patient = nrow(x)/length(unique(x$physician)),
-                 ave.acute.los = mean(x$LOS.without.ALC, na.rm = T),
-                 ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
-                 read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
-                 mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
-                 short.adm = mean(x$LOS.without.ALC < 2, na.rm = T)*100,
-                 icu.rate = mean(x$SCU.adm, na.rm = T)*100,
-                 cbc.per.patientday = sum(x$n.bloodtest)/sum(x$LOS.without.ALC),
-                 trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
-                 aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
-                 weekday = mean(x$weekday, na.rm = T),
-                 daytime = mean(x$daytime, na.rm = T),
-                 ave.cost = mean(x$Cost, na.rm = T)
-                 ))
+  data.frame(N = nrow(x),
+             code.new = x$mrp.code.new[1],
+             GIM = x$mrp.GIM[1],
+             site = x$Institution.Number[1],
+             n.patient = nrow(x)/length(unique(x$physician)),
+             ave.acute.los = mean(x$Acute.LoS, na.rm = T),
+             ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
+             read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
+             mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
+             short.adm = mean(x$Acute.LoS < 2, na.rm = T)*100,
+             icu.rate = mean(x$SCU.adm, na.rm = T)*100,
+             cbc.per.patientday = sum(x$n.bloodtest)/sum(x$Acute.LoS),
+             trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
+             aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
+             weekday = mean(x$weekday, na.rm = T),
+             daytime = mean(x$daytime, na.rm = T),
+             ave.cost = mean(x$Cost, na.rm = T)
+  ))
 all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
 phy.sum <- merge(phy.sum, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], by.x = "code.new",
                  by.y = "code.new", all.x = T, all.y = F)
@@ -119,6 +114,7 @@ cohort <- merge(cohort, all.name[!duplicated(code.new), .(code.new, first.name, 
 table(cohort$GIM)
 cohort$phy.name <- paste(cohort$first.name, cohort$last.name)
 fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.new.withname.csv")
+
 
 
 plot.phy <- function(data, title, xlab = "Physician", 
@@ -169,7 +165,9 @@ plot.phy <- function(data, title, xlab = "Physician",
   print(p)
 }
 
-setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3/with_sitename")
+
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/no_sitename")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/with_sitename")
 N.patient <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
@@ -185,7 +183,7 @@ dev.off()
 ave.los <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = mean(x$LOS.without.ALC, na.rm = T))
+             ave = mean(x$Acute.LoS, na.rm = T))
 }
 png("ave.los_overall.png", res = 250, width = 2000, height = 1200)
 plot.phy(cohort,  "Average Acute Length-of-Stay (Days)", ylab = "Average Length-of-Stay (Days)", ave.fun = ave.los)
@@ -225,7 +223,7 @@ dev.off()
 shortadm <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = mean(x$LOS.without.ALC < 2, na.rm = T)*100)
+             ave = mean(x$Acute.LoS < 2, na.rm = T)*100)
 }
 png("short.adm.rate_overall.png", res = 250, width = 2000, height = 1200)
 plot.phy(cohort, "Short-Admission (<48h) Rate (%)", ylab = "Short-Admission (<48h) Rate (%)", ave.fun = shortadm, xstart = -4)
@@ -245,7 +243,7 @@ dev.off()
 ave.bloodtest <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = sum(x$n.bloodtest)/sum(x$LOS.without.ALC))
+             ave = sum(x$n.bloodtest)/sum(x$Acute.LoS))
 }
 png("n.bloodtest_overall.png", res = 250, width = 2000, height = 1200)
 plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
@@ -277,16 +275,118 @@ plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],
          "Proportion of Patients with Hospital-Acquired AKI (%)", 
          ylab = "Proportion of Patients with Hospital-Acquired AKI (%)", ave.fun = aki.rate)
 dev.off()
+# ----------------------Number of CT MRI US ------------------------------------
+ctmrius <- fread("C:/Users/guoyi/Desktop/to.adm/n.ctmrius.csv")
+ctmrius$EncID.new <- as.character(ctmrius$EncID.new)
+cohort <- merge(cohort, ctmrius, by = "EncID.new", all.x = T, all.y = F)
+cohort[is.na(N.rad), N.rad:= 0]
+
+n.rad <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$N.rad)/nrow(x))
+}
+png("n.ctmrius.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],  
+         "Number of Radiology Tests (CT/MRI/Ultrasound) per Patient per Doctor", 
+         ylab = "Number of Radiology Tests (CT/MRI/Ultrasound) \nper Patient per Doctor", ave.fun = n.rad)
+dev.off()
+
+# --------------------------------- Adjusted LOS -------------------------------
+library(lme4)
+for(i in unique(cohort$Institution.Number)){
+  fit.los <- lm(Acute.LoS ~ Age + Gender + Charlson.Comorbidity.Index + fiscal.year, 
+          data = cohort[Institution.Number==i])
+  cohort$adj_acute_los[cohort$Institution.Number==i] <- predict(fit.los, newdata = data.frame(
+    Age = median(cohort$Age),
+    Gender = "F",
+    Charlson.Comorbidity.Index = median(cohort$Charlson.Comorbidity.Index),
+    fiscal.year = 2015
+  )) + fit.los$residuals
+  print(i)
+}
+cor.test(cohort$Acute.LoS, cohort$adj_acute_los, method = "spearman")
+adj.los <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$adj_acute_los, na.rm = T))
+}
+png("adjusted_ave_acute_los.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort,  "Average Adjusted Acute Length-of-Stay (Days)", 
+         ylab = "Average Adjusted Length-of-Stay (Days)", ave.fun = adj.los)
+dev.off()
+
+# --------------------------------- Cost ---------------------------------------
+ave.cost <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$Cost, na.rm = T))
+}
+
+png("ave.cost.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort,  "Average Cost ($)", 
+         ylab = "Average Cost ($)", ave.fun = ave.cost, xstart = -5, digit = 0)
+dev.off()
+
+# ------------------------------ Adjusted Cost ---------------------------------
+library(lme4)
+for(i in unique(cohort$Institution.Number)){
+  fit <- lm(Cost ~ Age + Gender + Charlson.Comorbidity.Index + fiscal.year, 
+            data = cohort[Institution.Number==i,])
+  cohort$adj_cost[!is.na(cohort$Cost)&cohort$Institution.Number==i] <- 
+    predict(fit, newdata = data.frame(
+    Age = median(cohort$Age),
+    Gender = "F",
+    Charlson.Comorbidity.Index = median(cohort$Charlson.Comorbidity.Index),
+    fiscal.year = 2015
+  )) + fit$residuals
+  print(i)
+}
+cor.test(cohort$Cost, cohort$adj_cost)
+adj.cost <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$adj_cost, na.rm = T))
+}
+png("adjusted_cost.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort,  "Average Adjusted Cost ($)", 
+         ylab = "Average Adjusted Cost ($)", ave.fun = adj.cost, xstart = -4, digit = 0)
+dev.off()
 
 
+# Correlation between adjusted and unadjusted variables
+phy.ave <- ddply(cohort, ~ physician, summarize, 
+                 site = Institution.Number[1],
+                 ave.los = mean(Acute.LoS),
+                 ave.adj.los = mean(adj_acute_los),
+                 ave.cost = mean(Cost, na.rm = T),
+                 ave.adj.cost = mean(adj_cost, na.rm = T))
+ddply(phy.ave, ~ site, summarise,
+      los.corr = cor(ave.los, ave.adj.los),
+      los.corr.p = cor.test(ave.los, ave.adj.los)$p.value,
+      cost.corr = cor(ave.cost, ave.adj.cost),
+      cost.corr.p = cor.test(ave.cost, ave.adj.cost)$p.value) %>%
+  fwrite("C:/Users/guoyi/Desktop/to.adm/correlation.after.adjustment.csv")
 
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/adjustment_comparison")
+png("los_adjustement_comparison.png", res = 250, width = 2000, height = 1200)
+ggplot(phy.ave, aes(ave.los, ave.adj.los, color = site)) + geom_point() +
+  geom_smooth(method = "lm") + xlab("Average Acute Length-of-Stay (Days)") +
+  ylab("Average Adjusted Acute Length-of-Stay (Days)") + theme_bw()
+dev.off()
+
+png("cost_adjustement_comparison.png", res = 250, width = 2000, height = 1200)
+ggplot(phy.ave, aes(ave.cost, ave.adj.cost, color = site)) + geom_point() +
+  geom_smooth(method = "lm") + xlab("Average Cost ($)") +
+  ylab("Average Adjusted Cost ($)") + theme_bw()
+dev.off()
 
 
 # --------------------------- create plot based on phy_sum ---------------------
 phy.sum <- fread("C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
 plot.phy2 <- function(df, phy.ave, title, xlab = "Physician", 
-                     ylab, nextreme = 1,
-                     xstart = -2, digit = 1, hide_site = F){
+                      ylab, nextreme = 1,
+                      xstart = -2, digit = 1, hide_site = F){
   if(hide_site) df <- hide_site(df)
   phy.ave.col <- which(names(df)==phy.ave)
   digitform <- paste("%.", digit, "f", sep = "")
@@ -322,7 +422,7 @@ plot.phy2 <- function(df, phy.ave, title, xlab = "Physician",
     geom_text(data = del, aes(x = xstart/2, y = yav, label = ydiff), size = 3) +
     # plot the label for average
     geom_segment(data = del, aes(x = 0, xend = xm, y = site.ave, yend = site.ave), alpha = 0.5,
-              linetype = 2, size = 0.5) + 
+                 linetype = 2, size = 0.5) + 
     geom_text(data = del, aes(x = xm-2, y = site.ave + ave.shift, 
                               label = sprintf(digitform , site.ave)),
               size = 3) 
@@ -337,38 +437,103 @@ hide_site <- function(data){
   return(data)
 }
 
-setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3/with_sitename")
-setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3")
-# ------------------------ Adjust Mortality ------------------------------------
-fit.mor <- lm(mortality ~   weekday + daytime, data = phy.sum)
-phy.sum$adj.mortality <- summary(fit.mor)$residuals + predict(fit.mor,
-                                                              newdata = data.frame(weekday = mean(phy.sum$weekday),
-                                                                                   daytime = mean(phy.sum$daytime)))
-png("adj.mortality.png", res = 250, width = 2000, height = 1200)
-plot.phy2(phy.sum, "adj.mortality", title = "Adjusted In-Hospital Mortality (%)", 
-          ylab = "Adjusted In-Hospital Mortality (%)", hide_site = T)
-dev.off()
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/with_sitename")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4")
 
-# ----------------------- Adjusted Length-of-Stay ------------------------------
-fit.los <- lm(ave.acute.los ~ weekday + daytime, data = phy.sum)
-phy.sum$adj.acute.los <- summary(fit.los)$residuals + 
-  predict(fit.los,data.frame(weekday = mean(phy.sum$weekday),
-                             daytime = mean(phy.sum$daytime)))
-png("adj.acute.los.png", res = 250, width = 2000, height = 1200)
-plot.phy2(phy.sum, "adj.acute.los", title = "Adjusted Average Acute Length-of-Stay (Days)", 
-          ylab = "Adjusted Average Acute Length-of-Stay (Days)", hide_site = T)
-dev.off()
 
-# ----------------------- Adjusted ICU utilization -----------------------------
-fit.icu <- lm(icu.rate ~ weekday + daytime, data = phy.sum[!site%in%c("THP-C", "THP-M")])
-summary(fit.icu)
-phy.sum$adj.icu[!phy.sum$site%in%c("THP-C", "THP-M")] <- summary(fit.icu)$residuals + 
-  predict(fit.icu,
-          data.frame(weekday = mean(phy.sum$weekday),
-                     daytime = mean(phy.sum$daytime)))
-png("adj.icu.uti.png", res = 250, width = 2000, height = 1200)
-plot.phy2(phy.sum[!site%in%c("THP-C", "THP-M")], 
-          "adj.icu", title = "Adjusted ICU Utilization Rate (%)", 
-          ylab = "Adjusted ICU Utilization Rate (%)", hide_site = T)
-dev.off()
-f
+
+# ----------------------- Stability Over Time ----------------------------------
+cohort <- find_cohort()
+cohort[, fiscal.year.group := ifelse(fiscal.year<=2011,
+                                     1,
+                                     2)]
+
+phy.sum.by.year <- ddply(cohort, ~physician + fiscal.year.group, function(x)
+  data.frame(N = nrow(x),
+             code.new = x$mrp.code.new[1],
+             GIM = x$mrp.GIM[1],
+             site = x$Institution.Number[1],
+             n.patient = nrow(x)/length(unique(x$physician)),
+             ave.acute.los = mean(x$Acute.LoS, na.rm = T),
+             med.los = median(x$Acute.LoS, na.rm = T),
+             ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
+             read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
+             mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
+             short.adm = mean(x$Acute.LoS < 2, na.rm = T)*100,
+             icu.rate = mean(x$SCU.adm, na.rm = T)*100,
+             cbc.per.patientday = sum(x$n.bloodtest)/sum(x$Acute.LoS),
+             trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
+             aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
+             ave.cost = mean(x$Cost, na.rm = T))) %>% data.table
+
+# keep only with > 100 patients per year
+phy.sum.by.year.100 <- phy.sum.by.year[N>=100]
+stab.phy <- phy.sum.by.year[physician%in%phy.sum.by.year.100[, .N, by = physician][N==2, physician]]
+
+
+
+
+
+plot_phy_stab <- function(Site, Var){
+  df <- stab.phy %>% filter(site==Site)
+  df <- df[, c("physician", "fiscal.year.group", Var)]
+  for(i in unique(df$fiscal.year.group)){
+    df$var_rank[df$fiscal.year.group==i] <- order(df[df$fiscal.year.group==i,Var])
+  }
+  ggplot(df, aes(fiscal.year.group, var_rank, color = physician)) +
+    geom_point(size = 0.1) +
+    geom_line(size = 1.5, alpha = 0.5) +
+    theme_bw() +
+    ylab("Rank") + 
+    xlab("Fiscal Year") +
+    theme(legend.position="none") +
+    expand_limits(y = 0) +
+    scale_x_continuous(breaks = c(1, 2))
+}
+
+
+plot_phy_stab("SMH", "ave.alc")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/stability")
+for(i in unique(stab.phy$site)){
+  for(j in names(stab.phy)[8:17]){
+    title <- paste(i, "_", j, ".png", sep = "")
+    png(title, res = 250, width = 2000, height = 1200)
+    print(plot_phy_stab(i, j))
+    dev.off()
+  }
+    
+}
+
+
+
+# median los by year
+rbind(stab.phy[,c("physician", "fiscal.year.group", "med.los", "site")])
+med.los.by.site <- ddply(cohort, ~fiscal.year.group + Institution.Number, summarize,
+      med.los  = median(Acute.LoS, na.rm = T))
+med.los.by.site$site = med.los.by.site$Institution.Number
+med.los.by.site$OVERALL <- med.los.by.site$med.los
+med.los <- merge(stab.phy[,c("physician", "fiscal.year.group", "med.los", "site")],
+                 med.los.by.site[, c("fiscal.year.group", "OVERALL", "site")],
+                 by = c("site", "fiscal.year.group"))
+
+plot_medlos <- function(Site){
+  ggplot(med.los[site==Site, ],
+         aes(x = fiscal.year.group, y = med.los, colour = physician, size = Size)) +
+    geom_point(size = 0.5) +
+    geom_line(size = 1.5, alpha = 0.5) +
+    geom_line(aes(x = fiscal.year.group, y = OVERALL), 
+              color = "#999999", size = 3, alpha = 0.8) +
+    theme_bw() +
+    xlab("Fiscal Year") + 
+    ylab("Median Acute Length-of-Stay") +
+    scale_x_continuous(breaks = c(0, 1, 2)) 
+}
+
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/stability/by_site")
+for(i in c("SMH", "SHSC", "SHS", "UHN-TW", "UHN-TG")){
+  title <- paste(i, "_median_los.png", sep = "")
+  png(title, res = 250, width = 2000, height = 1200)
+  print(plot_medlos(i))
+  dev.off()
+}
+i = "SMH"

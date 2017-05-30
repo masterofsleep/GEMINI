@@ -493,8 +493,8 @@ dad <- rbind(smh.dad[,vars, with = F],
              uhn.dad[,vars, with = F],
              msh.dad[,vars, with = F],
              thp.dad[,vars, with = F])
-ex <- readg(gim, notgim)
-dad <- dad[!EncID.new%in%ex$EncID.new]
+#ex <- readg(gim, notgim)
+#dad <- dad[!EncID.new%in%ex$EncID.new]
 
 con = dbConnect(SQLite(), dbname = "gemini.db")
 dbWriteTable(con, "dad", dad)
@@ -528,7 +528,7 @@ adm <- rbind(smh.adm[,.(EncID.new, NACRSRegistrationNumber,
              thp.adm[,.(EncID.new, NACRSRegistrationNumber,
                         Total.Direct.Cost, Total.Indirect.Cost, Total.Cost,
                         Hash)], fill = T)
-adm <- adm[!EncID.new%in%ex$EncID.new]
+#adm <- adm[!EncID.new%in%ex$EncID.new]
 library(RSQLite)
 library(DBI)
 setwd("C:/Users/guoyi/sqlite")

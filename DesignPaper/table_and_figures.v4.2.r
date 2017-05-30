@@ -311,18 +311,27 @@ df <- ddply(dad, ~fiscal.year, summarize,
 fwrite(data.frame(t(df)), "H:/GEMINI/Results/DesignPaper/result.v4/appen.table2.csv")
 
 library(lmtest)
+# number of hospitalization
 summary(lm(number.of.hospitalization ~ fiscal.year, data = df))
+
+# length of stay
 lm(Acute.LoS ~ fiscal.year, dad) %>% summary
 
+# readmission
 glm(read.in.30 ~ fiscal.year, dad, family = binomial) %>% summary
-lrtest(glm(read.in.30 ~ fiscal.year, dad, family = binomial))
+
+# Cost
 lm(Cost ~ fiscal.year, dad) %>% summary
 
-lrtest(glm(ctmrius ~ fiscal.year, dad, family = binomial))
+# CT MRI US
 glm(ctmrius ~ fiscal.year, dad, family = binomial) %>% summary
-lrtest(glm(ct ~ fiscal.year, dad, family = binomial))
-lrtest(glm(mri ~ fiscal.year, dad, family = binomial))
-lrtest(glm(us ~ fiscal.year, dad, family = binomial))
+
+#CT
+glm(ct ~ fiscal.year, dad, family = binomial) %>% summary
+#MRI
+glm(mri ~ fiscal.year, dad, family = binomial) %>% summary
+#US
+glm(us ~ fiscal.year, dad, family = binomial) %>% summary
 
 
 
@@ -456,7 +465,8 @@ thp <- readg(thp, .er.nophi)
 er <- c(smh$EncID.new, sbk$EncID.new, uhn$EncID.new, msh$EncID.new, thp$EncID.new)
 dad$er.adm <- dad$EncID.new%in%er
 dad[str_sub(EncID.new, 1, 2)=="15", sum(er.adm), by = fiscal.year][order(fiscal.year)]
-dad[str_sub(EncID.new, 1, 2)=="14", sum(LoS), by = fiscal.year]
+dad[str_sub(EncID.new, 1, 2)=="14", sum(LoS), by = fiscal.year][order(fiscal.year)]
+dad[str_sub(EncID.new, 1, 2)=="15", sum(LoS), by = fiscal.year][order(fiscal.year)]
 
 # cmg freq
 cmg.freq <- dad[, .N, by = .(CMG, CMG.Diagnosis)][order(N, decreasing = T)]

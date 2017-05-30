@@ -7,7 +7,7 @@ extrafont::loadfonts(device="win")
 library(ggplot2)
 library(gemini)
 lib.pa()
-dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
 
 
 fonts() # view available fonts
@@ -156,7 +156,7 @@ plot_volumn("THP-C")
 bi_order <- c(1, 1, -1, 1, 1, -1, -1)
 for(i in 1:7){
   site = unique(dad$Institution.Number)[i]
-  target <- paste("C:/Users/guoyi/Desktop/to.adm/figures.v3/patient_volume/", 
+  target <- paste("C:/Users/guoyi/Desktop/to.adm/figures.v4/patient_volume/", 
                   site, ".png", sep = "")
   png(target, res = 200, width = 1600, height = 1000)
   print(plot_volumn(site, bi_order[i]))

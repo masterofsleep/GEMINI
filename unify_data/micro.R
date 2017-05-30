@@ -249,3 +249,8 @@ for(i in files){
 fwrite(tgh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.tgh.micro.csv")
 fwrite(twh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.twh.micro.csv")
 
+
+
+
+# -------------------------- MSH Micro data ------------------------------------
+setwd("R:\GEMINI\_RESTORE\MSH\Micro")

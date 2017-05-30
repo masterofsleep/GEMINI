@@ -23,8 +23,17 @@ unique_patient <- function(stroke_enc){
                           Discharge.Disposition)]) %>% 
     arrange(Hash, ymd_hm(paste(Admit.Date, Admit.Time))) %>% data.table
   patient <- patient[patient$EncID.new%in%stroke_enc]
-  return(data.table(patient[(!duplicated(Hash))]))
+  patient <- patient[!is.na(Hash)]
+  design.paper.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+  patient <- patient[patient$EncID.new%in%design.paper.dad$EncID.new]
+  patient <- patient[!duplicated(Hash)]
+  return(data.table(patient))
 }
+is_stroke[EncID.new%in%patient$EncID.new, 
+          .(str_sub(Diagnosis.Code, 1, 1), str_sub(EncID.new, 1, 2))] %>% table
+is_stroke[EncID.new%in%patient$EncID.new, str_sub(EncID.new, 1, 2)] %>% table
+is_stroke[EncID.new%in%patient$EncID.new,
+          .(Diagnosis.Code, str_sub(EncID.new, 1, 2))] %>% table
 
 # find those to be included in DREAMS study
 dreams_inc <- function(){
