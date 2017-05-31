@@ -5,10 +5,13 @@ lib.pa()
 
 # ---------------------- NEW Cohort selection ----------------------------------
 all.phy <- readg(gim, all.phy)
-los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM=="y"]
+#los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM=="y"]
+los.cohort <- all.phy[adm.GIM%in%c("y", "GP-GIM")|dis.GIM%in%c("y", "GP-GIM")]
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv") # update 2017-05-18
 
-los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM= mrp.GIM)], 
+los.cohort <- merge(los.cohort[,.(EncID.new, adm.code.new,
+                                  adm.GIM, dis.code.new, dis.GIM,
+                                  mrp.code.new, mrp.GIM)], 
                     unique(dad[,.(EncID.new, Age, Gender, CMG, 
                                   Charlson.Comorbidity.Index)]),
                     by = "EncID.new")
@@ -68,13 +71,14 @@ hgb.cohort[, hgb_in_10_grps :=
                  labels = 1:10)]
 #hgb.cohort[, Group_by_10hrs := ceiling((hgb-min(hgb))/10)]
 #hgb.cohort[, Group_by_20hrs := ceiling((hgb-min(hgb))/20)]
-hgb.cohort[, mrp.code.new:=NULL]
+#hgb.cohort[, mrp.code.new:=NULL]
 
-fwrite(hgb.cohort[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG, mrp.code, mrp.GIM = GIM, site,
-                     hgb, hgb_in_10_grps, hgb_in_20_grps)],
-       "H:/GEMINI/Results/LengthofStay/hgb/cohort.hgb.may24.csv")
+fwrite(hgb.cohort#[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG, adm.code.new, adm.GIM,
+                  #   dis.code.new, dis.GIM, mrp.code.new, mrp.GIM,
+                  #   hgb, hgb_in_10_grps, hgb_in_20_grps)],
+       ,"H:/GEMINI/Results/LengthofStay/hgb/cohort.hgb.may31.csv")
 fwrite(data.table(table(hgb.cohort[,mrp.code])),
-       "H:/GEMINI/Results/LengthofStay/hgb/mrp.freq.may24.csv")
+       "H:/GEMINI/Results/LengthofStay/hgb/mrp.freq.may31.csv")
 
 table(hgb.cohort$site)
 table(hgb.cohort$hgb_in_10_grps)

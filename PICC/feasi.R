@@ -240,3 +240,69 @@ uhn.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decrea
 msh.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decreasing = T)]%>%
   fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_msh.csv")
 
+
+# -------------------------- further check some test names ---------------------
+# read in all the radiology data
+smh.rad <- readg(smh, rad)
+sbk.rad <- readg(sbk, rad.csv)
+uhn.rad <- rbind(readg(UHN, rad_ip),
+                 readg(UHN, rad_er))
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
+# find frequency table for those in Intervention but not in Radiology files
+picc.insert.names <- c("Angiography Line PICC CCM",
+                       "Angiography Line PICC Insertion",
+                       "PIC line insertion-1 lumen",
+                       "PIC line insertion-2 lumen",
+                       "PIC line insertion-3 lumen",
+                       "PICC Line Single Lumen-Nursing Unit",
+                       "PICC Line Double Lumen-Nursing Unit",
+                       "PICC INSERTION US GUIDED (Z456)",
+                       "PICC INSERT VENOGRAM",
+                       "PICC INSERT SINGLE LUMEN",
+                       "PICC INSERT DOUBLE LUMEN",
+                       "Angiography Peripheral Line Insertion",
+                       "Angiography Body Line Insertion")
+
+uhn_apaveu<- uhn.rad[ProcedureName=="Angiography Peripheral Angiogram Venous Extremity Upper"]
+fwrite(uhn_apaveu, "H:/GEMINI/Results/PICC/check/uhn_angiography_peripheral_angiogram_venous_extremity_upper.csv")
+uhn_apd<- uhn.rad[ProcedureName=="Angiography Peripheral Diagnostic"]
+fwrite(uhn_apd, "H:/GEMINI/Results/PICC/check/uhn_angiography_peripheral_diagnostic.csv")
+uhn_apaaeu<- uhn.rad[ProcedureName=="Angiography Peripheral Angiogram Arterial Extremity Upper"]
+fwrite(uhn_apaaeu, "H:/GEMINI/Results/PICC/check/uhn_angiography_peripheral_angiogram_arterial_extremity_upper.csv")
+smh_cvci <- smh.rad[proc_desc_long=="CENTRAL VENOUS CATH INSERT"]
+fwrite(smh_cvci, "H:/GEMINI/Results/PICC/check/smh_central_venous_cath_insert.csv")
+
+
+# ---- sampel test report for each test name ---------
+setwd("R:/GEMINI/Check/PICC/sample_of_each_test_name")
+smh.picc.insert <- smh.rad[proc_desc_long%in%picc.insert.names]
+smh.picc.insert[, ':='(ADMITDATE = NULL,
+                  ADMITTIME = NULL,
+                  DISCHARGEDATE = NULL,
+                  DISCHARGETIME = NULL)]
+for(i in unique(smh.picc.insert$proc_desc_long)){
+  dat <- smh.picc.insert[proc_desc_long==i]
+  fwrite(dat, paste("SMH_", i, ".csv", sep = ""))
+}
+
+sbk.picc.insert <- sbk.rad[Test.Name%in%picc.insert.names]
+sbk.picc.insert[, ":="(NACRSRegistrationNumber = NULL,
+                       Order.DtTm = NULL,
+                       Perform.DtTm = NULL)]
+for(i in unique(sbk.picc.insert$Test.Name)){
+  dat <- sbk.picc.insert[Test.Name==i]
+  fwrite(dat, paste("SBK_", i, ".csv", sep = ""))
+}
+
+uhn.picc.insert <- uhn.rad[ProcedureName%in%picc.insert.names]
+for(i in unique(uhn.picc.insert$ProcedureName)){
+  dat <- uhn.picc.insert[ProcedureName==i]
+  fwrite(dat, paste("UHN_", i, ".csv", sep = ""))
+}
+
+msh.picc.insert <- msh.rad[ProcedureName%in%picc.insert.names]
+for(i in unique(msh.picc.insert$ProcedureName)){
+  dat <- msh.picc.insert[ProcedureName==i]
+  fwrite(dat, paste("MSH_", i, ".csv", sep = ""))
+}
