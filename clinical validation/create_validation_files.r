@@ -227,3 +227,56 @@ for(i in 1:100){
          paste("H:/GEMINI/Results/Clinical Validation/smh_patient_new", i,".csv",
                sep = ""))
 }
+
+
+
+
+
+
+# ---------------------------- check the new 100 -------------------------------
+find_vali_values <- function(dat){
+  dat$EncID.new <- as.character(dat$EncID.new)
+  # find lab values
+  patient.lab <- smh.lab[EncID.new==dat$EncID.new[1]]
+  patient.lab$Test <- patient.lab$Test.Name
+  dat$Test[1:7] <- test.names
+  dat <- merge(dat, patient.lab[, .(EncID.new, Test, Result.Value, Collection.DtTm)],
+               by = c("EncID.new", "Test"), all.x = T, all.y = F, sort = F)
+  dat$Collection.DtTm <- as.character(dat$Collection.DtTm)
+  # find ct head 
+ 
+  # find culture
+  dat$Collection.DtTm[8] <- ifelse(dat$EncID.new[1]%in%smh.blood$EncID.new,
+                                    as.character(smh.blood[EncID.new==dat$EncID.new[1], Collection.DtTm]),
+                                    NA)
+  dat$Collection.DtTm[9] <- ifelse(dat$EncID.new[1]%in%smh.urine$EncID.new,
+                                    as.character(smh.urine[EncID.new==dat$EncID.new[1], Collection.DtTm]),
+                                    NA)
+  return(dat)
+}
+
+setwd("R:/GEMINI-DRM-TEAM/Clinical Validation/Alpa/new_patients")
+files <- list.files()[str_sub(list.files(), -4, -1)=="xlsx"]
+all.dat <- NULL
+for(i in 2:101){
+  dat_ncol <- readxl::read_excel(files[i]) %>% ncol
+  dat <- readxl::read_excel(files[i], col_types = c(rep("text", 8), "date", "date",
+                                                    "numeric",
+                                                    rep("text", (dat_ncol-11)))) %>%
+    data.table
+  dat$Collection.Performed.Date <- as.character(dat$Collection.Performed.Date)
+  dat$Collection.Performed.Time <- as.character(dat$Collection.Performed.Time)
+  print(files[i])
+  all.dat <- rbind(all.dat, find_vali_values(dat), fill = T)
+}
+
+all.dat <- merge(all.dat, smh_vali[, .(EncID.new, Admit.Time)], by = "EncID.new")
+all.dat[, Admit.Time.x:=Admit.Time.y]
+all.dat[, Admit.Time.y := NULL]
+all.dat[, Collection.Performed.Time:=str_sub(Collection.Performed.Time, -8, -1)]
+fwrite(all.dat, "H:/GEMINI/Results/Clinical Validation/validate/all.validate.new.csv")
+
+lab.vali <- all.dat[Result.Category=="Lab"]
+fwrite(lab.vali, "H:/GEMINI/Results/Clinical Validation/validate/lab.validate.new.csv")
+culture.vali <- all.dat[Result.Category=="Culture"]
+fwrite(culture.vali, "H:/GEMINI/Results/Clinical Validation/validate/culture.validate.new.csv")

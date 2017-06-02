@@ -128,10 +128,25 @@ sbk_echo_dreams <- function(){
                         ymd_hm(paste(Admit.Date, Admit.Time)))/60/24,
                       Report)]
 }
-
+sbk_echo <- sbk_echo_dreams()
 # validate with old data 
 # compare.sets(cohort$EncID.new, dreams_cohort$EncID.new)
 # old.cohort.enc <- cohort[!EncID.new%in%dreams_cohort$EncID.new, EncID.new]
 # ip_diag <- readg(gim, ip_diag)
 # ip_diag[EncID.new%in%old.cohort.enc&Diagnosis.Type=="M"]
 # sum(old.cohort.enc%in%uni_patient$EncID.new)
+
+
+# ------------ check numbers for NACRS Stroke and DAD endocarditis -------------
+# --------------------------- 2017-06-01 ---------------------------------------
+stroke_diag <- c("G450","G451", "G452", "G453", "G458", "G459", "H341", "I63", "I64")
+endo_diag <- c("I33", "I38", "I39")
+ip.diag_2site <- readg(gim, ip_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+er.diag_2site <- readg(gim, er_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+
+#endo_diag%in%str_sub(ip.diag_2site$Diagnosis.Code, 1, 3) 
+
+d1 <- er.diag_2site[startwith.any(ER.Diagnosis.Code, stroke_diag)&ER.Diagnosis.Type=="M", EncID.new]
+d2 <- ip.diag_2site[startwith.any(Diagnosis.Code, endo_diag)&Diagnosis.Type=="M", EncID.new]
+intersect(d1, d2)%in%design.paper.dad$EncID.new
+design.paper.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")

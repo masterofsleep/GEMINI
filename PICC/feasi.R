@@ -199,6 +199,11 @@ picc.insert.names <- c("Angiography Line PICC CCM",
                        "PICC INSERT SINGLE LUMEN",
                        "PICC INSERT DOUBLE LUMEN",
                        "Angiography Peripheral Line Insertion",
+                       "Angiography Body Line Insertion",
+                       "Angiography Peripheral Angiogram Venous Extremity Upper",
+                       "Angiography Peripheral Diagnostic",
+                       "Angiography Peripheral Angiogram Arterial Extremity Upper",
+                       "Angiography Line PICC CCM",
                        "Angiography Body Line Insertion")
 picc.insert.names%in%c(smh.rad$proc_desc_long, sbk.rad$Test.Name, uhn.rad$ProcedureName,
                     msh.rad$ProcedureName)
@@ -240,6 +245,13 @@ uhn.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decrea
 msh.rad[EncID.new%in%int.only$EncID.new, .N, by = ProcedureName][order(N, decreasing = T)]%>%
   fwrite("H:/GEMINI/Results/PICC/check/picc_in_interv_only_msh.csv")
 
+ddply(dad[str_sub(EncID.new, 1, 2)!="15"], ~Institution.Number, summarize,
+      in.both = sum(picc.insert.rad&picc.insert.int),
+      in.rad.only = sum(picc.insert.rad&!picc.insert.int),
+      in.int.only = sum(picc.insert.int&!picc.insert.rad)
+) %>%
+fwrite("H:/GEMINI/Results/PICC/check/picc_validate_int_rad.csv")
+
 
 # -------------------------- further check some test names ---------------------
 # read in all the radiology data
@@ -262,7 +274,10 @@ picc.insert.names <- c("Angiography Line PICC CCM",
                        "PICC INSERT SINGLE LUMEN",
                        "PICC INSERT DOUBLE LUMEN",
                        "Angiography Peripheral Line Insertion",
-                       "Angiography Body Line Insertion")
+                       "Angiography Body Line Insertion",
+                       "Angiography Peripheral Angiogram Venous Extremity Upper",
+                       "Angiography Peripheral Diagnostic",
+                       "Angiography Peripheral Angiogram Arterial Extremity Upper")
 
 uhn_apaveu<- uhn.rad[ProcedureName=="Angiography Peripheral Angiogram Venous Extremity Upper"]
 fwrite(uhn_apaveu, "H:/GEMINI/Results/PICC/check/uhn_angiography_peripheral_angiogram_venous_extremity_upper.csv")

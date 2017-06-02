@@ -298,3 +298,48 @@ feasi.rad15 <- freq.rad15[order(total.cost, decreasing = T),
                            listed.name, listed.code,
                            unit.cost, total.cost)]
 fwrite(price_rad, "H:/GEMINI/Results/Studycost/coded/feasibility.rad15.csv")
+
+
+
+
+
+# ------------------------------ Abnormal Lab ----------------------------------
+# ------------------------------- 2017-06-01 -----------------------------------
+rm(list = ls())
+library(gemini)
+lib.pa()
+
+sbk.lab <- rbind(readg(sbk, labs_ip),
+                 readg(sbk, labs_er))
+amalg_list <- readxl::read_excel("H:/GEMINI/Results/Studycost/Feasibility lab_amalgemated.name_ASW.xlsx")[,1:10] %>%
+  data.table
+amalg_list[is.na(Amalgamated.Name), Amalgamated.Name := Test.Name]
+
+sbk.lab <- merge(sbk.lab, amalg_list[1:102, .(Amalgamated.Name, Test.Name,
+                                              Test.ID)],
+                 by = c("Test.Name", "Test.ID"), all.x = T, all.y = F)
+paste(amalg_list$Test.Name[1:102], amalg_list$Test.ID[1:102]) %in% 
+      paste(sbk.lab$Test.Name, sbk.lab$Test.ID)
+amalg_list[1:102]%>%filter(!paste(amalg_list$Test.Name[1:102], amalg_list$Test.ID[1:102]) %in% 
+                             paste(sbk.lab$Test.Name, sbk.lab$Test.ID)) -> check
+check$Test.Name%in%sbk.lab$Test.Name
+check$Test.ID%in%sbk.lab$Test.ID
+sbk.lab.inc <- sbk.lab[!is.na(Amalgamated.Name)]
+
+
+
+
+# Adina to check all the reference ranges
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+sbk.lab.inc <- sbk.lab[!is.na(Amalgamated.Name)]
+sbk.lab.inc <- merge(sbk.lab.inc, dad[, .(EncID.new, Gender)],by = "EncID.new")
+
+reference.range.check <- 
+  unique(sbk.lab.inc[, .(Amalgamated.Name, Test.Name, Test.ID, 
+                         Gender,Reference.Range)])
+reference.range.check <- reference.range.check[!duplicated(reference.range.check[, .(Amalgamated.Name,
+                                                       Test.Name, Test.ID, Reference.Range)])]
+reference.range.check <- reference.range.check %>% 
+  arrange(Amalgamated.Name, Test.Name, Test.ID, Gender) %>% data.table
+
+fwrite(reference.range.check, "H:/GEMINI/Results/Studycost/lab_reference_ranges.csv")

@@ -3,6 +3,7 @@ rm(list = ls())
 library(gemini)
 lib.pa()
 dat <- fread("H:/GEMINI/Results/DRM/REDCap/GEMINIDRMTEAM_DATA_2017-05-25_1134.csv")
+dat <- fread("H:/GEMINI/Results/DRM/REDCap/GEMINIDRMTEAM_DATA_2017-06-02_1030.csv")
 dat <- dat[order(gemini_id)] %>% filter(!(is.na(date)|date=="")) %>% data.table
 
 # summary of variables
@@ -24,8 +25,9 @@ patient.sum <- data.table(gemini_id = var_sum$gemini_id,
 
 
 # heat map
-df <- var_sum[, c(1, 9:33)]
+df <- var_sum[, c(1, 9:30)]
 df.long <- melt(df, id.var = "gemini_id")
+png("R:/GEMINI-DRM-TEAM/ra_comparison/heatmap_june2.png", res = 200, width = 2000, height = 1600)
 ggplot(df.long, aes( factor(gemini_id), variable, fill = value)) + 
   geom_tile(aes(fill = value), colour = "white") +
   scale_fill_gradient(low = "white", high = "red") +
@@ -33,3 +35,5 @@ ggplot(df.long, aes( factor(gemini_id), variable, fill = value)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title = element_blank()) +
   scale_y_discrete(labels = names(df)[2:26])
+dev.off()
+

@@ -35,6 +35,10 @@ smh.micro <- readg(smh, micro, dt = T)
 smh.micro[ResultIsFinal=="Y", Collection.DtTm := mdy(str_sub(`Specimen_Collection_Date\\Time`, 1, -6))]
 smh.micro[is.na(ResultIsFinal), Collection.DtTm := mdy(`Specimen_Collection_Date\\Time`)]
 ggplot(smh.micro, aes(Collection.DtTm, fill = ResultIsFinal)) + geom_histogram(binwidth = 5)
+smh.dad <- readg(smh, dad)
+smh.dad$with_micro <- smh.dad$EncID.new%in%smh.micro$EncID.new
+ggplot(smh.dad, aes(ymd(Admit.Date), fill = with_micro)) +
+  geom_histogram(binwidth = 10)
 
 range(smh.micro$Collection.DtTm, na.rm = T)
 smh.micro[which.max(Collection.DtTm)]
