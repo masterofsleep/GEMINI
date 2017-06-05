@@ -139,14 +139,57 @@ sbk_echo <- sbk_echo_dreams()
 
 # ------------ check numbers for NACRS Stroke and DAD endocarditis -------------
 # --------------------------- 2017-06-01 ---------------------------------------
-stroke_diag <- c("G450","G451", "G452", "G453", "G458", "G459", "H341", "I63", "I64")
-endo_diag <- c("I33", "I38", "I39")
-ip.diag_2site <- readg(gim, ip_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
-er.diag_2site <- readg(gim, er_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+# stroke_diag <- c("G450","G451", "G452", "G453", "G458", "G459", "H341", "I63", "I64")
+# endo_diag <- c("I33", "I38", "I39")
+# ip.diag_2site <- readg(gim, ip_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+# er.diag_2site <- readg(gim, er_diag)[str_sub(EncID.new, 1, 2)%in%c("11", "12")]
+# 
+# #endo_diag%in%str_sub(ip.diag_2site$Diagnosis.Code, 1, 3) 
+# 
+# d1 <- er.diag_2site[startwith.any(ER.Diagnosis.Code, stroke_diag)&ER.Diagnosis.Type=="M", EncID.new]
+# d2 <- ip.diag_2site[startwith.any(Diagnosis.Code, endo_diag)&Diagnosis.Type=="M", EncID.new]
+# intersect(d1, d2)%in%design.paper.dad$EncID.new
+# design.paper.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
 
-#endo_diag%in%str_sub(ip.diag_2site$Diagnosis.Code, 1, 3) 
 
-d1 <- er.diag_2site[startwith.any(ER.Diagnosis.Code, stroke_diag)&ER.Diagnosis.Type=="M", EncID.new]
-d2 <- ip.diag_2site[startwith.any(Diagnosis.Code, endo_diag)&Diagnosis.Type=="M", EncID.new]
-intersect(d1, d2)%in%design.paper.dad$EncID.new
-design.paper.dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+# ------------------compare new cohort with old ones ---------------------------
+cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
+cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
+
+compare.sets(cohort$EncID.new, dreams_cohort)
+
+smh.echo.reviewed <- fread("H:/GEMINI/Results/DREAM/201706/smh_echo_reviewered.csv")[is.na(discrepancy)]
+sbk.echo.reviewed <- fread("H:/GEMINI/Results/DREAM/201706/sbk_echo_reviewered.csv")
+
+sum(smh.echo.reviewed$StudyId%in%smh_echo$Study.ID)
+sum(sbk.echo.reviewed$SID%in%sbk_echo$Study.ID)
+
+sbk_echo[EncID.new%in%cohort$EncID.new] %>% dim
+
+sbk.echo.reviewed[!SID%in%sbk_echo$Study.ID, EncID.new] %in%dreams_cohort$EncID.new
+
+smh.newpatient <- dreams_cohort[!EncID.new%in%cohort$EncID.new&
+                                  str_sub(EncID.new, 1, 2)=="11"]
+sbk.newpatient <- dreams_cohort[!EncID.new%in%cohort$EncID.new&
+                                  str_sub(EncID.new, 1, 2)=="12"]
+
+smh.newpatient <- add_smh_mrn(smh.newpatient)
+fwrite(smh.newpatient, "H:/GEMINI/Results/DREAM/new/smh_newpatient.csv")
+fwrite(sbk.newpatient, "H:/GEMINI/Results/DREAM/new/sbk_newpatient.csv")
+
+
+smh_echo_new <- smh_echo[!Study.ID%in%smh.echo.reviewed[is.na(discrepancy), StudyId]]
+sbk_echo_new <- sbk_echo[!Study.ID%in%sbk.echo.reviewed$SID]
+# validate
+smh_echo[EncID.new%in%dreams_cohort$EncID.new&!EncID.new%in%cohort$EncID.new] %>% dim
+sbk_echo[EncID.new%in%dreams_cohort$EncID.new&!EncID.new%in%cohort$EncID.new] %>% dim
+
+fwrite(smh_echo_new, "H:/GEMINI/Results/DREAM/new/smh_echo_in14_new.csv")
+fwrite(sbk_echo_new, "H:/GEMINI/Results/DREAM/new/sbk_echo_in14_new.csv")
+
+
+# number in old cohort and exclude in new 
+cohort[!EncID.new%in%dreams_cohort$EncID.new, str_sub(EncID.new, 1, 2)] %>% table
+
+# number in new cohort by site
+dreams_cohort[!EncID.new%in%cohort$EncID.new, str_sub(EncID.new, 1, 2)] %>% table

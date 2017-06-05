@@ -1,3 +1,6 @@
+library(gemini)
+lib.pa()
+
 # check Encounter and Orders that are not in GEMINI 
 smh.lab <- readg(smh, labs)
 smh.lab <- smh.lab[Order.!="J2241772"]
@@ -126,8 +129,9 @@ twh.micro <- readg(twh, micro)
 ggplot(twh.micro, aes(ymd(CDATE))) + geom_histogram(bins = 50)                  # seems suspicious
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
 dad[, twh.micro := EncID.new%in%twh.micro$EncID.new]
+library(scale)
 ggplot(dad[Institution.Number=="UHN-TW"], aes(ymd(Discharge.Date), fill = twh.micro)) +
-  geom_histogram(bins = 50)
+  geom_histogram(bins = 50) + scale_y_continuous(labels=percent)
 
 # uhn pharmacy
 uhn.phar <- readg(uhn, phar)
@@ -172,7 +176,7 @@ ggplot(msh.lab, aes(ymd(DATE_COLLECT) )) + geom_histogram(bins = 50)
 
 #pharmacy
 msh.phar <- readg(msh, phar)                                                    # there is a volume peak in 2011
-ggplot(msh.phar, aes(ymd(STOP_DATE), fill = is.na(START_DATE)))  + geom_histogram(bins = 50)
+ggplot(msh.phar[EncID.new%in%dad$EncID.new], aes(ymd(STOP_DATE), fill = is.na(START_DATE)))  + geom_histogram(bins = 50)
 ggplot(msh.phar, aes(ymd(START_DATE)))  + geom_histogram(bins = 50)
 dad$msh.phar <- dad$EncID.new%in%msh.phar$EncID.new
 ggplot(dad[Institution.Number=="SHS"], aes(ymd(Discharge.Date), fill = msh.phar)) +

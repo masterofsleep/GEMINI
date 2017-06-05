@@ -446,7 +446,7 @@ df1[duplicated(df1[,.(EncID.new, Conclusions)])|duplicated(df1[,.(EncID.new, Con
 
 sbk.echo <- readxl::read_excel("SBK ECHO COMBINED_YG_march14_NG March 15.xlsx")%>%data.table
 df2<- unique(sbk.echo[,-5, with = F])
-df[duplicated(df[,.(EncID.new, Report)])|duplicated(df[,.(EncID.new, Report)], fromLast = T)]
+df2[duplicated(df2[,.(EncID.new, Report)])|duplicated(df2[,.(EncID.new, Report)], fromLast = T)]
 df1[, EncID.new := paste("11", EncID.new, sep = "")]
 df2[, EncID.new := paste("12", EncID.new, sep = "")]
 names(df1)
@@ -555,6 +555,26 @@ fwrite(df2[LALVTHROMBY=="1"], "H:/GEMINI/Results/DREAM/201704/thrombus.sbk.csv")
 # none of the thrombus people died
 
 
+
+cohort <- fread("H:/GEMINI/Results/DREAM/201704/dreams.cohort.csv")
+cohort <- cohort[(!duplicated(Hash))|Hash=="c3ed0844860fb77e4fcacbc5124ad71bede04a0579a862a5301a8dd132957692"]
+
+dad <- readg(gim, dad)
+cohort[!EncID.new%in%dad$EncID.new, str_sub(EncID.new, 1, 2)] %>% table
+sum(!cohort$EncID.new%in%dad$EncID.new)
+
+
+setwd("R:/GEMINI-DREAM/DATA FINAL")
+smh.echo <- fread("SMH ECHO COMBINED_YG_march14_NG march 15.csv")
+sum(duplicated(smh.echo$EncID.new))
+df1<- unique(smh.echo[,c(1:19, 24:34), with = F])
+df1[duplicated(df1[,.(EncID.new, Conclusions)])|duplicated(df1[,.(EncID.new, Conclusions)], fromLast = T)]
+
+sbk.echo <- readxl::read_excel("SBK ECHO COMBINED_YG_march14_NG March 15.xlsx")%>%data.table
+df2<- unique(sbk.echo[,-5, with = F])
+df2[duplicated(df2[,.(EncID.new, Report)])|duplicated(df2[,.(EncID.new, Report)], fromLast = T)]
+df1[, EncID.new := paste("11", EncID.new, sep = "")]
+df2[, EncID.new := paste("12", EncID.new, sep = "")]
 # number of all the variables in the echo (JUST TTE, only the first Echo)
 smh.echo <- readg(smh, echo, dt = T)[EncID.new%in%cohort$EncID.new]
 sbk.echo <- readg(sbk, echo, dt = T)[EncID.new%in%cohort$EncID.new]
@@ -575,14 +595,14 @@ df1 <- df1[EncID.new%in%cohort$EncID.new]
 df2 <- df2[EncID.new%in%cohort$EncID.new]
 df1 <- df1 %>% filter(echodone==1) %>% 
   arrange(EncID.new, Conclusions) %>% data.table
-df2 <- df2 %>%  filter(echotype!=100) %>%
+df2 <- df2 %>%  filter(echotype!=100|EncID.new=="12738947") %>%
   arrange(EncID.new, Report) %>% data.table
 smh.echo <- smh.echo %>% filter(((dmy(StudyStartDateTime)-dmy(ADMITDATE))<=14)) %>%
   arrange(EncID.new, Conclusions) %>% data.table
 sbk.echo$TestDate <- 
   mdy(str_sub(sbk.echo$`Test Performed Date/time`, 1, 11))
 sbk.echo <- sbk.echo %>% filter(((`TestDate`-ymd(Admit.Date))<=14)) %>%
-  filter(EncID.new!="12738947") %>% 
+  #filter(EncID.new!="12738947") %>%                                            
   arrange(EncID.new, Report) %>% data.table
 
 
@@ -590,8 +610,30 @@ sbk.echo$EncID.new == df2$EncID.new
 smh.echo$EncID.new == df1$EncID.new
 
 
-df1 <- cbind(df1, smh.echo[,.(StudyStartDateTime, Test.Name = ProcedureName)])
-df2 <- cbind(df2, sbk.echo[,.(Performed.DtTm, Test.Name = TestName)])
+df1 <- cbind(df1, smh.echo[,.(StudyStartDateTime, Test.Name = ProcedureName, 
+                              StudyId, Conclusions)])
+df2 <- cbind(df2, sbk.echo[,.(Performed.DtTm, Test.Name = TestName, SID, Report)])
+
+
+check1 <- cbind(df1[, .(EncID.new, Conclusions)], smh.echo[, .(Conc_orig = Conclusions)])
+check2 <- cbind(df2[, .(EncID.new, Report)], sbk.echo[, .(Rep_orig = Report)])
+fwrite(check1, "H:/GEMINI/Results/DREAM/201706/smh_echo_check.csv")
+fwrite(check2, "H:/GEMINI/Results/DREAM/201706/sbk_echo_check.csv")
+
+
+
+
+smh.echo.reviewered <- cbind(smh.echo[, .(EncID.new, StudyStartDateTime, Test.Name = ProcedureName, 
+                          StudyId, Conclusions_Origin = Conclusions)],
+             df1[, c(6,2,7:30), with = F])
+sbk.echo.reviewered <- cbind(sbk.echo[, .(EncID.new, Performed.DtTm, 
+                                          Test.Name = TestName, SID, Report_Origin = Report)],
+                             df2[, c(18, 4:17, 19:28), with = F])
+
+fwrite(smh.echo.reviewered, "H:/GEMINI/Results/DREAM/201706/smh_echo_reviewered.csv")
+fwrite(sbk.echo.reviewered, "H:/GEMINI/Results/DREAM/201706/sbk_echo_reviewered.csv")
+
+
 
 # number of people got TEE
 df1[Test.Name=="Transesophageal Echo", EncID.new] %>% table %>% table
