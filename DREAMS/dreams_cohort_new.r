@@ -193,3 +193,15 @@ cohort[!EncID.new%in%dreams_cohort$EncID.new, str_sub(EncID.new, 1, 2)] %>% tabl
 
 # number in new cohort by site
 dreams_cohort[!EncID.new%in%cohort$EncID.new, str_sub(EncID.new, 1, 2)] %>% table
+
+
+
+new_data_summary <- data.frame(
+  EncID.new = cohort$EncID.new,
+  in_new_cohort = ifelse(cohort$EncID.new%in%dreams_cohort$EncID.new,
+                         "keep", "excluded"),
+  new_patient_EncID.new = c(dreams_cohort$EncID.new[!dreams_cohort$EncID.new%in%cohort$EncID.new],
+                  rep(NA, 1494 - 646))
+)
+
+fwrite(new_data_summary, "H:/GEMINI/Results/DREAM/new/cohort_comparison.csv")

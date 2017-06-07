@@ -6,9 +6,9 @@ smh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/smh.link.csv")
 sbk <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/sbk.link.csv")
 uhn <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/uhn.link.csv")
 msh <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/msh.link.csv")
-thp <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")
+thp <- fread("H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.new.csv")
 #exclude <- readg(gim, notgim)
-all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new.csv")
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
 
 # add the information for two encounters that are missing in the physician list
 # encounters 13303103, 13177105
@@ -56,7 +56,7 @@ sbk <- find.new.code(sbk, "sbk", "sbk")
 uhn <- find.new.code(uhn, "uhn.adm", "uhn.mrp")
 msh <- find.new.code(msh, "msh", "msh")
 thp <- find.new.code(thp, "thp", "thp")
-sum(thp$mrp.code.new==thp$dis.code.new)
+sum(thp$mrp.code.new==thp$dis.code.new, na.rm = T)
 cohort <- rbind(smh, sbk, uhn, msh, thp, fill = T) %>% unique#[!EncID.new%in%exclude$EncID.new] %>% unique
 
 
@@ -66,6 +66,6 @@ dad <- fread("H:/GEMINI/DataBackup/Data170214/UHN/CIHI/uhn.ip_dad.nophi.csv")
 extra.enc <- dad[mdy(Discharge.Date)>ymd("20150331"), EncID.new]
 cohort <- cohort[!EncID.new%in%extra.enc]
 table(cohort[,.(adm.GIM, dis.GIM)])
-
+cohort[duplicated(EncID.new)]
 
 fwrite(cohort, "H:/GEMINI/Data/GEMINI/gim.all.phy.csv")

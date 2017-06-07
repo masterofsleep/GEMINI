@@ -207,3 +207,22 @@ all.name[GIM=="n"&N>50] -> check
 fwrite(all.name, 
        "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new.csv")
 
+
+
+
+
+# ------------------------- assign code to new list ----------------------------
+phy.list <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
+range(phy.list$code.new, na.rm = T)
+sum(is.na(phy.list$code.new))
+c(1:1806)[!c(1:1806)%in%phy.list$code.new] %>% length
+extra_code <- c(rep(NA, 4),
+  c(1:1806)[!c(1:1806)%in%phy.list$code.new],
+  1807: (1807+sum(is.na(phy.list$code.new))-59))
+
+extra_code[extra_code%in%phy.list$code.new]
+phy.list[is.na(code.new), code.new:= extra_code]
+range(phy.list$code.new, na.rm = T)
+c(1:1879)[!c(1:1879)%in%phy.list$code.new]
+
+fwrite(phy.list, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")

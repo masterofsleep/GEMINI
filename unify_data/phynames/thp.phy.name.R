@@ -60,3 +60,99 @@ link <- merge(unique(adm.link[,.(EncID.new, adm.code = AdmittingPhysicianCode,
 link$EncID.new <- paste("15", link$EncID.new, sep = "")
 
 fwrite(link, "H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.csv")
+
+
+# ---------------------- check new adm dis physician file ----------------------
+# ------------------------------- 2017-06-06 -----------------------------------
+library(gemini)
+lib.pa()
+adm.link <- fread("H:/GEMINI/Results/DataSummary/physician_names/revisedIP_deidentified.csv")
+adm.link[, V1:=NULL]
+adm.link <- unique(adm.link)
+adm.old <- fread("R:/GEMINI/_RESTORE/THP/phynames/thp.GIM_IP_LINKING_LIST_physicians.csv")
+sum(adm.link$EncID.new%in%adm.old$EncID.new)
+
+sum(c(adm.link$AdmittingPhysicianCode, adm.link$DischargingPhysicianCode)%in%
+      c(adm.old$AdmittingPhysicianCode, adm.old$DischargingPhysicianCode))
+names(adm.link) <- paste(names(adm.link), "new", sep = "_")
+adm.old <- adm.old[, 1:7, with = F]
+adm.old <- unique(adm.old)
+adm.compare <- merge(adm.old, adm.link, by.x = "EncID.new",
+                     by.y = "EncID.new_new")
+
+sum(adm.compare$DischargingPhysicianCode == adm.compare$DischargingPhysicianCode_new)
+adm.compare[DischargingPhysicianCode!=DischargingPhysicianCode_new, 
+            .(DischargingPhysicianCode, DischargingPhysicianCode_new,
+              DischargingPhysicianFirstName, DischargingPhysicianLastName,
+              DischargingPhysicianFirstName_new, DischargingPhysicianLastName_new)] -> check
+adm.compare[DischargingPhysicianLastName!=toupper(DischargingPhysicianLastName_new),
+            .(DischargingPhysicianCode, DischargingPhysicianCode_new,
+              DischargingPhysicianFirstName, DischargingPhysicianLastName,
+              DischargingPhysicianFirstName_new, DischargingPhysicianLastName_new)] -> check
+##? ~3000 patients had different discharging physician
+
+adm.compare[AdmittingPhysicianCode!=""&
+  AdmittingPhysicianLastName!=toupper(AdmittingPhysicianLastName_new),
+            .(EncID.new, AdmittingPhysicianCode, AdmittingPhysicianFirstName, 
+              AdmittingPhysicianLastName,
+              AdmittingPhysicianCode_new, AdmittingPhysicianFirstName_new, 
+              AdmittingPhysicianLastName_new)] -> check_adm_p
+fwrite(check_adm_p, "R:/GEMINI/Check/physician_names/thp_adm_phy_discrepancy.csv")
+
+apply(adm.link, 2, function(x)sum(x==""))
+adm.link[AdmittingPhysicianCode==""] -> check
+adm.old[EncID.new%in%check$EncID.new] -> check2
+apply(check2, 2, function(x)sum(x==""))
+check2[AdmittingPhysicianCode!=""]
+fwrite(check, "R:/GEMINI/Check/physician_names/thp_missing_adm_dis_md.csv")
+
+
+adm.link <- fread("H:/GEMINI/Results/DataSummary/physician_names/revisedIP_deidentified.csv")
+adm.link[, V1:=NULL]
+adm.link <- unique(adm.link)
+dad.link <- fread("R:/GEMINI/_RESTORE/THP/phynames/thp.dad.LINKINGLIST_physicians.csv")
+link <- merge(unique(adm.link[,.(EncID.new, adm.code = AdmittingPhysicianCode, 
+                                 dis.code = DischargingPhysicianCode)]),
+              dad.link[,.(EncID.new, mrp.code = MostResponsibleDoctorCode)],
+              by = "EncID.new")
+link$EncID.new <- paste("15", link$EncID.new, sep = "")
+
+fwrite(link, "H:/GEMINI/Results/DataSummary/physician_names/link/thp.link.new.csv")
+
+
+
+
+
+all.names <- rbind(data.table(Code = adm.link$AdmittingPhysicianCode,
+                              first.name = adm.link$AdmittingPhysicianFirstName,
+                              last.name = adm.link$AdmittingPhysicianLastName),
+                   data.table(Code = adm.link$DischargingPhysicianCode,
+                              first.name = adm.link$DischargingPhysicianFirstName,
+                              last.name = adm.link$DischargingPhysicianLastName),
+                   data.table(Code = dad.link$MostResponsibleDoctorCode,
+                              first.name = dad.link$MostResponsiblePhysicianFirstName,
+                              last.name = dad.link$MostResponsiblePhysicianLastName))
+
+all.names <- merge(unique(all.names), data.table(table(all.names$Code)),
+                   by.x = "Code", by.y= "V1", all.x = T)
+
+all.names$code.type <- "thp"
+all.names$GIM <- "y"
+
+fwrite(all.names, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/thp.names.new.csv")
+
+
+simpleCap <- function(x)gsub("(^|[[:space:]]|'|-)([[:alpha:]])", "\\1\\U\\2", x, perl=TRUE)
+all.names$first.name <- simpleCap(tolower(all.names$first.name))
+all.names$last.name <- simpleCap(tolower(all.names$last.name))
+
+
+all.phy.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new.csv")
+all.phy.name.new <- rbind(all.phy.name,
+                          all.names[!Code%in%all.phy.name[code.type=="thp", Code]],
+                          fill = T)
+# all.phy.name.new <- all.phy.name.new %>% arrange(last.name, first.name)
+# fwrite(all.phy.name.new, "H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
+# 
+# 
+# all.phy.name.new[duplicated(all.phy.name.new), ]
