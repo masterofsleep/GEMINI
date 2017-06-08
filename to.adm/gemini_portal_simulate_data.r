@@ -1,5 +1,6 @@
 # ----------------- Simulated data for GEMINI Portal demo ----------------------
-
+library(gemini)
+lib.pa()
 simu_phy_sum <- data.frame(
   physician = letters[1:10],
   N = sample(c(100:1500), 10),
@@ -41,8 +42,10 @@ ggplot(simu_phy_sum, aes(physician[order(ave.los, decreasing = T)],
 patient_los <- rexp(simu_phy_sum$N[4], 1/simu_phy_sum$ave.los[4])
 patient_los <- data.frame(patient_id = 1:length(patient_los),
                           los = patient_los)
+png("my_los.png", res = 150, width = 1000, height = 600)
 ggplot(patient_los, aes(los)) + 
   geom_histogram(binwidth = 0.5, fill = "#5DD0D8", color = "#555555")  + 
   theme_bw() +
   xlab("Acute Length-of-Stay") + 
   ylab("Count")
+dev.off()

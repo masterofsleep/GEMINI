@@ -24,6 +24,23 @@ smh.abx <- smh.phar[din%in%din.drm|generic_name%in%generic]
 sbk.abx <- sbk.phar[(ndc_din%in%din.drm|generic_name%in%generic)]
 uhn.abx <- uhn.phar[(DIN%in%din.drm|toupper(Generic_Name)%in%generic)]
 
+# check how many captured by din and how many be generic name
+smh.abx[, ':='(bydin = din%in%din.drm, bygene = generic_name%in%generic)]
+sbk.abx[, ':='(bydin = ndc_din%in%din.drm, bygene = generic_name%in%generic)]
+uhn.abx[, ':='(bydin = DIN%in%din.drm, bygene = toupper(Generic_Name)%in%generic)]
+
+checkdin_abx <- function(x){
+  table(x[, .(bydin, bygene)])
+}
+
+checkdin_abx(smh.abx)
+checkdin_abx(sbk.abx)
+checkdin_abx(uhn.abx)
+smh.abx[bygene&!bydin, din] %>% table %>% data.table %>% fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/smh.csv")
+sbk.abx[bygene&!bydin, ndc_din] %>% table %>% data.table %>% fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/sbk.csv")
+uhn.abx[bygene&!bydin, DIN] %>% table %>% data.table %>% fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/uhn.csv")
+
+
 apply(smh.abx, 2, function(x)sum(is.na(x)))
 apply(sbk.abx, 2, function(x)sum(is.na(x)))
 apply(uhn.abx, 2, function(x)sum(is.na(x)))

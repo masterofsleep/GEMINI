@@ -285,3 +285,105 @@ simu.result[, ':='(n_saved_75 = total.ctmrius * prop_saved_75,
                    n_saved_25 = total.ctmrius * prop_saved_25)]
 
 fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.nrad.csv")
+
+
+# ----------------------- simu blood work --------------------------------------
+n.bw <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$n.bloodtest)/nrow(x),
+             stringsAsFactors = F)
+}
+nbw.sum <- ddply(cohort[!startsWith(Institution.Number, "THP")], ~physician, n.bw)
+
+
+simu_bw <- function(percentile){
+  target.bw <- ddply(nbw.sum, ~site, summarize,
+                      targ_nbw = quantile(ave, probs = percentile))
+  nbw.sum <- merge(nbw.sum, target.bw, by = "site") %>% data.table
+  nbw.sum[, ave.diff:= ifelse(ave > targ_nbw,
+                               ave - targ_nbw,
+                               0)]
+  saved.prop <- ddply(nbw.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_bw(0.75),
+                     simu_bw(0.5),
+                     simu_bw(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+
+hgb <- readg(lab, hgb)
+sod <- readg(lab, sodium)
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+hgb <- merge(hgb, dad[, .(EncID.new, Institution.Number)],by = "EncID.new")
+sod <- merge(sod, dad[, .(EncID.new, Institution.Number)],by = "EncID.new")
+
+site_total <- table(c(hgb$Institution.Number, sod$Institution.Number)) %>% data.table %>% 
+  rename(site = V1, total_bloodwork = N) 
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total_bloodwork * prop_saved_75,
+                   n_saved_50 = total_bloodwork * prop_saved_50,
+                   n_saved_25 = total_bloodwork * prop_saved_25)]
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.nbloodwork.csv")
+
+# --------------------------- transfusion --------------------------------------
+n.tr <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$N.pre.tran.hgb.gt80)/nrow(x),
+             stringsAsFactors = F)
+}
+ntr.sum <- ddply(cohort[!startsWith(Institution.Number, "THP")], ~physician, n.tr)
+
+
+simu_tr <- function(percentile){
+  target.tr <- ddply(ntr.sum, ~site, summarize,
+                     targ_ntr = quantile(ave, probs = percentile))
+  ntr.sum <- merge(ntr.sum, target.tr, by = "site") %>% data.table
+  ntr.sum[, ave.diff:= ifelse(ave > targ_ntr,
+                              ave - targ_ntr,
+                              0)]
+  saved.prop <- ddply(ntr.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_tr(0.75),
+                     simu_tr(0.5),
+                     simu_tr(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+
+rbc.trans <- fread("H:/GEMINI/Results/to.administrator/rbc.trans.with.pre.hgb.csv")
+rbc.trans.80 <- rbc.trans[with.pre.hgb==T&pre.hgb>80]
+rbc.trans.80 <- merge(dad[,.(EncID.new, Institution.Number)],
+                      rbc.trans.80)
+
+site_total <- table(rbc.trans.80$Institution.Number) %>% data.table %>% 
+  rename(site = V1, total_rbc_trans_with_pre_hgb80 = N) 
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total_rbc_trans_with_pre_hgb80 * prop_saved_75,
+                   n_saved_50 = total_rbc_trans_with_pre_hgb80 * prop_saved_50,
+                   n_saved_25 = total_rbc_trans_with_pre_hgb80 * prop_saved_25)]
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.rbc_trans.csv")

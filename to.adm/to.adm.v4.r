@@ -16,18 +16,11 @@ hide_site(cohort)
 find_cohort <- function(x){
   phy <- readg(gim, all.phy)
   dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
-  cohort <- phy[(adm.code.new==dis.code.new&adm.code.new==mrp.code.new)]
+  cohort <- phy[(adm.code.new==dis.code.new&adm.code.new==mrp.code.new&
+                   adm.code!=0&adm.GIM!="n")]
   cohort[,':='(mrp.code = NULL,
                adm.code = NULL,
                dis.code = NULL)]
-  # keep only y or not ??
-  # dad[Institution.Number=="M", Institution.Number:="THP-M"]
-  # dad[Institution.Number=="C", Institution.Number:="THP-C"]
-  # dad[Institution.Number=="54265", Institution.Number:="UHN-TG"]
-  # dad[Institution.Number=="54266", Institution.Number:="UHN-TW"]
-  # dad[Institution.Number=="sbk", Institution.Number:="SHSC"]
-  # dad[Institution.Number=="msh", Institution.Number:="SHS"]
-  # dad[Institution.Number=="smh", Institution.Number:="SMH"]
   setwd("H:/GEMINI/Results/to.administrator")
   copd <- fread("qbp.copd.csv")
   cap <- fread("qbp.cap.csv")
@@ -81,6 +74,7 @@ find_cohort <- function(x){
 }
 cohort <- find_cohort()
 
+cohort[physician=="SMH-261"]
 phy.sum <- ddply(cohort, ~physician, function(x)
   data.frame(N = nrow(x),
              code.new = x$mrp.code.new[1],
@@ -96,11 +90,11 @@ phy.sum <- ddply(cohort, ~physician, function(x)
              cbc.per.patientday = sum(x$n.bloodtest)/sum(x$Acute.LoS),
              trans.with.prehgb80.per1000patient = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000,
              aki.rate = sum(x$aki, na.rm = T)/nrow(x)*100,
-             weekday = mean(x$weekday, na.rm = T),
-             daytime = mean(x$daytime, na.rm = T),
+             #weekday = mean(x$weekday, na.rm = T),
+             #daytime = mean(x$daytime, na.rm = T),
              ave.cost = mean(x$Cost, na.rm = T)
   ))
-all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
 phy.sum <- merge(phy.sum, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], by.x = "code.new",
                  by.y = "code.new", all.x = T, all.y = F)
 table(phy.sum$GIM)
@@ -108,19 +102,19 @@ phy.sum$phy.name <- paste(phy.sum$first.name, phy.sum$last.name)
 fwrite(phy.sum, "C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
 
 #add phy name to cohort
-all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
-cohort <- merge(cohort, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], 
-                by.x = "mrp.code.new", by.y = "code.new", all.x = T, all.y = F)
-table(cohort$GIM)
-cohort$phy.name <- paste(cohort$first.name, cohort$last.name)
-fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.new.withname.csv")
-
+# all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.csv")
+# cohort <- merge(cohort, all.name[!duplicated(code.new), .(code.new, first.name, last.name)], 
+#                 by.x = "mrp.code.new", by.y = "code.new", all.x = T, all.y = F)
+# table(cohort$GIM)
+# cohort$phy.name <- paste(cohort$first.name, cohort$last.name)
+# fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.new.withname.csv")
+# 
 
 
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  data <- hide_site(data)
+  #data <- hide_site(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -147,8 +141,8 @@ plot.phy <- function(data, title, xlab = "Physician",
                site.ave = sum(phy.ave * N)/sum(N),
                #site.ave = mean(phy.ave), # for patient sum only
                xm = max(phy),
-               ymi = quantile(phy.ave, probs = 0.25),
-               yma = quantile(phy.ave, probs = 0.75),
+               ymi = quantile(phy.ave, probs = 0.1),
+               yma = quantile(phy.ave, probs = 0.9),
                yav = quantile(phy.ave, probs = 0.5),
                ydiff = sprintf(digitform , yma - ymi))
   ave.shift <- max(df$phy.ave) * 0.02
@@ -323,7 +317,7 @@ ave.cost <- function(x){
              ave = mean(x$Cost, na.rm = T))
 }
 
-png("ave.cost.png", res = 250, width = 2000, height = 1200)
+png("ave.cost.png", res = 250, width = 2200, height = 1200)
 plot.phy(cohort,  "Average Cost ($)", 
          ylab = "Average Cost ($)", ave.fun = ave.cost, xstart = -5, digit = 0)
 dev.off()
@@ -348,9 +342,9 @@ adj.cost <- function(x){
              site = x$Institution.Number[1],
              ave = mean(x$adj_cost, na.rm = T))
 }
-png("adjusted_cost.png", res = 250, width = 2000, height = 1200)
+png("adjusted_cost.png", res = 250, width = 2200, height = 1200)
 plot.phy(cohort,  "Average Adjusted Cost ($)", 
-         ylab = "Average Adjusted Cost ($)", ave.fun = adj.cost, xstart = -4, digit = 0)
+         ylab = "Average Adjusted Cost ($)", ave.fun = adj.cost, xstart = -5, digit = 0)
 dev.off()
 
 

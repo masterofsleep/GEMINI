@@ -284,3 +284,4 @@ plot.phy.sig(cohort,  "Average Adjusted Cost ($)",
          ylab = "Average Adjusted Cost ($)", ave.fun = adj.cost, xstart = -4, digit = 0,
          varname = "adj_cost")
 dev.off()
+
