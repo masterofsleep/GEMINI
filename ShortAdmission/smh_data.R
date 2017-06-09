@@ -100,3 +100,19 @@ endo.code <- int.map$X2[4:171]
 smh.er.int_endo <- smh.er.int[Occurrence.Type%in%endo.code]
 smh.ip_int <- readg(smh, ip_int)
 smh.ip_int[Intervention.Code%in%endo.code]
+
+
+
+setwd("R:/GEMINI-Short_Admission_Project/Data/CIHI")
+list.files()
+smh.inc <- fread("smh.adm.nophi.csv")
+adm <- readg(gim, adm)
+smh.hash <- adm[EncID.new%in%smh.inc, .(EncID.new, Hash)]
+fwrite(smh.hash, "smh.hash.csv")
+
+
+smh.vitals <- readg(smh, vitals, dt = T)
+smh.vitals_inc <- smh.vitals[mdy_hm(Collected.DT)<=ymd_hm(paste(Admit.Date, Admit.Time))]
+smh.vitals_inc <- smh.vitals_inc[EncID.new%in%smh.inc$EncID.new]
+
+fwrite(smh.vitals_inc, "R:/GEMINI-Short_Admission_Project/Data/Clinical/vitals.csv")
