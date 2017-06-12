@@ -11,7 +11,16 @@ hide_site <- function(data){
   return(data)
 }
 
-hide_site(cohort)
+hide_site2 <- function(data){
+  ninst <- length(unique(data$Institution.Number))
+  newcode <- data.frame(Institution.Number = 
+                          c("SHS", "SHSC", "SMH", "THP-C", "THP-M", "UHN-TG", "UHN-TW"), 
+                        new.inst = c("A", "B", "C", "D", "E", "F", "G"))
+  data <- merge(data, newcode, by = "Institution.Number")
+  data$Institution.Number <- data$new.inst
+  return(data)
+}
+
 
 find_cohort <- function(x){
   phy <- readg(gim, all.phy)
@@ -59,13 +68,13 @@ find_cohort <- function(x){
   
   # Transfusion with pre hgb > 80
   rbc.trans <- fread("H:/GEMINI/Results/to.administrator/rbc.trans.with.pre.hgb.csv")
-  rbc.trans.80 <- rbc.trans[with.pre.hgb==T&pre.hgb>80]
-  n.with.pre.trans.80 <- rbc.trans.80[,.N, by = EncID.new]
-  n.with.pre.trans.80$EncID.new <- as.character(n.with.pre.trans.80$EncID.new)
-  names(n.with.pre.trans.80)[2] <- "N.pre.tran.hgb.gt80"
-  cohort <- merge(cohort, n.with.pre.trans.80, by = "EncID.new",
+  rbc.trans.70 <- rbc.trans[with.pre.hgb==T&pre.hgb>70]
+  n.with.pre.trans.70 <- rbc.trans.70[,.N, by = EncID.new]
+  n.with.pre.trans.70$EncID.new <- as.character(n.with.pre.trans.70$EncID.new)
+  names(n.with.pre.trans.70)[2] <- "N.pre.tran.hgb.gt70"
+  cohort <- merge(cohort, n.with.pre.trans.70, by = "EncID.new",
                   all.x = T, all.y = F)
-  cohort[is.na(N.pre.tran.hgb.gt80), N.pre.tran.hgb.gt80 := 0]
+  cohort[is.na(N.pre.tran.hgb.gt70), N.pre.tran.hgb.gt70 := 0]
   
   # AKI 
   inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.csv")
@@ -73,7 +82,7 @@ find_cohort <- function(x){
   return(cohort)
 }
 cohort <- find_cohort()
-
+# fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.csv")
 cohort[physician=="SMH-261"]
 phy.sum <- ddply(cohort, ~physician, function(x)
   data.frame(N = nrow(x),
@@ -114,7 +123,7 @@ fwrite(phy.sum, "C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  #data <- hide_site(data)
+  data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -246,16 +255,16 @@ plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],
 dev.off()
 
 # -------------------------Transfusion with pre hgb > 80 -----------------------
-num.pre.trans.hgb80 <- function(x){
+num.pre.trans.hgb70 <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000)
+             ave = sum(x$N.pre.tran.hgb.gt70)/nrow(x)*1000)
 }
-png("number.of.rbc.trans.with.prehbg.gt80.png", res = 250, width = 2000, height = 1200)
+png("number.of.rbc.trans.with.prehbg.gt70.png", res = 250, width = 2000, height = 1200)
 plot.phy(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")], 
-         "Number of RBC Transfusions \n with pre-Transfusion Hgb > 80 \n per 1000 Patient per Doctor", 
-         ylab = "Number of RBC Transfusions \n with pre-Transfusion Hgb > 80 \n per 1000 Patient per Doctor", 
-         ave.fun = num.pre.trans.hgb80, xstart = -3)
+         "Number of RBC Transfusions \n with pre-Transfusion Hgb > 70 \n per 1000 Patient per Doctor", 
+         ylab = "Number of RBC Transfusions \n with pre-Transfusion Hgb > 70 \n per 1000 Patient per Doctor", 
+         ave.fun = num.pre.trans.hgb70, xstart = -3)
 dev.off()
 
 # ----------------------------------- AKI --------------------------------------

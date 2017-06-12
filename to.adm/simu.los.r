@@ -1,25 +1,25 @@
 # --------------------------- test balance -------------------------------------
 library(gemini)
 lib.pa()
-cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv", colClasses = list(character = "EncID.new"))
-all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
-cohort <- cohort[physician!="thp-m-708"]
-n.pat <- cohort[,.N, by = physician]
-cohort.100p <- cohort[physician%in%n.pat[N>=100, physician]]
-cohort.100p <- cohort.100p[LOS.without.ALC<=30]
-sd(cohort.100p$LOS.without.ALC)
+# cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv", colClasses = list(character = "EncID.new"))
+# all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
+# cohort <- cohort[physician!="thp-m-708"]
+# n.pat <- cohort[,.N, by = physician]
+# cohort <- cohort[physician%in%n.pat[N>=100, physician]]
+# cohort <- cohort[Acute.LoS<=30]
+# sd(cohort$Acute.LoS)
+# 
 
 
-
-# los.quantile <- quantile(cohort.100p$LOS.without.ALC, probs = seq(0, 1, 0.01)) %>% data.table
+# los.quantile <- quantile(cohort$Acute.LoS, probs = seq(0, 1, 0.01)) %>% data.table
 # los.quantile$tile <- paste(0:100, "%", sep = "")
 # names(los.quantile$tile) <- "LOS"
 # fwrite(los.quantile, "H:/GEMINI/Results/to.administrator/los.percentile.csv")
 
-ave.los <- ddply(cohort.100p, ~physician, summarize,
+ave.los <- ddply(cohort, ~physician, summarize,
                  N = length(EncID.new), 
                  site = Institution.Number[1],
-                 ave.los = mean(LOS.without.ALC)) %>% data.table
+                 ave.los = mean(Acute.LoS)) %>% data.table
 for(i in unique(ave.los$site)){
   ave.los[site ==i, ':='(phy = as.numeric(factor(physician, levels = physician[order(ave.los, decreasing = T)])),
                          avelos.group = cut(ave.los, breaks=quantile(ave.los, probs=seq(0,1, by=1/3), na.rm=TRUE), 
@@ -28,14 +28,14 @@ for(i in unique(ave.los$site)){
 }
 
 ave.los$avelos.group <- as.numeric(ave.los$avelos.group)
-cohort.100p <- merge(cohort.100p, ave.los[,.(avelos.group, phy, physician)],
+cohort <- merge(cohort, ave.los[,.(avelos.group, phy, physician)],
                      by = "physician")
 
 
 
-df <- ddply(cohort.100p[Institution.Number=="smh"], ~avelos.group, function(x){
-  rbind(find.qq(x$LOS.without.ALC, 
-                cohort.100p[avelos.group==4&Institution.Number=="smh",LOS.without.ALC]))
+df <- ddply(cohort[Institution.Number=="smh"], ~avelos.group, function(x){
+  rbind(find.qq(x$Acute.LoS, 
+                cohort[avelos.group==4&Institution.Number=="smh",Acute.LoS]))
 })
 find.qq <- function(x, y){
   sx <- quantile(x, probs = seq(0, 1, 0.02))
@@ -52,8 +52,8 @@ find.qq.bygroup <- function(data = NULL, var, group){
   })
 }
 df <- NULL
-for(i in unique(cohort.100p$Institution.Number)){
-  df <- rbind(df, cbind(find.qq.bygroup(cohort.100p[Institution.Number==i], LOS.without.ALC, avelos.group),
+for(i in unique(cohort$Institution.Number)){
+  df <- rbind(df, cbind(find.qq.bygroup(cohort[Institution.Number==i], Acute.LoS, avelos.group),
                     site = i))
 }
 png("H:/GEMINI/Results/to.administrator/los_qq_no_outliers.png", res = 200, width = 2000, height = 2000)
@@ -126,39 +126,39 @@ plot.phy <- function(data, title, xlab = "physician",
 
 
 
-ddply(cohort.100p, ~Institution.Number, summarize,
+ddply(cohort, ~Institution.Number, summarize,
       nphy =  max(phy))
 
-simu.los <- function(x, ref.n = 3, ref.pctl = 0.75){
+simu.los <- function(x, ref.n = 1, ref.pctl = 0.75){
   x <- data.table(x)
   ref.pctl <- 1 - ref.pctl
   phy.ref <- as.numeric(quantile(unique(x$phy), ref.pctl))
-  ref <- x[phy>(phy.ref-ref.n/2)&phy<=(phy.ref+ref.n/2), LOS.without.ALC]
+  ref <- x[phy>(phy.ref-ref.n/2)&phy<=(phy.ref+ref.n/2), Acute.LoS]
   for(i in 1: floor(phy.ref-ref.n/2)){
-    fn <- ecdf(x[phy==i, LOS.without.ALC])
-    percentiles <- fn(x[phy==i, LOS.without.ALC])
+    fn <- ecdf(x[phy==i, Acute.LoS])
+    percentiles <- fn(x[phy==i, Acute.LoS])
     x[phy==i, simu.LOS := as.numeric(quantile(ref, probs = percentiles))]
   }
-  x[is.na(simu.LOS), simu.LOS := LOS.without.ALC]
-  return(x[,.(EncID.new, simu.LOS, LOS.without.ALC, physician, phy)])
+  x[is.na(simu.LOS), simu.LOS := Acute.LoS]
+  return(x[,.(EncID.new, simu.LOS, Acute.LoS, physician, phy)])
 }
 
 ## method 1, only simulate to those around the targeted percentile
-los.to.75 <- ddply(cohort.100p, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.75)) %>% data.table
-los.to.50 <- ddply(cohort.100p, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.5)) %>% data.table
-los.to.25 <- ddply(cohort.100p, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.25)) %>% data.table
+los.to.75 <- ddply(cohort, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.75)) %>% data.table
+los.to.50 <- ddply(cohort, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.5)) %>% data.table
+los.to.25 <- ddply(cohort, ~Institution.Number, function(x)simu.los(x, ref.pctl = 0.25)) %>% data.table
 
 
 ave.simu.los <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = mean(x$LOS.without.ALC, na.rm = T))
+             ave = mean(x$Acute.LoS, na.rm = T))
 }
-los.original <- los.to.75
-los.original$simu.LOS <- los.original$LOS.without.ALC
+
+los.original$simu.LOS <- los.original$Acute.LoS
 setwd("C:/Users/guoyi/Desktop/to.adm/to.gemini.investigators")
 png("simu.no.simu.png", res = 170, width = 2000, height = 1200)
-plot.phy(cohort.100p, "Average Length-of-Stay", 
+plot.phy(cohort, "Average Length-of-Stay", 
          ylab = "Average Length-of-Stay", 
          ave.fun = ave.simu.los)
 dev.off()
@@ -182,32 +182,32 @@ dev.off()
 
 
 
-los.to.75[simu.LOS!=LOS.without.ALC, .(Institution.Number, phy)] %>% table
-los.to.50[simu.LOS!=LOS.without.ALC, .(Institution.Number, phy)] %>% table
-los.to.25[simu.LOS!=LOS.without.ALC, .(Institution.Number, phy)] %>% table
-x[simu.LOS!=LOS.without.ALC, .(Institution.Number, phy)] %>% table
+los.to.75[simu.LOS!=Acute.LoS, .(Institution.Number, phy)] %>% table
+los.to.50[simu.LOS!=Acute.LoS, .(Institution.Number, phy)] %>% table
+los.to.25[simu.LOS!=Acute.LoS, .(Institution.Number, phy)] %>% table
+x[simu.LOS!=Acute.LoS, .(Institution.Number, phy)] %>% table
 
 sum(los.to.75$EncID.new == los.to.25$EncID.new)
 sum(los.to.75$EncID.new == los.to.50$EncID.new)
-sum(los.to.75$EncID.new == cohort.100p$EncID.new)
+sum(los.to.75$EncID.new == cohort$EncID.new)
 
 simu <- data.frame(EncID.new = los.to.75$EncID.new, 
               los.to.75 = los.to.75$simu.LOS,
               los.to.50 = los.to.50$simu.LOS,
               los.to.25 = los.to.25$simu.LOS)
 
-cohort.100p <- merge(cohort.100p, simu, by = "EncID.new")
+cohort <- merge(cohort, simu, by = "EncID.new")
 
-simu.res <- ddply(cohort.100p, ~Institution.Number, summarize,
-      saved.bd.75th  = sum(LOS.without.ALC) - sum(los.to.75),
-      saved.bd.50th  = sum(LOS.without.ALC) - sum(los.to.50),
-      saved.bd.25th  = sum(LOS.without.ALC) - sum(los.to.25),
+simu.res <- ddply(cohort, ~Institution.Number, summarize,
+      saved.bd.75th  = sum(Acute.LoS) - sum(los.to.75),
+      saved.bd.50th  = sum(Acute.LoS) - sum(los.to.50),
+      saved.bd.25th  = sum(Acute.LoS) - sum(los.to.25),
       total.ALC = sum(Number.of.ALC.Days),
-      total.Non.ALC = sum(LOS.without.ALC),
+      total.Non.ALC = sum(Acute.LoS),
       total.LOS = sum(LoS)
 )
 
-fwrite(simu.res, "C:/Users/guoyi/Desktop/to.adm/simu.los.comparison.csv")
+fwrite(simu.res, "C:/Users/guoyi/Desktop/to.adm/simu.los.comparison.new.csv")
 
 
 
@@ -342,7 +342,7 @@ fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.nbloodwork.csv")
 n.tr <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = sum(x$N.pre.tran.hgb.gt80)/nrow(x),
+             ave = sum(x$N.pre.tran.hgb.gt70)/nrow(x),
              stringsAsFactors = F)
 }
 ntr.sum <- ddply(cohort[!startsWith(Institution.Number, "THP")], ~physician, n.tr)
@@ -364,7 +364,7 @@ simu_tr <- function(percentile){
 simu.result <- cbind(simu_tr(0.75),
                      simu_tr(0.5),
                      simu_tr(0.25)) 
-names(simu.result) <- c("site",
+names(simu.result) <- c("site",b
                         "prop_saved_75",
                         "site",
                         "prop_saved_50",
@@ -374,16 +374,68 @@ simu.result <- simu.result[, c(1, 2, 4, 6)]
 
 
 rbc.trans <- fread("H:/GEMINI/Results/to.administrator/rbc.trans.with.pre.hgb.csv")
-rbc.trans.80 <- rbc.trans[with.pre.hgb==T&pre.hgb>80]
-rbc.trans.80 <- merge(dad[,.(EncID.new, Institution.Number)],
-                      rbc.trans.80)
+rbc.trans.70 <- rbc.trans[with.pre.hgb==T&pre.hgb>70]
+rbc.trans.70 <- merge(dad[,.(EncID.new, Institution.Number)],
+                      rbc.trans.70)
 
-site_total <- table(rbc.trans.80$Institution.Number) %>% data.table %>% 
-  rename(site = V1, total_rbc_trans_with_pre_hgb80 = N) 
+site_total <- table(rbc.trans.70$Institution.Number) %>% data.table %>% 
+  rename(site = V1, total_rbc_trans_with_pre_hgb70 = N) 
 
 simu.result <- merge(site_total, simu.result, by = "site")
 simu.result <- data.table(simu.result)
-simu.result[, ':='(n_saved_75 = total_rbc_trans_with_pre_hgb80 * prop_saved_75,
-                   n_saved_50 = total_rbc_trans_with_pre_hgb80 * prop_saved_50,
-                   n_saved_25 = total_rbc_trans_with_pre_hgb80 * prop_saved_25)]
+simu.result[, ':='(n_saved_75 = total_rbc_trans_with_pre_hgb70 * prop_saved_75,
+                   n_saved_50 = total_rbc_trans_with_pre_hgb70 * prop_saved_50,
+                   n_saved_25 = total_rbc_trans_with_pre_hgb70 * prop_saved_25)]
 fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.rbc_trans.csv")
+
+
+
+# --------------------------- AKI --------------------------------------
+n.aki <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$aki)/nrow(x),
+             stringsAsFactors = F)
+}
+naki.sum <- ddply(cohort[!startsWith(Institution.Number, "THP")], ~physician, n.aki)
+
+
+simu_aki <- function(percentile){
+  target.aki <- ddply(naki.sum, ~site, summarize,
+                     targ_naki = quantile(ave, probs = percentile))
+  naki.sum <- merge(naki.sum, target.aki, by = "site") %>% data.table
+  naki.sum[, ave.diff:= ifelse(ave > targ_naki,
+                              ave - targ_naki,
+                              0)]
+  saved.prop <- ddply(naki.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_aki(0.75),
+                     simu_aki(0.5),
+                     simu_aki(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+
+inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.csv")
+dad$aki <- dad$EncID.new%in%inc[KDIGO%in%c("2", "3"), EncID.new]
+
+site_total <- ddply(dad[!startsWith(Institution.Number, "THP")], ~Institution.Number,
+                    summarize,
+                    total_aki = sum(aki, na.rm = T)) %>% rename(site = Institution.Number)
+  
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total_aki * prop_saved_75,
+                   n_saved_50 = total_aki * prop_saved_50,
+                   n_saved_25 = total_aki * prop_saved_25)]
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.aki.csv")

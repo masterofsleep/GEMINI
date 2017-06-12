@@ -2,24 +2,24 @@
 library(gemini)
 lib.pa()
 cohort <- fread("C:/Users/guoyi/Desktop/to.adm/cohort.csv", colClasses = list(character = "EncID.new"))
-all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
-cohort <- cohort[physician!="thp-m-708"]
-n.pat <- cohort[,.N, by = physician]
-cohort.100p <- cohort[physician%in%n.pat[N>=100, physician]]
-cohort.100p <- cohort.100p[LOS.without.ALC<=30]
-cor(cohort.100p$LOS.without.ALC, cohort.100p$adm)
-fit <- glmer(read.in.30 ~ sqrt(LoS) + (1|Institution.Number), cohort.100p, family = binomial)
+# all.name <- fread("C:/Users/guoyi/Desktop/to.adm/all.name.csv")
+# cohort <- cohort[physician!="thp-m-708"]
+# n.pat <- cohort[,.N, by = physician]
+# cohort <- cohort[physician%in%n.pat[N>=100, physician]]
+# cohort <- cohort[Acute.LoS<=30]
+# cor(cohort$Acute.LoS, cohort$adm)
+fit <- glmer(read.in.30 ~ sqrt(LoS) + (1|Institution.Number), cohort, family = binomial)
 summary(fit)
 
-ggplot(cohort.100p, aes(read.in.30, LOS.without.ALC)) + geom_boxplot() + facet_wrap(~Institution.Number)
+ggplot(cohort, aes(read.in.30, Acute.LoS)) + geom_boxplot() + facet_wrap(~Institution.Number)
 
-phy.sum <- ddply(cohort.100p, ~physician, summarize,
+phy.sum <- ddply(cohort, ~physician, summarize,
                  n.patient = length(EncID.new),
                  site = Institution.Number[1],
-                 ave.los.value = mean(LOS.without.ALC),
-                 ave.cost.value = mean(Cost, na.rm = T),
-                 re.adm.rate.value = mean(SCU.adm, na.rm = T)*100,
-                 mortality.value = mean(Discharge.Disposition ==7, na.rm = T)*100) %>% data.table
+                 ave.acute.los = mean(Acute.LoS),
+                 ave.cost = mean(Cost, na.rm = T),
+                 read.rate = mean(SCU.adm, na.rm = T)*100,
+                 mortality = mean(Discharge.Disposition ==7, na.rm = T)*100) %>% data.table
 
 fit <- lm(re.adm.rate.value ~ ave.los, data = phy.sum)
 fit2 <- lm(re.adm.rate ~ ave.cost, data = phy.sum)
@@ -37,39 +37,50 @@ phy.sum <- fread("C:/Users/guoyi/Desktop/to.adm/phy.summary.csv")
 
 
 for(i in unique(phy.sum$site)){
-  phy.sum[site==i, ':='(ave.los = rank(ave.acute.los, ties.method = "min"),
+  phy.sum[site==i, ':='(ave_los = rank(ave.acute.los, ties.method = "min"),
                         ave_cost = rank(ave.cost, ties.method = "min"),
-                        re.adm.rate = rank(read.rate, ties.method = "min"),
-                        aki = rank(aki.rate, ties.method = "min"))]
+                        read_rate = rank(read.rate, ties.method = "min"),
+                        mort = rank(mortality, ties.method = "min")
+                        )]
 }
 
 
 library(reshape2)
-phy.sum.long <- melt(phy.sum[,.(physician, site, ave.los, re.adm.rate, aki, ave_cost)], 
-                     id.vars = c("physician", "site", "ave.los"), 
-                     measure.vars = c("ave.los", "ave_cost", "re.adm.rate", "aki"))
+phy.sum.long <- melt(phy.sum[,.(physician, site, read_rate, ave_cost, mort)], 
+                     id.vars = c("physician", "site", "ave_cost"), 
+                     measure.vars = c("ave_cost", "read_rate", "mort"))
+#phy.sum.long[variable=="ave_los", variable:="Avearage Acute Length-of-Stay"]
+phy.sum.long[variable=="ave_cost", variable:="Avearage Cost"]
+phy.sum.long[variable=="read_rate", variable:="Readmission within 30 days"]
+phy.sum.long[variable=="mort", variable:="In-Hospital Mortality"]
 # setwd("C:/Users/guoyi/Desktop/to.adm/phy.comparison")
 # png("physician_comparison.png", res = 200, width = 1600, height = 1000)
-ggplot(phy.sum.long[site=="SMH"], aes(variable, value, group = physician, color = factor(ave.los))) +
+ggplot(phy.sum.long[site=="SMH"], aes(variable, value, group = physician, color = factor(ave_cost))) +
   geom_point(size = 0.1) +
   geom_line(size = 1.5, alpha = 0.5) +
-  facet_wrap(~site, nrow = 2) + ylab("Rank") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position="none")
+  facet_grid( ~site) +
+  ylab("Rank") + 
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.x = element_blank())
 # dev.off()
 # getwd()
 
+setwd("C:/Users/guoyi/Desktop/to.adm/phy.comparison")
 for(i in unique(phy.sum.long$site)){
   plot.name <- paste(i, ".png", sep = "")
   png(plot.name, res = 200, width = 1600, height = 1000)
-  ggplot(phy.sum.long[site==i], aes(variable, value, group = physician, color = factor(ave.los))) + 
+  p <-ggplot(phy.sum.long[site==i], aes(variable, value, group = physician, color = factor(ave_cost))) +
     geom_point(size = 0.1) +
     geom_line(size = 1.5, alpha = 0.5) +
+    facet_grid( ~site) +
     ylab("Rank") + 
+    theme_bw() +
     theme(legend.position="none",
-          plot.title = element_text(hjust = 0.5)) + 
-    ggtitle(toupper(i))
+          axis.title.x = element_blank())
+  print(p)
   dev.off()
+  print(i)
 }
 i = "SMH"
 i = "sbk"

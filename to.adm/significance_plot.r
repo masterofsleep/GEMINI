@@ -217,11 +217,11 @@ plot.phy.sig(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")],
          ave.fun = aki.rate, varname = "aki", var_cat = T)
 dev.off()
 
-# -------------------------Transfusion with pre hgb > 80 -----------------------
-num.pre.trans.hgb80 <- function(x){
+# -------------------------Transfusion with pre hgb > 70 -----------------------
+num.pre.trans.hgb70 <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = sum(x$N.pre.tran.hgb.gt80)/nrow(x)*1000)
+             ave = sum(x$N.pre.tran.hgb.gt70)/nrow(x)*1000)
 }
 png("number.of.rbc.trans.with.prehbg.gt80.png", res = 250, width = 2000, height = 1200)
 plot.phy.sig(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")], 
@@ -285,3 +285,62 @@ plot.phy.sig(cohort,  "Average Adjusted Cost ($)",
          varname = "adj_cost")
 dev.off()
 
+
+
+
+
+
+
+# ---------------------- calculate test table ----------------------------------
+
+find_p <- function(data, varname, ave.fun, var_cat = F, category = NULL){
+  df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
+  names(df)[4] <- "phy.ave"
+  for(i in unique(df$site)){
+    df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
+    ref.phy.number <- median(df[site==i, phy])
+    phy.ref <- df[site==i&phy>(ref.phy.number-1.5)&phy<=(ref.phy.number+1.5), physician]
+    data = data.frame(data)
+    ref.dat <- data[data$Institution.Number==i&data$physician%in%phy.ref, varname]
+    for(j in unique(df[df$site==i, physician])){
+      if(var_cat == T){
+        df$var_sig[df$site==i&df$physician==j] <-
+          prop.test(c(sum(data[data$Institution.Number==i&data$physician==j, varname]==category, na.rm = T),
+                      sum(data[data$Institution.Number==i&data$physician!=j, varname]==category, na.rm = T)),
+                    c(sum(!is.na(data[data$Institution.Number==i&data$physician==j, varname])),
+                      sum(!is.na(data[data$Institution.Number==i&data$physician!=j, varname]))))$p.value
+      } else{
+        df$t_test_p[df$site==i&df$physician==j] <- 
+          t.test(data[data$Institution.Number==i&data$physician==j, varname],
+                 ref.dat
+          )$p.value
+        df$mw_text_p[df$site==i&df$physician==j] <- 
+          wilcox.test(x = data[data$Institution.Number==i&data$physician==j, varname],
+                 y = ref.dat
+          )$p.value
+      }
+    }
+  }
+  return(df)
+}
+
+los_sig <- find_p(cohort, "Acute.LoS", ave.los) %>%
+  rename(ave_los = phy.ave) %>% arrange(site, phy) %>% 
+  fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_los.csv")
+sum(los_sig$t_test_p<0.05)
+sum(los_sig$mw_text_p < 0.05)
+cost_sig <- find_p(cohort, "Cost", ave.cost) %>%
+  rename(ave_cost = phy.ave) %>% arrange(site, phy) %>% 
+  fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_cost.csv")
+
+n_rad_sig <- find_p(cohort, "N.rad", n.rad) %>%
+  rename(ave_nrad = phy.ave) %>% arrange(site, phy) %>% 
+  fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_nrad.csv")
+
+n_trans <- find_p(cohort, "N.pre.tran.hgb.gt70", num.pre.trans.hgb70) %>%
+  rename(ave_n_trans = phy.ave) %>% arrange(site, phy) %>% 
+  fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_ntrans.csv")
+
+n_bloodwork <- find_p(cohort, "n.bloodtest", ave.bloodtest) %>%
+  rename(ave_bloodwork = phy.ave) %>% arrange(site, phy) %>% 
+  fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_n_bloodwork.csv")
