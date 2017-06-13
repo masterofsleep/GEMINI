@@ -6,24 +6,26 @@ lib.pa()
 # ---------------------- NEW Cohort selection ----------------------------------
 all.phy <- readg(gim, all.phy)
 #los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM=="y"]
-los.cohort <- all.phy[adm.GIM%in%c("y", "GP-GIM")|dis.GIM%in%c("y", "GP-GIM")]
+#los.cohort <- all.phy[adm.GIM%in%c("y", "GP-GIM")|dis.GIM%in%c("y", "GP-GIM")]
+los.cohort <- all.phy[mrp.GIM%in%c("y", "GP-GIM")]
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv") # update 2017-05-18
 
 los.cohort <- merge(los.cohort[,.(EncID.new, adm.code.new,
                                   adm.GIM, dis.code.new, dis.GIM,
                                   mrp.code.new, mrp.GIM)], 
-                    unique(dad[,.(EncID.new, Age, Gender, CMG, 
+                    unique(dad[,.(EncID.new, Age, Gender, Site = Institution.Number, 
+                                  CMG, 
                                   Charlson.Comorbidity.Index)]),
                     by = "EncID.new")
 
-site.map <- data.table(
-  code = c("11", "12","13","14","15"),
-  site = c("smh", "sbk", "uhn", "msh", "thp")
-)
-los.cohort$code <- str_sub(los.cohort$EncID.new, 1, 2)
-los.cohort <- merge(los.cohort, site.map, by = "code")
+# site.map <- data.table(
+#   code = c("11", "12","13","14","15"),
+#   site = c("smh", "sbk", "uhn", "msh", "thp")
+# )
+#los.cohort$code <- str_sub(los.cohort$EncID.new, 1, 2)
+#los.cohort <- merge(los.cohort, site.map, by = "code")
 
-los.cohort$mrp.code <- paste(los.cohort$site, los.cohort$mrp.code.new, sep = "-")
+los.cohort$mrp.code <- paste(los.cohort$Site, los.cohort$mrp.code.new, sep = "-")
 
 # find RBC Transfusion
 smh.bb <- readg(smh, bb)
@@ -73,13 +75,15 @@ hgb.cohort[, hgb_in_10_grps :=
 #hgb.cohort[, Group_by_20hrs := ceiling((hgb-min(hgb))/20)]
 #hgb.cohort[, mrp.code.new:=NULL]
 
+hgb.cohort[, Collection.DtTm := as.character(ymd_hms(Collection.DtTm))]
+hgb.cohort[, RBC.Trans.DtTm := as.character(ymd_hms(RBC.Trans.DtTm))]
 fwrite(hgb.cohort#[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG, adm.code.new, adm.GIM,
                   #   dis.code.new, dis.GIM, mrp.code.new, mrp.GIM,
                   #   hgb, hgb_in_10_grps, hgb_in_20_grps)],
-       ,"H:/GEMINI/Results/LengthofStay/hgb/cohort.hgb.may31.csv")
+       ,"H:/GEMINI/Results/LengthofStay/hgb/cohort.hgb.june13.csv")
 fwrite(data.table(table(hgb.cohort[,mrp.code])),
-       "H:/GEMINI/Results/LengthofStay/hgb/mrp.freq.may31.csv")
+       "H:/GEMINI/Results/LengthofStay/hgb/mrp.freq.june13.csv")
 
-table(hgb.cohort$site)
+table(hgb.cohort$Site)
 table(hgb.cohort$hgb_in_10_grps)
 

@@ -107,8 +107,8 @@ setwd("R:/GEMINI-Short_Admission_Project/Data/CIHI")
 list.files()
 smh.inc <- fread("smh.adm.nophi.csv")
 adm <- readg(gim, adm)
-smh.hash <- adm[EncID.new%in%smh.inc, .(EncID.new, Hash)]
-fwrite(smh.hash, "smh.hash.csv")
+smh.hash <- adm[EncID.new%in%smh.inc$EncID.new, .(EncID.new, Hash)]
+fwrite(smh.hash, "smh.hash.new.csv")
 
 
 smh.vitals <- readg(smh, vitals, dt = T)
