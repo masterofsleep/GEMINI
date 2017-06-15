@@ -33,7 +33,7 @@ for(i in c(10:18)[c(7,6,2,1,9,5,8,4,3)]){
   dc <- rbind(dc, dat, fill = T)
 }
 dc <- unique(dc)
-dc <- dc[order(subject_id), .(subject_id, dis_diag_listed_yn,
+dc <- dc[order(subject_id), .(subject_id, diag_syn_del,
                               hosp_course_del_syn_yn,
                               del_spec_instr, instr_taper, rec_monitoring,
                               rec_follow_appt, rec_follow_cog_test)] %>% unique
@@ -96,7 +96,10 @@ my_tab <- function(x){
   df
 }
 
-my_tab(dc_uni$dis_diag_listed_yn)
+dc_uni <- dc_uni[subject_id%in%charts_uni[del_present%in%c("1", "Yes"), subject_id]]
+charts_uni[del_present%in%c("1", "Yes")&!subject_id%in%dc_uni$subject_id]
+
+my_tab(dc_uni$diag_syn_del)
 my_tab(dc_uni$hosp_course_del_syn_yn)
 my_tab(dc_uni$del_spec_instr)
 my_tab(dc_uni$instr_taper)

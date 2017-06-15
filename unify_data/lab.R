@@ -287,3 +287,31 @@ sbk.lab <- rbind(readg(sbk, labs_ip),
 
 sbk.lab.freq <- sbk.lab[,.N, by = .(Test.Name, Test.ID)]
 fwrite(sbk.lab.freq, "H:/GEMINI/Results/DataSummary/clinical freq tables/lab.sbk.csv")
+
+
+
+# --------------------- check smh new lab  2017-06-14 --------------------------
+smh.lab <- readg(smh, labs)
+setwd("R:/GEMINI/_RESTORE/SMH/CoreLab/New2010")
+files <- list.files()
+new2010 <- NULL
+for(i in files){
+  new2010 <- rbind(new2010,
+                   fread(i))
+}
+names(new2010) <- names(smh.lab)[1:8]
+new2010[str_sub(CollectedDtTm, -1, -1)!="M", 
+    Collection.DtTm := as.character(ymd_hms(CollectedDtTm))]
+ggplot(new2010, aes(ymd(str_sub(CollectedDtTm, 1, 10)))) + geom_histogram(binwidth = 10)
+
+smh.lab.new <- rbind(new2010, smh.lab, fill = T)
+smh.lab.new <- smh.lab.new[!duplicated(smh.lab.new[, .(Order., Test.Name,
+                                                       Test.ID,
+                                                       Result.Value, Result.Unit,
+                                                       Reference.Range,
+                                                       EncID.new, Collection.DtTm)])]
+ggplot(smh.lab.new[!duplicated(Order.)&Order.!="J2241772"], 
+       aes(ymd(str_sub(Collection.DtTm, 1, 10)))) + geom_histogram(binwidth = 10)
+
+new2010[!Order.%in%smh.lab$Order.]
+

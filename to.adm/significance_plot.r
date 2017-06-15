@@ -5,7 +5,7 @@ plot.phy.sig <- function(data, title, xlab = "Physician",
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1, show.sig = F, varname = NULL,
                      var_cat = F, category = TRUE){
-  #data <- hide_site(data)
+  data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -14,18 +14,27 @@ plot.phy.sig <- function(data, title, xlab = "Physician",
   df <- merge(df, site.mean[,c(1,4)], by.x = "site", by.y = "Institution.Number")
   data <- data.frame(data)
   for(i in unique(df$site)){
+    data = data.table(data)
     df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
+    ref.phy.number <- median(df[site==i, phy])
+    phy.ref <- df[site==i&phy>(ref.phy.number-1.5)&phy<=(ref.phy.number+1.5), physician]
+    data = data.frame(data)
+    ref.dat <- data[data$Institution.Number==i&data$physician%in%phy.ref, varname]
     for(j in unique(df[df$site==i, physician])){
       if(var_cat == T){
         df$var_sig[df$site==i&df$physician==j] <-
           prop.test(c(sum(data[data$Institution.Number==i&data$physician==j, varname]==category, na.rm = T),
-                      sum(data[data$Institution.Number==i&data$physician!=j, varname]==category, na.rm = T)),
+                      sum(ref.dat==category, na.rm = T)),
                     c(sum(!is.na(data[data$Institution.Number==i&data$physician==j, varname])),
-                      sum(!is.na(data[data$Institution.Number==i&data$physician!=j, varname]))))$p.value
+                      sum(!is.na(ref.dat))))$p.value
       } else{
+        # df$t_test_p[df$site==i&df$physician==j] <- 
+        #   t.test(data[data$Institution.Number==i&data$physician==j, varname],
+        #          ref.dat
+        #   )$p.value
         df$var_sig[df$site==i&df$physician==j] <- 
-          t.test(data[data$Institution.Number==i&data$physician==j, varname],
-                 data[data$Institution.Number==i&data$physician!=j, varname]
+          wilcox.test(x = data[data$Institution.Number==i&data$physician==j, varname],
+                      y = ref.dat,
           )$p.value
       }
     }
@@ -53,8 +62,8 @@ plot.phy.sig <- function(data, title, xlab = "Physician",
   }
   p <- ggplot(df, aes(phy, phy.ave, fill = col)) + 
     geom_bar(stat = "identity", width = 0.5) + 
-    #geom_line(aes(x = phy, y = site.mean), alpha = 0.5,
-    #          linetype = 2, size = 0.5) + 
+    geom_line(aes(x = phy, y = site.mean), alpha = 0.5,
+             linetype = 2, size = 0.5) +
     facet_grid(.~site, scales = "free_x") + 
     scale_fill_manual(values = mycol) +
     ggtitle(title) +
@@ -65,27 +74,28 @@ plot.phy.sig <- function(data, title, xlab = "Physician",
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           legend.position="none")
+  #print(df)
+  del <- ddply(df, ~site, summarise,
+               site.ave = sum(phy.ave * N)/sum(N),
+               #site.ave = mean(phy.ave), # for patient sum only
+               xm = max(phy),
+               ymi = quantile(phy.ave, probs = 0.1),
+               yma = quantile(phy.ave, probs = 0.9),
+               yav = quantile(phy.ave, probs = 0.5),
+               ydiff = sprintf(digitform , yma - ymi))
+  del$col = del$site
   print(df)
-  # del <- ddply(df, ~site, summarise,
-  #              site.ave = sum(phy.ave * N)/sum(N),
-  #              #site.ave = mean(phy.ave), # for patient sum only
-  #              xm = max(phy),
-  #              ymi = quantile(phy.ave, probs = 0.25),
-  #              yma = quantile(phy.ave, probs = 0.75),
-  #              yav = quantile(phy.ave, probs = 0.5),
-  #              ydiff = sprintf(digitform , yma - ymi))
-  # print(del)
-  # ave.shift <- max(df$phy.ave) * 0.02
-  # p <- p + geom_errorbar(data = del, aes(x = xstart/2, y = NULL,ymin = ymi, ymax = yma),
-  #                        alpha = 0.3, width = 2) 
-  #   # plot the 25% - 75% range
-  #   geom_rect(data = del, aes(x = NULL, y = NULL, xmin = xstart/2 - 1, xmax =  xstart/2 +1,
-  #                             ymin = yav-0.5*ave.shift, ymax = yav+0.5*ave.shift), fill = "#EEEEEE") +
-  #   geom_text(data = del, aes(x = xstart/2, y = yav, label = ydiff), size = 3) +
-  #   # plot the label for average
-  #   geom_text(data = del, aes(x = xm-2, y = site.ave + ave.shift,
-  #                             label = sprintf(digitform , site.ave)),
-  #             size = 3)
+  ave.shift <- max(df$phy.ave) * 0.02
+  p <- p + geom_errorbar(data = del, aes(x = xstart/2, y = NULL,ymin = ymi, ymax = yma, group = site),
+                         alpha = 0.3, width = 2) +
+    # plot the 10% - 90% range
+    geom_rect(data = del, aes(x = NULL, y = NULL, xmin = xstart/2 - 1, xmax =  xstart/2 +1,
+                              ymin = yav-0.5*ave.shift, ymax = yav+0.5*ave.shift), fill = "#EEEEEE") +
+    geom_text(data = del, aes(x = xstart/2, y = yav, label = ydiff), size = 3) +
+    # plot the label for average
+    geom_text(data = del, aes(x = xm-2, y = site.ave + ave.shift,
+                              label = sprintf(digitform , site.ave)),
+              size = 3)
   print(p)
 }
 
@@ -115,7 +125,7 @@ ave.cost <- function(x){
              ave = mean(x$Cost, na.rm = T))
 }
 
-png("ave.cost.png", res = 250, width = 2000, height = 1200)
+png("ave.cost.png", res = 250, width = 2200, height = 1200)
 plot.phy.sig(cohort,  "Average Cost ($)", 
          ylab = "Average Cost ($)", ave.fun = ave.cost, xstart = -5, digit = 0,
          varname = "Cost")
@@ -225,10 +235,10 @@ num.pre.trans.hgb70 <- function(x){
 }
 png("number.of.rbc.trans.with.prehbg.gt80.png", res = 250, width = 2000, height = 1200)
 plot.phy.sig(cohort[str_sub(EncID.new, 1, 2)%in%c("11","12","13", "14")], 
-         "Number of RBC Transfusions \n with pre-Transfusion Hgb > 80 \n per 1000 Patient per Doctor", 
-         ylab = "Number of RBC Transfusions \n with pre-Transfusion Hgb > 80 \n per 1000 Patient per Doctor", 
-         ave.fun = num.pre.trans.hgb80, xstart = -3,
-         varname = "N.pre.tran.hgb.gt80", var_cat = F)
+         "Number of RBC Transfusions \n with pre-Transfusion Hgb > 70 \n per 1000 Patient per Doctor", 
+         ylab = "Number of RBC Transfusions \n with pre-Transfusion Hgb > 70 \n per 1000 Patient per Doctor", 
+         ave.fun = num.pre.trans.hgb70, xstart = -3,
+         varname = "N.pre.tran.hgb.gt70", var_cat = F)
 dev.off()
 
 
@@ -297,6 +307,7 @@ find_p <- function(data, varname, ave.fun, var_cat = F, category = NULL){
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   names(df)[4] <- "phy.ave"
   for(i in unique(df$site)){
+    data = data.table(data)
     df[site ==i, phy := as.numeric(factor(physician, levels = physician[order(phy.ave, decreasing = T)]))]
     ref.phy.number <- median(df[site==i, phy])
     phy.ref <- df[site==i&phy>(ref.phy.number-1.5)&phy<=(ref.phy.number+1.5), physician]
@@ -306,17 +317,17 @@ find_p <- function(data, varname, ave.fun, var_cat = F, category = NULL){
       if(var_cat == T){
         df$var_sig[df$site==i&df$physician==j] <-
           prop.test(c(sum(data[data$Institution.Number==i&data$physician==j, varname]==category, na.rm = T),
-                      sum(data[data$Institution.Number==i&data$physician!=j, varname]==category, na.rm = T)),
+                      sum(ref.dat==category, na.rm = T)),
                     c(sum(!is.na(data[data$Institution.Number==i&data$physician==j, varname])),
-                      sum(!is.na(data[data$Institution.Number==i&data$physician!=j, varname]))))$p.value
+                      sum(!is.na(ref.dat))))$p.value
       } else{
-        df$t_test_p[df$site==i&df$physician==j] <- 
-          t.test(data[data$Institution.Number==i&data$physician==j, varname],
-                 ref.dat
-          )$p.value
-        df$mw_text_p[df$site==i&df$physician==j] <- 
+        # df$t_test_p[df$site==i&df$physician==j] <- 
+        #   t.test(data[data$Institution.Number==i&data$physician==j, varname],
+        #          ref.dat
+        #   )$p.value
+        df$var_sig[df$site==i&df$physician==j] <- 
           wilcox.test(x = data[data$Institution.Number==i&data$physician==j, varname],
-                 y = ref.dat
+                 y = ref.dat, alternative = "greater", conf.level = 0.9
           )$p.value
       }
     }
@@ -324,8 +335,8 @@ find_p <- function(data, varname, ave.fun, var_cat = F, category = NULL){
   return(df)
 }
 
-los_sig <- find_p(cohort, "Acute.LoS", ave.los) %>%
-  rename(ave_los = phy.ave) %>% arrange(site, phy) %>% 
+los_sig1 <- find_p(cohort, "Acute.LoS", ave.los) %>%
+  rename(ave_los = phy.ave) %>% arrange(site, phy)
   fwrite("C:/Users/guoyi/Desktop/to.adm/physician_significance/significance_los.csv")
 sum(los_sig$t_test_p<0.05)
 sum(los_sig$mw_text_p < 0.05)

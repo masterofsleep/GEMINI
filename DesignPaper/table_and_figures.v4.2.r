@@ -306,7 +306,7 @@ df <- ddply(dad, ~fiscal.year, summarize,
       US.CT.MRI = cat1.prop(ctmrius, TRUE),
       US = cat1.prop(us, TRUE),
       CT = cat1.prop(ct, TRUE),
-      MRI = cat1.prop(mri, TRUE)
+      MRI = cat1.prop(mri, TRUE),
 )
 fwrite(data.frame(t(df)), "H:/GEMINI/Results/DesignPaper/result.v4/appen.table2.csv")
 
@@ -333,8 +333,22 @@ glm(mri ~ fiscal.year, dad, family = binomial) %>% summary
 #US
 glm(us ~ fiscal.year, dad, family = binomial) %>% summary
 
-
-
+# enw 20170615
+df1 <- ddply(dad, ~fiscal.year, summarize,
+            age = mean(Age),
+            sex.f = mean(Gender=="F"),
+            cci = mean(Charlson.Comorbidity.Index),
+            ncom = mean(Number.of.Comorbidity))
+df1 <- data.frame(t(df1))[2:5, ]
+names(df1) <- c("fiscal 2010", "fiscal 2011", "fiscal 2012", "fiscal 2013", "fiscal 2014")
+df1$p.value <- 
+c(summary(lm(Age ~ fiscal.year, data = dad))$coefficients[2,4],
+summary(glm(factor(Gender) ~ fiscal.year, data = dad, family = binomial))$coefficients[2,4],
+summary(lm(Charlson.Comorbidity.Index ~ fiscal.year, data = dad))$coefficients[2,4],
+summary(lm(Number.of.Comorbidity ~ fiscal.year, data = dad))$coefficients[2,4])
+df1$variable <- c("Age", "Sex F", "Charlson Comorbidity Index", "Number of Comorbidity")
+df1 <- df1[, c(7,1:6)]
+fwrite(df1, "H:/GEMINI/Results/DesignPaper/result.v5/appen.table2.extra.csv")
 # ----------------------------- Appendix Table 1 -------------------------------
 appen_table1 <- function(){
   ip.diag <- readg(gim, ip_diag)

@@ -129,23 +129,23 @@ ggsave("H:/GEMINI/Results/LengthofStay/hist.los.png")
 
 # ---------------------- NEW Cohort selection ----------------------------------
 all.phy <- readg(gim, all.phy)
-los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM=="y"]
+los.cohort <- all.phy[adm.code.new==dis.code.new&mrp.GIM%in%c("y", "GP-GIM")]
 dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv") # update 2017-05-18
 
 los.cohort <- merge(los.cohort[,.(EncID.new, mrp.code.new, GIM= mrp.GIM)], 
-                    unique(dad[,.(EncID.new, Age, Gender, LoS= Acute.LoS)]),by = "EncID.new")
+                    unique(dad[,.(EncID.new, Age, Gender, LoS= Acute.LoS,
+                                  Charlson.Comorbidity.Index, 
+                                  Site = Institution.Number)]),by = "EncID.new")
 
-cci <- readg(gim, cci)
-los.cohort <- merge(los.cohort, cci, by = "EncID.new", all.x = T, all.y = F)
 
-site.map <- data.table(
-  code = c("11", "12","13","14","15"),
-  site = c("smh", "sbk", "uhn", "msh", "thp")
-)
-los.cohort$code <- str_sub(los.cohort$EncID.new, 1, 2)
-los.cohort <- merge(los.cohort, site.map, by = "code")
+# site.map <- data.table(
+#   code = c("11", "12","13","14","15"),
+#   site = c("smh", "sbk", "uhn", "msh", "thp")
+# )
+# los.cohort$code <- str_sub(los.cohort$EncID.new, 1, 2)
+# los.cohort <- merge(los.cohort, site.map, by = "code")
 
-los.cohort$mrp.code <- paste(los.cohort$site, los.cohort$mrp.code.new, sep = "-")
+los.cohort$mrp.code <- paste(los.cohort$Site, los.cohort$mrp.code.new, sep = "-")
 los.cohort[, LoS := LoS * 24]
 los.cohort[, LOS_in_20_grps := 
              cut(LoS, breaks=quantile(LoS, probs=seq(0,1, by=0.05), na.rm=TRUE), 
@@ -162,17 +162,17 @@ los.cohort$EncID.new <- as.character(los.cohort$EncID.new)
 los.cohort <- merge(los.cohort, cmg, by = "EncID.new", all.x = T, all.y = F)
 los.cohort[, mrp.code.new:=NULL]
 
-fwrite(los.cohort[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG,LoS, mrp.code, mrp.GIM = GIM, site, 
+fwrite(los.cohort[,.(EncID.new, Age, Gender, Charlson.Comorbidity.Index, CMG,LoS, mrp.code, mrp.GIM = GIM, Site, 
                      Group_by_10hrs, Group_by_20hrs, LOS_in_20_grps, LOS_in_10_grps)],
-       "H:/GEMINI/Results/LengthofStay/cohort.los.may18.csv")
+       "H:/GEMINI/Results/LengthofStay/cohort.los.june14.csv")
 fwrite(data.table(table(los.cohort[,mrp.code])),
-       "H:/GEMINI/Results/LengthofStay/mrp.freq.may18.csv")
+       "H:/GEMINI/Results/LengthofStay/mrp.freq.june14.csv")
 
-table(los.cohort$site)
+table(los.cohort$Site)
 table(los.cohort$LOS_in_10_grps)
 
 # ---------------------------- 20 group frequency ------------------------------
-los.cohort <- fread("H:/GEMINI/Results/LengthofStay/cohort.los.april07.csv")
+los.cohort <- fread("H:/GEMINI/Results/LengthofStay/cohort.los.june14.csv")
 freq.by.20grp <- data.table(table(los.cohort[,.(mrp.code, LOS_in_20_grps)]))[N!=0]
 freq.phy.by.20.grp <- data.table(table(freq.by.20grp$LOS_in_20_grps))
 

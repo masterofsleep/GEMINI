@@ -28,7 +28,7 @@ find.icc <- function(data, var, binary = T, varname = var){
 # Age
 icc.age <- find.icc(cohort, "Age", binary = F)
 # Gender
-icc.gender <- find.icc(cohort, "Gender", binary = T)
+icc.gender <- find.icc(cohort, "Gender", binary = T, varname = "Sex")
 
 # charlson
 icc.cci <- find.icc(cohort, "Charlson.Comorbidity.Index", F, 
@@ -71,8 +71,8 @@ copd <- find.icc(cohort, "copd", varname = "COPD")
 cap <- find.icc(cohort, "cap", varname = "Pneumonia")
 chf <- find.icc(cohort, "chf", varname = "Heart Failure")
 stroke <- find.icc(cohort, "stroke", varname = "Stroke")
-
-diag.icc <- rbind(copd, cap, chf, stroke)
+uti <- find.icc(cohort, "uti", varname = "UTI")
+diag.icc <- rbind(copd, cap, chf, stroke, uti)
 diag.icc
 
 fwrite(diag.icc, "C:/Users/guoyi/Desktop/to.adm/balence.test.diag.csv")
@@ -151,11 +151,22 @@ hide_site <- function(data){
   data$site <- data$new.inst
   return(data)
 }
+hide_site2 <- function(data){
+  ninst <- length(unique(data$site))
+  newcode <- data.frame(site = 
+                          c("SHS", "SHSC", "SMH", "THP-C", "THP-M", "UHN-TG", "UHN-TW"), 
+                        new.inst = c("A", "B", "C", "D", "E", "F", "G"))
+  data <- merge(data, newcode, by = "site")
+  data$site <- data$new.inst
+  return(data)
+}
+
 
 library(extrafont)
 loadfonts()
 plot_icc <- function(data, titlex = 3, hidesite = F){
   if(hidesite) data = hide_site(data)
+  data = hide_site2(data)
   ggplot(data, aes(x = var, y = (1-icc)*100, fill = site)) + 
     geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.5) +
     scale_fill_brewer(palette = "Paired") +
@@ -181,13 +192,13 @@ icc.diag <- fread("C:/Users/guoyi/Desktop/to.adm/balence.test.diag.csv")
 icc.lab <- fread("C:/Users/guoyi/Desktop/to.adm/balence.test.lab.csv")
 
 # ------------------------figures with site names ------------------------------
-setwd("C:/Users/guoyi/Desktop/to.adm/figures.v3/with_sitename")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/balance")
 png("icc.png", res = 200, width = 1600, height = 1000)
 plot_icc(icc, 3)
 dev.off()       
 
 png("icc.diag.png", res = 200, width = 1600, height = 1000)
-plot_icc(icc.diag, 2.5)
+plot_icc(icc.diag, 3)
 dev.off()
 
 png("icc.lab.png", res = 200, width = 1600, height = 1000)

@@ -24,7 +24,7 @@ phy.sum <- ddply(cohort, ~physician, summarize,
 fit <- lm(re.adm.rate.value ~ ave.los, data = phy.sum)
 fit2 <- lm(re.adm.rate ~ ave.cost, data = phy.sum)
 summary(fit)
-qplot(ave.los, re.adm.rate.value, color = mortality.value, data = phy.sum)
+qplot(ave.acute.los, re.adm.rate.value, color = mortality, data = phy.sum)
 qplot(ave.los, mortality.value, color = re.adm.rate.value, data = phy.sum) + facet_wrap(~site)
 
 
@@ -128,7 +128,7 @@ adj_site <- function(x){
   adj.x <- summary(fit)$coefficient[1] + summary(fit)$residuals
   adj.x
 }
-
+phy.sum = data.table(phy.sum)
 phy.sum[,':='(
   adj_ave.acute.los = adj_site(ave.acute.los),
   adj_read.rate = adj_site(read.rate),
@@ -157,18 +157,22 @@ library(cowplot)
 
 png("cost_vs_mort.png", res = 250, width = 2000, height = 1200)
 qplot(adj_cost, adj_mort, color = site, data = phy.sum, size=I(2), geom = "point",
-      xlab = "Cost", ylab = "Mortality") + theme_bw()
+      xlab = "Cost ($)", ylab = "Mortality (%)", main = "Mortality vs Cost adjusted by Site") + 
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 dev.off()
 
 cor.test(phy.sum$adj_cost, phy.sum$adj_read.rate)
 p1 <- qplot(ave.cost, read.rate,  color = site, data = phy.sum, size=I(2), geom = "point",
-            xlab = "Cost", ylab = "Re-admission in 30 days")
+            xlab = "Cost (%)", ylab = "Re-admission in 30 days")
 p2 <- qplot(adj_cost, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
-            xlab = "Cost", ylab = "Re-admission in 30 days")
+            xlab = "Cost ", ylab = "Re-admission in 30 days")
 
 png("cost_vs_read.png", res = 250, width = 2000, height = 1200)
 qplot(adj_cost, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
-      xlab = "Cost", ylab = "Re-admission in 30 days") + theme_bw()
+      xlab = "Cost ($)", ylab = "Re-admission in 30 days (%)", main = "Re-admission vs Cost adjusted by Site") + 
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 dev.off()
 
 cor.test(phy.sum$adj_ave.acute.los, phy.sum$adj_read.rate)
@@ -179,7 +183,10 @@ p2 <- qplot(adj_ave.acute.los, adj_read.rate, color = site, data = phy.sum, size
 #library(cowplot)
 png("los_vs_read.png", res = 250, width = 2000, height = 1200)
 qplot(adj_ave.acute.los, adj_read.rate, color = site, data = phy.sum, size=I(2), geom = "point",
-      xlab = "Acute Length-of-Stay", ylab = "Re-admission in 30 days") + theme_bw()
+      xlab = "Acute Length-of-Stay (Days)", ylab = "Re-admission in 30 days (%)", 
+      main = "Mortality vs Length-of-Stay adjusted by Site") + 
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 dev.off()
 
 cor.test(phy.sum$adj_cost, phy.sum$adj_mort)
