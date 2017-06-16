@@ -58,7 +58,72 @@ stab.phy <- phy.sum.by.year[
 
 
 
-plot_phy_stab <- function(Site, Var, ylab = "NULL"){
+plot_phy_stab <- function(Site=NULL, Var, ylab, ncolumn = 3){
+  stab.phy <- data.frame(stab.phy)
+  stab.site <- data.frame(stab.site)
+  stab.site$OVERALL = stab.site[, Var]
+  df <- merge(stab.phy[, c("physician", "fiscal.year.group", Var, "site")],
+              stab.site[, c("site", "OVERALL", "fiscal.year.group")], 
+              by = c("site", "fiscal.year.group"))
+  df$var = df[, Var]
+  df.wide <- merge(df[df$fiscal.year.group==1, c("site", "physician", "var")],
+                   df[df$fiscal.year.group==2, c("site", "physician", "var")],
+                   by = c("site", "physician"))
+  #var.cor <- ddply(df.wide, ~site, summarize,
+  #                 correlation = cor(var.x, var.y))
+  df <- merge(df, var.cor)
+  for(i in unique(df$site)){
+    df$phy[df$site==i] <- as.numeric(factor(df$phy[df$site==i]))
+  }
+  df <- df[df$site%in%Site,]
+  ggplot(data = df,
+         aes(x = fiscal.year.group, y = var, colour = phy)) +
+    geom_point(size = 0.5) +
+    geom_line(size = 0.5, alpha = 0.5) +
+    geom_line(aes(x = fiscal.year.group, y = OVERALL), 
+              color = "#999999", size = 2, alpha = 0.8) +
+    theme_bw() +
+    xlab("Fiscal Year") + 
+    ylab(ylab) +
+    scale_x_continuous(breaks = c(0, 1, 2)) +
+    facet_wrap(~site, ncol = ncolumn) +
+    theme(legend.position = "none")
+  # geom_text(data = df, aes(x = 1, y = 3, color = "#444444",
+  #                          label = sprintf("%.2f", correlation)),
+  #           color = "#444444")
+  #return(var.cor)
+}
+Site1 = unique(stab.site$Institution.Number)
+Site2 = unique(stab.site$Institution.Number)[c(1,2,3,6,7)]
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/stability")
+for(i in 1:nrow(vartoplot)){
+  if(i<=4){
+    Site =  Site1
+    nco = 4
+  } else {
+    Site = Site2
+    nco = 3
+  }
+  png(paste(vartoplot$vars[i], ".png", sep = ""), res = 250, width = 2000, height = 1000)
+  print(plot_phy_stab(Site, Var = vartoplot$vars[i], ylab = vartoplot$ylabs[i], ncolumn = nco))
+  dev.off()
+}
+
+
+vartoplot <- data.frame(
+  vars = c("ave.acute.los", "ave.cost", "read.rate", 
+           "mortality", "ave.nrad","aki.rate"),
+  ylabs = c("Acute Length-of-Stay (Days)",
+            "Average Cost ($)",
+            "Re-Admission Rate (%)",
+            "Mortality (%)",
+            "Number of Advanced Imaging",
+            "Hospital-Acquired AKI"), stringsAsFactors = F)
+
+
+
+# calculate correlations 
+phy_cor_overtime <- function(Var){
   stab.phy <- data.frame(stab.phy)
   stab.site <- data.frame(stab.site)
   stab.site$OVERALL = stab.site[, Var]
@@ -71,32 +136,20 @@ plot_phy_stab <- function(Site, Var, ylab = "NULL"){
                    by = c("site", "physician"))
   var.cor <- ddply(df.wide, ~site, summarize,
                    correlation = cor(var.x, var.y))
-  df <- merge(df, var.cor)
-  for(i in unique(df$site)){
-    df$phy[df$site==i] <- as.numeric(factor(df$phy[df$site==i]))
-  }
-  ggplot(df[df$site==Site, ],
-         aes(x = fiscal.year.group, y = var, colour = phy)) +
-    geom_point(size = 0.5) +
-    geom_line(size = 1, alpha = 0.5) +
-    geom_line(aes(x = fiscal.year.group, y = OVERALL), 
-              color = "#999999", size = 3, alpha = 0.8) +
-    theme_bw() +
-    xlab("Fiscal Year") + 
-    ylab(ylab) +
-    scale_x_continuous(breaks = c(0, 1, 2)) +
-    facet_wrap(~site) +
-    theme(legend.position = "none")
-  # geom_text(data = df, aes(x = 1, y = 3, color = "#444444",
-  #                          label = sprintf("%.2f", correlation)),
-  #           color = "#444444")
+  return(var.cor)
 }
 
+all_cor <- phy_cor_overtime(vartoplot$vars[1])
+names(all_cor)[2] <- vartoplot$ylabs[1]
+for(i in  2:nrow(vartoplot)){
+  var_cor <- phy_cor_overtime(vartoplot$vars[i])
+  names(var_cor)[2] <- vartoplot$ylabs[i]
+  all_cor <- merge(all_cor, var_cor, by = "site")
+}
 
-dev.off()
+all_cor
+fwrite(all_cor, "C:/Users/guoyi/Desktop/to.adm/figures.v4/stability/corre_values.csv" )
 
-
-Var = "ave.acute.los"
 
 
 

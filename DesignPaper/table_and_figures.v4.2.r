@@ -336,17 +336,21 @@ glm(us ~ fiscal.year, dad, family = binomial) %>% summary
 # enw 20170615
 df1 <- ddply(dad, ~fiscal.year, summarize,
             age = mean(Age),
-            sex.f = mean(Gender=="F"),
+            sex.f = mean(Gender=="F")*100,
             cci = mean(Charlson.Comorbidity.Index),
+            cci2 = mean(Charlson.Comorbidity.Index>=2)*100,
             ncom = mean(Number.of.Comorbidity))
-df1 <- data.frame(t(df1))[2:5, ]
+df1 <- data.frame(t(df1))[2:6, ]
 names(df1) <- c("fiscal 2010", "fiscal 2011", "fiscal 2012", "fiscal 2013", "fiscal 2014")
 df1$p.value <- 
 c(summary(lm(Age ~ fiscal.year, data = dad))$coefficients[2,4],
 summary(glm(factor(Gender) ~ fiscal.year, data = dad, family = binomial))$coefficients[2,4],
 summary(lm(Charlson.Comorbidity.Index ~ fiscal.year, data = dad))$coefficients[2,4],
+summary(glm((Charlson.Comorbidity.Index>=2) ~ fiscal.year, data = dad))$coefficients[2,4],
 summary(lm(Number.of.Comorbidity ~ fiscal.year, data = dad))$coefficients[2,4])
-df1$variable <- c("Age", "Sex F", "Charlson Comorbidity Index", "Number of Comorbidity")
+df1$variable <- c("Age", "Sex F (%)", "Charlson Comorbidity Index",
+                  "Charlson Comorbidity Index 2+ (%)" , 
+                  "Number of Comorbidity")
 df1 <- df1[, c(7,1:6)]
 fwrite(df1, "H:/GEMINI/Results/DesignPaper/result.v5/appen.table2.extra.csv")
 # ----------------------------- Appendix Table 1 -------------------------------

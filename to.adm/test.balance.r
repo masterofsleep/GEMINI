@@ -45,7 +45,7 @@ cohort[, daytime := as.numeric(str_sub(cohort$Admit.Time, -5, -4))>=7&
 icc.dtime <- find.icc(cohort, "daytime", varname = "Admission \nDay/Night")
 
 
-icc <- rbind(icc.age, icc.gender, icc.cci, icc.wkd, icc.dtime)
+icc <- rbind(icc.age, icc.gender, icc.cci)#, icc.wkd, icc.dtime)
 fwrite(icc, "C:/Users/guoyi/Desktop/to.adm/balence.test.csv")
 
 # # discharge weekday vs weekend
@@ -194,7 +194,7 @@ icc.lab <- fread("C:/Users/guoyi/Desktop/to.adm/balence.test.lab.csv")
 # ------------------------figures with site names ------------------------------
 setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/balance")
 png("icc.png", res = 200, width = 1600, height = 1000)
-plot_icc(icc, 3)
+plot_icc(icc, 2)
 dev.off()       
 
 png("icc.diag.png", res = 200, width = 1600, height = 1000)
