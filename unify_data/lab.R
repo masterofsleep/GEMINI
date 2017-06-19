@@ -292,14 +292,14 @@ fwrite(sbk.lab.freq, "H:/GEMINI/Results/DataSummary/clinical freq tables/lab.sbk
 
 # --------------------- check smh new lab  2017-06-14 --------------------------
 smh.lab <- readg(smh, labs)
-setwd("R:/GEMINI/_RESTORE/SMH/CoreLab/New2010")
+setwd("R:/GEMINI/_RESTORE/SMH/CoreLab/New2011")
 files <- list.files()
 new2010 <- NULL
 for(i in files){
   new2010 <- rbind(new2010,
                    fread(i))
 }
-names(new2010) <- names(smh.lab)[1:8]
+names(new2010) <- names(smh.lab)[c(1,2,3,5,4,6,7,8)]
 new2010[str_sub(CollectedDtTm, -1, -1)!="M", 
     Collection.DtTm := as.character(ymd_hms(CollectedDtTm))]
 ggplot(new2010, aes(ymd(str_sub(CollectedDtTm, 1, 10)))) + geom_histogram(binwidth = 10)
@@ -313,5 +313,17 @@ smh.lab.new <- smh.lab.new[!duplicated(smh.lab.new[, .(Order., Test.Name,
 ggplot(smh.lab.new[!duplicated(Order.)&Order.!="J2241772"], 
        aes(ymd(str_sub(Collection.DtTm, 1, 10)))) + geom_histogram(binwidth = 10)
 
+ggplot(smh.lab[!duplicated(Order.)&Order.!="J2241772"], 
+       aes(ymd(str_sub(Collection.DtTm, 1, 10)))) + geom_histogram(binwidth = 10)
+
+
 new2010[!Order.%in%smh.lab$Order.]
 
+new2010[Order.=="E6040368"]
+smh.lab[EncID.new=="11418225", Order.] %>% table 
+new2010[Order.=="E6040369"] # still not in data
+new2010[Order.=="E8212446"]
+new2010[Order.=="E8220238"]
+new2010[Order.=="E8230198"]
+new2010[Order.=="E8240184"]
+new2010[Order.=="E8250316"]

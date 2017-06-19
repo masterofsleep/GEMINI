@@ -192,3 +192,13 @@ fwrite(freq.phy.by.10.grp, "H:/GEMINI/Results/LengthofStay/freq.phy.by.10.grp.cs
 los.cohort[, .(mean.los = mean(LoS),
               sd.los = sd(LoS),
               .N), by = mrp.code] %>% fwrite("H:/GEMINI/Results/LengthofStay/mrp.los.summary.may18.csv")
+
+
+
+
+# ---------------------- summary calculation june 19 ---------------------------
+los.cohort <- fread("R:/GEMINI-DREAM/Length of Stay/june14_update/cohort.los.june14.csv")
+table(los.cohort$Group_by_24hrs)
+los.cohort[, .(mean.los = mean(LoS),
+               sd.los = sd(LoS)), by = Group_by_24hrs] %>% 
+  fwrite("R:/GEMINI-DREAM/Length of Stay/june14_update/mean_sd_by_24hr_groups.csv")
