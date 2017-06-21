@@ -49,6 +49,7 @@ dat <- dat[!is.na(`GEMINI ID:`)&!is.na(`Research Assistant:`)][order(`GEMINI ID:
 dat <- dat[`GEMINI ID:`%in% dat[, .N, by = `GEMINI ID:`][N>1, `GEMINI ID:`]]
 names(dat)
 
+
 ddply(dat, ~`GEMINI ID:`, function(x){
   df1 <- data.frame(
     N.reviewer = nrow(x),
@@ -74,3 +75,43 @@ df1 <- ddply(dat, ~`GEMINI ID:`, function(x){
 res <- cbind(df1, df2[, c(7: 28)])
 
 fwrite(res, "H:/GEMINI/Results/DRM/REDCap/Summary_of_agreements_in_overlaps.csv")
+
+
+# correlation between vars June 21
+var_to_check <- names(dat)[c(8,10,13,15,17,19,23,25,27)]
+dat <- data.frame(dat)
+find_var_cor <- function(varname){
+  compare <- merge(dat[!duplicated(dat$GEMINI.ID.)&!is.na(dat[, varname]), 
+                       c("GEMINI.ID.", varname)],
+                   dat[duplicated(dat$GEMINI.ID.)&!is.na(dat[, varname]),
+                       c("GEMINI.ID.", varname)], by = "GEMINI.ID.")
+  correlation  <- cor(compare[, 2], compare[,3])
+  p.value = cor.test(compare[, 2], compare[,3])$p.value
+  return(data.frame(correlation, p.value))
+}
+
+corr <- NULL
+for(i in var_to_check){
+  corr <- rbind(corr, find_var_cor(i))
+}
+cbind(var_to_check, corr) %>% fwrite("H:/GEMINI/Results/DRM/REDCap/correlations.csv")
+
+
+# ------------------------- antibiotics data -----------------------------------
+dat <- fread("R:/GEMINI-DRM-TEAM/Data Extracts/antibiotics-review.csv")
+dat <- dat[GEMINI_ID%in% dat[,.N, by = .(GEMINI_ID, Event.Name.x)][N>1, GEMINI_ID]]
+
+
+df2 <- ddply(dat, ~GEMINI_ID + Event.Name.x, 
+             function(x)apply(x, MARGIN = 2, FUN = function(xx)length(unique(xx))))
+
+df1 <- ddply(dat, ~GEMINI_ID + Event.Name.x, function(x){
+  df1 <- data.frame(
+    N.reviewer = nrow(x),
+    reviewer1 = x$Research.Assistant[1],
+    reviewer2 = x$Research.Assistant[2]
+  )
+})
+
+res <- cbind(df1, df2[, c(4: 12)])
+fwrite(res, "H:/GEMINI/Results/DRM/REDCap/Summary_of_agreements_in_overlaps_antibiotics.csv")

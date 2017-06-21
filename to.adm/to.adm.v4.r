@@ -97,6 +97,7 @@ find_cohort <- function(x){
              er.diag[startwith.any(ER.Diagnosis.Code, "Z515"), EncID.new])
   cohort$death <- cohort$Discharge.Disposition==7
   cohort[EncID.new%in%palli, death:= F]
+  cohort[, with.ALC := Number.of.ALC.Days>0]
   return(cohort)
 }
 cohort <- find_cohort()
@@ -143,7 +144,7 @@ check$read.in.30[1] - check$adj.read.in.30[1]
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  data <- hide_site2(data)
+  #data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -220,6 +221,16 @@ ave.alc <- function(x){
 }
 png("ave.alc_overall.png", res = 250, width = 2000, height = 1200)
 plot.phy(cohort, "Average ALC Days", ylab = "Average ALC Days", ave.fun = ave.alc)
+dev.off()
+
+# -------------------------------- with ALC ------------------------------------
+alc.rate <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$with.ALC, na.rm = T)*100)
+}
+png("alc.rate.png", res = 250, width = 2000, height = 1200)
+plot.phy(cohort, "ALC Rate (%)", ylab = "ALC Rate (%)", ave.fun = alc.rate, digit = 1)
 dev.off()
 
 # ----------------------------- readmission rate -------------------------------
