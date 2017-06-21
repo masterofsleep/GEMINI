@@ -5,7 +5,7 @@ plot.phy.sig <- function(data, title, xlab = "Physician",
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1, show.sig = F, varname = NULL,
                      var_cat = F, category = TRUE){
-  data <- hide_site2(data)
+  #data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -158,11 +158,11 @@ dev.off()
 mort <- function(x){
   data.frame(N = nrow(x),
              site = x$Institution.Number[1],
-             ave = mean(x$Discharge.Disposition ==7, na.rm = T)*100)
+             ave = mean(x$death==T, na.rm = T)*100)
 }
 png("inhospital.mortality_overall.png", res = 250, width = 2000, height = 1200)
 plot.phy.sig(cohort, "In-hospital Mortality (%)", ylab = "In-hospital Mortality (%)", ave.fun = mort,
-         varname = "Discharge.Disposition", var_cat = T, category= "7")
+         varname = "death", var_cat = T, category= T)
 dev.off()
 
 # ------------------------------ short admission rate --------------------------

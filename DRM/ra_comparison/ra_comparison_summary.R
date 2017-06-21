@@ -37,3 +37,40 @@ ggplot(df.long, aes( factor(gemini_id), variable, fill = value)) +
   scale_y_discrete(labels = names(df)[2:26])
 dev.off()
 
+
+
+
+
+
+# -------------------------------- june20 --------------------------------------
+dat <- readxl::read_excel("H:/GEMINI/Results/DRM/REDCap/GEMINIDRMTEAM_DATA_LABELS_Overlapping.xlsx")
+dat <- data.table(dat)
+dat <- dat[!is.na(`GEMINI ID:`)&!is.na(`Research Assistant:`)][order(`GEMINI ID:`)]
+dat <- dat[`GEMINI ID:`%in% dat[, .N, by = `GEMINI ID:`][N>1, `GEMINI ID:`]]
+names(dat)
+
+ddply(dat, ~`GEMINI ID:`, function(x){
+  df1 <- data.frame(
+    N.reviewer = nrow(x),
+    reviewer1 = x$`Research Assistant:`[1],
+    reviewer2 = x$`Research Assistant:`[2]
+  )
+  df2 <- apply(x, 2, function(x)length(unique(x)))
+  cbind(df1, df2)
+  }
+)
+
+
+df2 <- ddply(dat, ~`GEMINI ID:`, 
+      function(x)apply(x, MARGIN = 2, FUN = function(xx)length(unique(xx))))
+
+df1 <- ddply(dat, ~`GEMINI ID:`, function(x){
+  data.frame(
+  N.reviewer = nrow(x),
+  reviewer1 = x$`Research Assistant:`[1],
+  reviewer2 = x$`Research Assistant:`[2]
+)})
+
+res <- cbind(df1, df2[, c(7: 28)])
+
+fwrite(res, "H:/GEMINI/Results/DRM/REDCap/Summary_of_agreements_in_overlaps.csv")

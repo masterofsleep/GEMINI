@@ -83,7 +83,7 @@ find_cohort <- function(x){
   cohort[is.na(N.pre.tran.hgb.gt70), N.pre.tran.hgb.gt70 := 0]
   
   # AKI 
-  inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.csv")
+  inc <- fread("C:/Users/guoyi/Desktop/to.adm/kdigo.new.csv")
   cohort$aki <- cohort$EncID.new%in%inc[KDIGO%in%c("2", "3"), EncID.new]
   
   # mark ICU before adm as non ICU admission
@@ -93,14 +93,14 @@ find_cohort <- function(x){
   # find mortality (excluding palliative in diagnoses)
   ip.diag <- readg(gim, ip_diag)
   er.diag <- readg(gim, er_diag)
-  palli <- c(ip.diag[startwith.any(Diagnosis.Code, "Z515")&Diagnosis.Type=="M", EncID.new],
-             er.diag[startwith.any(ER.Diagnosis.Code, "Z515")&ER.Diagnosis.Type=="M", EncID.new])
+  palli <- c(ip.diag[startwith.any(Diagnosis.Code, "Z515"), EncID.new],
+             er.diag[startwith.any(ER.Diagnosis.Code, "Z515"), EncID.new])
   cohort$death <- cohort$Discharge.Disposition==7
   cohort[EncID.new%in%palli, death:= F]
-  
   return(cohort)
 }
 cohort <- find_cohort()
+
 fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.csv")
 cohort[physician=="SMH-261"]
 phy.sum <- ddply(cohort, ~physician, function(x)
@@ -112,7 +112,7 @@ phy.sum <- ddply(cohort, ~physician, function(x)
              ave.acute.los = mean(x$Acute.LoS, na.rm = T),
              ave.alc = mean(x$Number.of.ALC.Days, na.rm = T),
              read.rate = sum(x$read.in.30, na.rm = T)/sum(!is.na(x$read.in.30), na.rm = T)*100,
-             mortality = mean(x$Discharge.Disposition ==7, na.rm = T)*100,
+             mortality = mean(x$death==T, na.rm = T)*100,
              short.adm = mean(x$Acute.LoS < 2, na.rm = T)*100,
              icu.rate = mean(x$SCU.adm, na.rm = T)*100,
              cbc.per.patientday = sum(x$n.bloodtest)/sum(x$Acute.LoS),
@@ -143,7 +143,7 @@ check$read.in.30[1] - check$adj.read.in.30[1]
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  #data <- hide_site2(data)
+  data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
