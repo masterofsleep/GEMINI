@@ -41,6 +41,13 @@ sbk.abx[bygene&!bydin, ndc_din] %>% table %>% data.table %>% fwrite("H:/GEMINI/R
 uhn.abx[bygene&!bydin, DIN] %>% table %>% data.table %>% fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/uhn.csv")
 
 
+smh.abx[bygene&!bydin, .(generic_name, din, route, ord_frequency)] %>% unique %>%
+  fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/smh.generic.not.din.csv")
+sbk.abx[bygene&!bydin, .(generic_name, ord_description,
+                         ndc_din, route, frequency)] %>% unique %>%
+  fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/sbk.generic.not.din.csv")
+uhn.abx[bygene&!bydin, .(Generic_Name, DIN, Route_Code, Frequency)] %>% unique %>%
+  fwrite("H:/GEMINI/Results/DRM/abx_generic_not_din/uhn.generic.not.din.csv")
 apply(smh.abx, 2, function(x)sum(is.na(x)))
 apply(sbk.abx, 2, function(x)sum(is.na(x)))
 apply(uhn.abx, 2, function(x)sum(is.na(x)))

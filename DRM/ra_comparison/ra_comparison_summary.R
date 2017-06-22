@@ -114,4 +114,16 @@ df1 <- ddply(dat, ~GEMINI_ID + Event.Name.x, function(x){
 })
 
 res <- cbind(df1, df2[, c(4: 12)])
+res <- data.frame(res, stringsAsFactors = F)
 fwrite(res, "H:/GEMINI/Results/DRM/REDCap/Summary_of_agreements_in_overlaps_antibiotics.csv")
+
+
+n.reviewered <- c(as.character(res[!is.na(res$reviewer2), "reviewer1"]),
+                  as.character(res[!is.na(res$reviewer2), "reviewer2"])) %>% table %>% data.frame
+
+melt(res[!is.na(res$reviewer2),], id.vars = c("reviewer1", "reviewer2"),
+     measure.vars = names(res)[6:14])  %>% data.table -> check
+n.dis <- c(as.character(check[value==2, reviewer1]),
+  as.character(check[value==2, reviewer2])) %>% table %>% data.frame
+names(n.dis) <- c("Research.Assistant", "Number.of.Discrepancy")
+fwrite(n.dis, "H:/GEMINI/Results/DRM/REDCap/number.of.discrepancy.antibiotics.csv")
