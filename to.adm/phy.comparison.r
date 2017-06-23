@@ -19,7 +19,7 @@ phy.sum <- ddply(cohort, ~physician, summarize,
                  ave.acute.los = mean(Acute.LoS),
                  ave.cost = mean(Cost, na.rm = T),
                  read.rate = mean(SCU.adm, na.rm = T)*100,
-                 mortality = mean(Discharge.Disposition ==7, na.rm = T)*100) %>% data.table
+                 mortality = mean(death==T, na.rm = T)*100) %>% data.table
 
 fit <- lm(re.adm.rate.value ~ ave.los, data = phy.sum)
 fit2 <- lm(re.adm.rate ~ ave.cost, data = phy.sum)
@@ -66,7 +66,7 @@ ggplot(phy.sum.long[site=="SMH"], aes(variable, value, group = physician, color 
 # dev.off()
 # getwd()
 
-setwd("C:/Users/guoyi/Desktop/to.adm/phy.comparison")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/phy.comparison")
 for(i in unique(phy.sum.long$site)){
   plot.name <- paste(i, ".png", sep = "")
   png(plot.name, res = 200, width = 1600, height = 1000)

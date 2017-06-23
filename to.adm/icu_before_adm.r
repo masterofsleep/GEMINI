@@ -42,3 +42,6 @@ scu_before_adm <- function(){
 }
 
 fwrite(data.frame(EncID.new = icu.before.adm.enc), "C:/Users/guoyi/Desktop/to.adm/icu.before.adm.enc.csv")
+
+
+fread("C:/Users/guoyi/Desktop/to.adm/icu.before.adm.enc.csv")
