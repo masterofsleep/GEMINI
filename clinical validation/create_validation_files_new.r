@@ -228,7 +228,7 @@ find_test <- function(encid){
 
 find_test(smh_rad_sample$EncID.new[1])
 
-smh_rad_vali_file <- function(){
+smh_rad_vali_file <- function(){S
   rad_vali <- NULL
   for(i in smh_rad_sample$EncID.new){
     rad_vali <- rbind(rad_vali, find_test(i))
@@ -240,7 +240,10 @@ smh_rad_vali <- smh_rad_vali_file()
 
 smh_rad_vali <- merge(smh_rad_sample, smh_rad_vali, by = "EncID.new")
 smh_rad_vali[, ':='(
-  `Test in Chart? (y/n)` = ""
+  `Test in Chart? (y/n)` = "",
+  `Other Test in Chart? (y/n)` = "",
+  `Other Test Date (yyyy-mm-dd)` = "",
+  `Other Test Time (hh:mm)` = ""
 )]
 smh_rad_vali <- add_smh_mrn(smh_rad_vali)
-fwrite(smh.trans, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_rad.csv")
+fwrite(smh_rad_vali, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_rad.csv")

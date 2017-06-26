@@ -3,6 +3,18 @@
 rm(list = ls())
 library(gemini)
 lib.pa()
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+
+new_tests <- function(x, inlist, outlist, n){
+  set.seed(100)
+  df <- x[EncID.new%in%inlist&!EncID.new%in%outlist,]
+  if(n<nrow(df)){
+    return(df[sample(nrow(df), n)])
+  }else{
+    print(nrow(df))
+    return(df)
+  }
+}
 # ------------------- St.Michael's ---------------------------------------------
 setwd("R:/GEMINI-DREAM/DELIRIUM Charts")
 EncID.new <- NULL
@@ -47,7 +59,9 @@ smh.ctpe.names %in% testnames
 smh.ctpa <- smh.ct[proc_desc_long%in%smh.ctpe.names, 
                    .(EncID.new, proc_desc_long, result, impression, after72)]
 smh.ctpa.watson <- smh.ctpa[EncID.new%in%watson.enc.smh]
-fwrite(smh.ctpa.watson, "H:/GEMINI/Results/WATSON/smh.ctpa.csv")
+smh.ctpa.new <- smh.ctpa[EncID.new%in%dad$EncID.new&!EncID.new%in%watson.enc.smh]
+
+#fwrite(smh.ctpa.watson, "H:/GEMINI/Results/WATSON/smh.ctpa.csv")
 
 # VQ
 smh.nuc <- readg(smh, nuc, dt = T)
@@ -55,7 +69,7 @@ smh.nuc[,after72 := ymd_h(ord_for_dtime)> ymd_hm(paste(Admit.Date, Admit.Time))+
 smh.vq <- smh.nuc[startsWith(proc_desc_long, "LUNG")]
 smh.vq.watson <- smh.vq[EncID.new%in%watson.enc.smh,
                         .(EncID.new, proc_desc_long, result, impression, after72)]
-fwrite(smh.vq.watson, "H:/GEMINI/Results/WATSON/smh.vq.csv")
+#fwrite(smh.vq.watson, "H:/GEMINI/Results/WATSON/smh.vq.csv")
 
 #Doppler
 smh.us <- readg(smh, us, dt = T)
@@ -68,12 +82,21 @@ smh.du.names <- c("DOP LEG VEIN/EXTREMITY BILAT",
                   "EXTREMITY BILAT",
                   "EXTREMITY UNILAT",
                   "EXTREMITY LEFT")
-
+smh.du <- smh.us[proc_desc_long%in%smh.du.names, 
+                 .(EncID.new, proc_desc_long, result, impression, after72)]
 smh.du.watson <- smh.us[proc_desc_long%in%smh.du.names&
                           EncID.new%in%watson.enc.smh, 
                         .(EncID.new, proc_desc_long, result, impression, after72)]
-fwrite(smh.du.watson, "H:/GEMINI/Results/WATSON/smh.du.csv")
+#fwrite(smh.du.watson, "H:/GEMINI/Results/WATSON/smh.du.csv")
 
+
+
+new_tests(smh.ctpa, dad$EncID.new, watson.enc.smh, 140) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/smh.ctpa.140.csv")
+new_tests(smh.vq, dad$EncID.new, watson.enc.smh, 60) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/smh.ctpa.60.csv")
+new_tests(smh.du, dad$EncID.new, watson.enc.smh, 200) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/smh.du.200.csv")
 
 
 
@@ -107,16 +130,24 @@ uhn.radip <- readg(uhn, rad_ip, dt = T)
 uhn.rader <- readg(uhn, rad_er, dt = T)
 uhn.rad <- rbind(uhn.rader, uhn.radip)
 uhn.rad[,after72 := mdy_hm(OrderDateTime)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
-uhn.ctpa <- uhn.rad[ProcedureName%in%uhn.ctpe.names&EncID.new%in%watson.enc.uhn,
+uhn.ctpa <- uhn.rad[ProcedureName%in%uhn.ctpe.names,#&EncID.new%in%watson.enc.uhn,
                     .(EncID.new, ProcedureName, ReportText, after72)]
-uhn.du <- uhn.rad[ProcedureName%in%uhn.du.names&EncID.new%in%watson.enc.uhn,
+uhn.du <- uhn.rad[ProcedureName%in%uhn.du.names,#&EncID.new%in%watson.enc.uhn,
                     .(EncID.new, ProcedureName, ReportText,  after72)]
-uhn.vq <- uhn.rad[ProcedureName%in%uhn.vq.names&EncID.new%in%watson.enc.uhn,
+uhn.vq <- uhn.rad[ProcedureName%in%uhn.vq.names,#&EncID.new%in%watson.enc.uhn,
                     .(EncID.new, ProcedureName, ReportText, after72)]
 
-fwrite(uhn.ctpa, "H:/GEMINI/Results/WATSON/uhn.ctpa.csv")
-fwrite(uhn.du, "H:/GEMINI/Results/WATSON/uhn.du.csv")
-fwrite(uhn.vq, "H:/GEMINI/Results/WATSON/uhn.vq.csv")
+# fwrite(uhn.ctpa, "H:/GEMINI/Results/WATSON/uhn.ctpa.csv")
+# fwrite(uhn.du, "H:/GEMINI/Results/WATSON/uhn.du.csv")
+# fwrite(uhn.vq, "H:/GEMINI/Results/WATSON/uhn.vq.csv")
+# 
+
+new_tests(uhn.ctpa, dad$EncID.new, watson.enc.uhn, 140) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/uhn.ctpa.140.csv")
+new_tests(uhn.vq, dad$EncID.new, watson.enc.uhn, 60) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/uhn.vq.60.csv")
+new_tests(uhn.du, dad$EncID.new, watson.enc.uhn, 200) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/uhn.du.200.csv")
 
 
 
@@ -162,24 +193,34 @@ watson.enc.sbk <- sbk.enc$EncID.new[sample(nrow(sbk.enc), 1000)]
 
 sbk.rad <- readg(sbk, rad.csv, dt = T)
 sbk.rad[,after72 := ymd_hms(Ordered.DtTm)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
-sbk.ctpa <- sbk.rad[Test.Name%in%sbk.ctpe.names&EncID.new%in%watson.enc.sbk,
-                    .(EncID.new, Test.Name, Results, after72)]
-sbk.du <- sbk.rad[Test.Name%in%sbk.du.names&EncID.new%in%watson.enc.sbk,
-                  .(EncID.new, Test.Name, Results, after72)]
-sbk.vq <- sbk.rad[Test.Name%in%sbk.vq.names&EncID.new%in%watson.enc.sbk,
-                  .(EncID.new, Test.Name, Results, after72)]
-fwrite(sbk.ctpa, "H:/GEMINI/Results/WATSON/sbk.ctpa.csv")
-fwrite(sbk.du, "H:/GEMINI/Results/WATSON/sbk.du.csv")
-fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")
-write.csv(c(watson.enc.sbk, watson.enc.smh, watson.enc.uhn), 
-          "H:/GEMINI/Results/WATSON/watson.enc.csv")
+sbk.ctpa <- sbk.rad[Test.Name%in%sbk.ctpe.names#&EncID.new%in%watson.enc.sbk
+                    ,.(EncID.new, Test.Name, Results, after72)]
+sbk.du <- sbk.rad[Test.Name%in%sbk.du.names#&EncID.new%in%watson.enc.sbk
+                 , .(EncID.new, Test.Name, Results, after72)]
+sbk.vq <- sbk.rad[Test.Name%in%sbk.vq.names#&EncID.new%in%watson.enc.sbk
+                 , .(EncID.new, Test.Name, Results, after72)]
+# fwrite(sbk.ctpa, "H:/GEMINI/Results/WATSON/sbk.ctpa.csv")
+# fwrite(sbk.du, "H:/GEMINI/Results/WATSON/sbk.du.csv")
+# fwrite(sbk.vq, "H:/GEMINI/Results/WATSON/sbk.vq.csv")
+# write.csv(c(watson.enc.sbk, watson.enc.smh, watson.enc.uhn), 
+#           "H:/GEMINI/Results/WATSON/watson.enc.csv")
+
+
+new_tests(sbk.ctpa, dad$EncID.new, watson.enc.sbk, 148) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/sbk.ctpa.140.csv")
+new_tests(sbk.vq, dad$EncID.new, watson.enc.sbk, 60) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/sbk.vq.52.csv") # only 52 available
+new_tests(sbk.du, dad$EncID.new, watson.enc.sbk, 200) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/sbk.du.200.csv")
+
 
 # ---------------------------- MSH ---------------------------------------------
-msh <- readg(msh, adm)
-set.seed(100)
-watson.enc.msh <- sample(msh$EncID.new, 1000)
-write.csv(watson.enc.msh, "H:/GEMINI/Results/delirium/msh.enc1000.csv")
-
+# msh <- readg(msh, adm)
+# set.seed(100)
+# watson.enc.msh <- sample(msh$EncID.new, 1000)
+# write.csv(watson.enc.msh, "H:/GEMINI/Results/delirium/msh.enc1000.csv")
+# 
+watson.enc.msh <- fread("H:/GEMINI/Results/delirium/msh.enc1000.csv")$x
 
 msh.ctpe.names <- c("Angiography Body Diagnostic",
                     "Angiography Body Angiogram Venous Subclavian",
@@ -206,14 +247,21 @@ msh.radip <- readg(msh, rad_ip, dt = T)
 msh.rader <- readg(msh, rad_er, dt = T)
 msh.rad <- rbind(msh.rader, msh.radip)
 msh.rad[,after72 := ymd_hm(OrderDateTime)>ymd_hm(paste(Admit.Date, Admit.Time))+hours(72)]
-msh.ctpa <- msh.rad[ProcedureName%in%msh.ctpe.names&EncID.new%in%watson.enc.msh,
-                    .(EncID.new, ProcedureName, ReportText, after72)]
-msh.du <- msh.rad[ProcedureName%in%msh.du.names&EncID.new%in%watson.enc.msh,
-                  .(EncID.new, ProcedureName, ReportText,  after72)]
-msh.vq <- msh.rad[ProcedureName%in%msh.vq.names&EncID.new%in%watson.enc.msh,
-                  .(EncID.new, ProcedureName, ReportText, after72)]
+msh.ctpa <- msh.rad[ProcedureName%in%msh.ctpe.names#&EncID.new%in%watson.enc.msh,
+                    ,.(EncID.new, ProcedureName, ReportText, after72)]
+msh.du <- msh.rad[ProcedureName%in%msh.du.names#&EncID.new%in%watson.enc.msh,
+                  ,.(EncID.new, ProcedureName, ReportText,  after72)]
+msh.vq <- msh.rad[ProcedureName%in%msh.vq.names#&EncID.new%in%watson.enc.msh,
+                  ,.(EncID.new, ProcedureName, ReportText, after72)]
 
-fwrite(msh.ctpa, "H:/GEMINI/Results/WATSON/msh.ctpa.csv")
-fwrite(msh.du, "H:/GEMINI/Results/WATSON/msh.du.csv")
-fwrite(msh.vq, "H:/GEMINI/Results/WATSON/msh.vq.csv")
+# fwrite(msh.ctpa, "H:/GEMINI/Results/WATSON/msh.ctpa.csv")
+# fwrite(msh.du, "H:/GEMINI/Results/WATSON/msh.du.csv")
+# fwrite(msh.vq, "H:/GEMINI/Results/WATSON/msh.vq.csv")
 
+
+new_tests(msh.ctpa, dad$EncID.new, watson.enc.msh, 159) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/msh.ctpa.140.csv")
+new_tests(msh.vq, dad$EncID.new, watson.enc.msh, 60) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/msh.vq.41.csv") # only 41 available
+new_tests(msh.du, dad$EncID.new, watson.enc.msh, 200) %>%
+  fwrite("H:/GEMINI/Results/WATSON/new_june26/msh.du.200.csv")
