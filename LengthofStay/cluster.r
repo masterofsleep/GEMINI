@@ -87,6 +87,7 @@ ip.diag.withname <- merge(ip.diag[Diagnosis.Type=="M"],
                           diag.names[, .(Diagnosis.Code = Code,
                                          Diagnosis = Desc2)],
                  by = "Diagnosis.Code", all.x = T)
+ip.diag[, Diag3:= str_sub(Diagnosis.Code, 1, 3)]
 hypertension.enc <- ip.diag[Diag3=="I10", EncID.new]
 type2diabetes.enc <- ip.diag[Diag3=="E11", EncID.new]
 afib.enc <- ip.diag[Diag3=="I48", EncID.new]
@@ -257,9 +258,12 @@ find_clinical_var <- function(df){
 
 input_var <- find_clinical_var(input_var)
 
-
 input_var_final <- merge(sum_var, input_var, by = "Hash")
+input_var_final <- data.table(input_var_final)
 
+input_var_final[, ':='(g1 = Hash%in%g1,
+                       g2 = Hash%in%g2,
+                       g3 = Hash%in%g3)]
 
 fwrite(input_var_final, "H:/GEMINI/Results/LengthofStay/cluster/input_var.csv")
 

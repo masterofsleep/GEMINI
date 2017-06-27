@@ -439,3 +439,111 @@ simu.result[, ':='(n_saved_75 = total_aki * prop_saved_75,
                    n_saved_50 = total_aki * prop_saved_50,
                    n_saved_25 = total_aki * prop_saved_25)]
 fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.aki.csv")
+
+
+# ---------------------------- simu death --------------------------------------
+n.mort <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = sum(x$death)/nrow(x),
+             stringsAsFactors = F)
+}
+nmort.sum <- ddply(cohort, ~physician, n.mort)
+
+
+simu_mort <- function(percentile){
+  target.mort <- ddply(nmort.sum, ~site, summarize,
+                      targ_nmort = quantile(ave, probs = percentile))
+  nmort.sum <- merge(nmort.sum, target.mort, by = "site") %>% data.table
+  nmort.sum[, ave.diff:= ifelse(ave > targ_nmort,
+                               ave - targ_nmort,
+                               0)]
+  saved.prop <- ddply(nmort.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_mort(0.75),
+                     simu_mort(0.5),
+                     simu_mort(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+ip.diag <- readg(gim, ip_diag)
+er.diag <- readg(gim, er_diag)
+palli <- c(ip.diag[startwith.any(Diagnosis.Code, "Z515"), EncID.new],
+           er.diag[startwith.any(ER.Diagnosis.Code, "Z515"), EncID.new]) %>% unique
+table(str_sub(palli, 1, 2))
+dad$death <- dad$Discharge.Disposition==7
+dad[EncID.new%in%palli, death:= F]
+site_total <- ddply(dad, ~Institution.Number,
+                    summarize,
+                    total_in_hospital_mortality = sum(death, na.rm = T)) %>% rename(site = Institution.Number)
+
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total_in_hospital_mortality * prop_saved_75,
+                   n_saved_50 = total_in_hospital_mortality * prop_saved_50,
+                   n_saved_25 = total_in_hospital_mortality * prop_saved_25)]
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.mort.csv")
+
+
+
+# -------------------------- readmission ---------------------------------------
+n.read <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$read.in.30, na.rm = T),
+             stringsAsFactors = F)
+}
+nread.sum <- ddply(cohort, ~physician, n.read)
+
+
+simu_read <- function(percentile){
+  target.read <- ddply(nread.sum, ~site, summarize,
+                       targ_nread = quantile(ave, probs = percentile))
+  nread.sum <- merge(nread.sum, target.read, by = "site") %>% data.table
+  nread.sum[, ave.diff:= ifelse(ave > targ_nread,
+                                ave - targ_nread,
+                                0)]
+  saved.prop <- ddply(nread.sum, ~site, summarize,
+                      saved_prop = sum(ave.diff * N)/
+                        sum(ave * N))
+  return(saved.prop)
+}
+
+simu.result <- cbind(simu_read(0.75),
+                     simu_read(0.5),
+                     simu_read(0.25)) 
+names(simu.result) <- c("site",
+                        "prop_saved_75",
+                        "site",
+                        "prop_saved_50",
+                        "site",
+                        "prop_saved_25")
+simu.result <- simu.result[, c(1, 2, 4, 6)]
+
+
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+
+site_total <- ddply(dad, ~Institution.Number,
+                    summarize,
+                    total_read= sum(read.in.30, na.rm = T)) %>% rename(site = Institution.Number)
+
+
+simu.result <- merge(site_total, simu.result, by = "site")
+simu.result <- data.table(simu.result)
+simu.result[, ':='(n_saved_75 = total_read * prop_saved_75,
+                   n_saved_50 = total_read * prop_saved_50,
+                   n_saved_25 = total_read * prop_saved_25)]
+fwrite(simu.result, "C:/Users/guoyi/Desktop/to.adm/simu.read.csv")
+
