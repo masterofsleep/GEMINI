@@ -265,3 +265,42 @@ new_tests(msh.vq, dad$EncID.new, watson.enc.msh, 60) %>%
   fwrite("H:/GEMINI/Results/WATSON/new_june26/msh.vq.41.csv") # only 41 available
 new_tests(msh.du, dad$EncID.new, watson.enc.msh, 200) %>%
   fwrite("H:/GEMINI/Results/WATSON/new_june26/msh.du.200.csv")
+
+
+
+
+# ------------------------ More CT for Alpa to review --------------------------
+library(gemini)
+lib.pa()
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.v4.csv")
+
+smh.ct <- readg(smh, ct)[EncID.new%in%dad$EncID.new]
+sbk.rad <- readg(sbk.rad, rad.csv)
+map.sbk <- readxl::read_excel("H:/GEMINI/Results/DesignPaper/rad.freq.table.new_AV.xlsx", sheet = 1)
+sbk.rad <- merge(sbk.rad, map.sbk[,c("Test.Name", "Test.Type", 
+                            "Interventional Procedure")], 
+                 by = "Test.Name", all.x = T, all.y = F)
+sbk.ct <- sbk.rad[Test.Type==3][EncID.new%in%dad$EncID.new]
+uhn.rad <- rbind(readg(uhn, rad_er),
+                   readg(uhn, rad_er))
+uhn.ct <- uhn.rad[str_sub(ProcedureName,1,2) =="CT"][EncID.new%in%dad$EncID.new]
+msh.rad <- rbind(readg(msh, rad_er),
+                 readg(msh, rad_ip))
+msh.ct <- msh.rad[str_sub(ProcedureName,1,2) =="CT"][EncID.new%in%dad$EncID.new]
+
+
+
+setwd("R:/GEMINI-DRM-TEAM/CT scans")
+set.seed(100)
+smh.ct200 <- smh.ct[sample(1:nrow(smh.ct), 200),.(EncID.new, proc_desc_long, result, impression)]
+set.seed(100)
+sbk.ct200 <- sbk.ct[sample(1:nrow(sbk.ct), 200),.(EncID.new, Test.Name, Results)]
+set.seed(100)
+uhn.ct200 <- uhn.ct[sample(1:nrow(uhn.ct), 200), .(EncID.new, ProcedureName, ReportText)]
+set.seed(100)
+msh.ct200 <- msh.ct[sample(1:nrow(msh.ct), 200), .(EncID.new, ProcedureName, ReportText)]
+
+fwrite(smh.ct200, "smh.ct200.csv")
+fwrite(sbk.ct200, "sbk.ct200.csv")
+fwrite(uhn.ct200, "uhn.ct200.csv")
+fwrite(msh.ct200, "msh.ct200.csv")

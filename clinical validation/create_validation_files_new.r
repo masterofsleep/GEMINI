@@ -50,6 +50,18 @@ death_sample[, `Death in Chart? (y/n)` := ""]
 smh.death <- add_smh_mrn(death_sample[str_sub(EncID.new,1,2)=="11"])
 fwrite(smh.death, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_death.csv")
 
+# no death
+sample_no_death_enc <- function(){
+  death_enc <- dad[Discharge.Disposition!=7, EncID.new]
+  sample_enc <- sample_n_each_site(death_enc, 100)
+  return(find_enc_hos_dt(sample_enc))
+}
+
+no_death_sample <- sample_no_death_enc()
+no_death_sample[, `Death in Chart? (y/n)` := ""]
+
+smh.no.death <- add_smh_mrn(no_death_sample[str_sub(EncID.new,1,2)=="11"])
+fwrite(smh.no.death, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_no_death.csv")
 
 
 # -------------------------------- ICU -----------------------------------------
@@ -172,8 +184,8 @@ noicu_notrans <- function(){
 no_icu_trans <- noicu_notrans() %>% filter(Institution.Number=="SMH") %>% data.table
 no_icu_trans[, ':='(`ICU in Chart? (y/n` = "",
                     `RBC Trans in Chart? (y/n)`= "")]
-
-fwrite(no_icu_trans[Institution.Number=="SMH"], "H:/GEMINI/Results/Clinical Validation/new_june23/smh_no_icu_no_trans.csv")
+smh.no_icu_trans <- add_smh_mrn(no_icu_trans[Institution.Number=="SMH"])
+fwrite(smh.no_icu_trans, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_no_icu_no_trans.csv")
 
 # --------------------------------- Radiology ----------------------------------
 sample_rad <- function(){
@@ -247,3 +259,20 @@ smh_rad_vali[, ':='(
 )]
 smh_rad_vali <- add_smh_mrn(smh_rad_vali)
 fwrite(smh_rad_vali, "H:/GEMINI/Results/Clinical Validation/new_june23/smh_rad.csv")
+
+
+
+
+# add mrn
+setwd("R:/GEMINI-DRM-TEAM/Clinical Validation/New_June23")
+files <- list.files();files
+
+addtofile <- function(x){
+  dat <- readxl::read_excel(x)
+  dat <- add_smh_mrn(dat)
+  setwd("R:/GEMINI-DRM-TEAM/Clinical Validation/New_June23")
+  fwrite(dat, str_replace(x, ".xlsx", ".csv"))
+}
+
+addtofile(files[8])
+addtofile(files[10])

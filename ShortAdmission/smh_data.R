@@ -116,3 +116,51 @@ smh.vitals_inc <- smh.vitals[mdy_hm(Collected.DT)<=ymd_hm(paste(Admit.Date, Admi
 smh.vitals_inc <- smh.vitals_inc[EncID.new%in%smh.inc$EncID.new]
 
 fwrite(smh.vitals_inc, "R:/GEMINI-Short_Admission_Project/Data/Clinical/vitals.csv")
+
+
+
+# readmission variable
+adm <- readg(gim, adm)
+dad <- fread("H:/GEMINI/Results/DesignPaper/design.paper.dad.new.csv")
+dad[, Hash:=NULL]
+dad <- merge(dad, adm[,.(Hash, EncID.new)], by = "EncID.new")
+dad[is.na(Hash), Hash:=""]
+sum(smh.inc%in%dad$EncID.new)
+dad <- dad %>% arrange(Hash, ymd_hm(paste(Admit.Date, Admit.Time))) %>% data.table
+time.since.last.visit <- as.numeric(ymd_hm(dad[2:nrow(dad), 
+                                                       paste(Admit.Date, Admit.Time)]) - 
+                                   ymd_hm(dad[1:(nrow(dad)-1), 
+                                                         paste(Discharge.Date, Discharge.Time)]) )/3600/24
+
+dad$time.since.last.visit<- c(NA, time.since.last.visit)
+
+dad[, .(Hash, time.since.last.visit)] -> check
+
+sum(smh.inc%in%dad$EncID.new)
+
+# dad[, readmission := time.since.last.visit<=30]
+# dad[!duplicated(Hash), readmission:=F]
+# dad[ymd(Admit.Date)<=ymd("2010-04-30")|Hash=="", readmission:=NA]
+# 
+dad[!duplicated(Hash), time.since.last.visit:=Inf]
+dad[ymd(Admit.Date)<=ymd("2010-04-30")|Hash=="", time.since.last.visit:=NA]
+
+dad[, readmission := time.since.last.visit<=30]
+
+smh.read <- dad[EncID.new%in%smh.inc, .(EncID.new, Hash, Admit.Date, Admit.Time, Discharge.Date, Discharge.Time,
+                                        time.since.last.visit, readmission)]
+table(smh.read$readmission, useNA = "ifany")
+sum(smh.read$Hash=="")
+
+fwrite(smh.read, "R:/GEMINI-Short_Admission_Project/Data/CIHI/smh.read.csv")
+
+
+# check dup er
+smh.er <- fread("R:/GEMINI-Short_Admission_Project/Data/CIHI/smh.er.nophi.csv")
+sum(duplicated(smh.er$EncID.new))
+
+sum(is.na(smh.read$readmission))
+ddply(dad, ~Institution.Number, summarize,
+      sum(Hash==""),
+      sum(read.in.30, na.rm =T))
+table(smh.read$readmission)

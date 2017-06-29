@@ -47,11 +47,13 @@ time.to.next.visit <- as.numeric(ymd_hm(cluster.cohort[2:nrow(cluster.cohort),
 
 cluster.cohort$time.to.next.visit <- c(time.to.next.visit, NA)
 cluster.cohort[!duplicated(Hash, fromLast = T), time.to.next.visit:=NA]
-# check <- cluster.cohort[, .(Hash, time.to.next.admission, time.to.next.visit)]
-# 
-# check[is.na(time.to.next.admission)&!is.na(time.to.next.visit)]
-# check[!is.na(time.to.next.admission)&
-#         is.na(time.to.next.visit)]
+check <- cluster.cohort[, .(Hash, time.to.next.admission, time.to.next.visit)]
+
+check[is.na(time.to.next.admission)&!is.na(time.to.next.visit)]
+check[!is.na(time.to.next.admission)&
+        is.na(time.to.next.visit), Hash] -> problemhash
+cluster.cohort [Hash%in%problemhash, .(EncID.new, Hash, Admit.Date, Admit.Time, Discharge.Date, Discharge.Time,
+                           time.to.next.admission, time.to.next.visit)] -> check
 
 cluster.cohort[, time.to.first.adm := as.numeric(ymd_hm(paste(Admit.Date, Admit.Time))-
                  ymd_hm("2010-04-01 00:00"))/3600/24]
@@ -272,8 +274,28 @@ fwrite(input_var_final, "H:/GEMINI/Results/LengthofStay/cluster/input_var.csv")
 
 # response var 
 res_var <- cluster.cohort[, .(EncID.new, Hash,
+                              Cost,
                               Acute.LoS, 
                               Number.of.ALC.Days,
                               ICU.utilization = SCU.adm,
                               Death = Discharge.Disposition==7)]
+table(table(res_var$Hash))
+for(i in unique(res_var$Hash)){
+  count = nrow(res_var[Hash==i])
+  res_var[Hash==i, n_visit := 1:count]
+}
+
+find_visit <- function(i){
+  dat <- res_var[n_visit==i]
+  names(dat)[c(1,3:7)] <- paste(names(dat)[c(1,3:7)], i, sep = "_")
+  return(dat[, c(1:7), with = F])
+}
+v1 <- find_visit(1)
+v2 <- find_visit(2)
+v3 <- find_visit(3)
+v4 <- find_visit(4)
+v5 <- find_visit(5)
+
+res_var <- Reduce(function(x, y)merge(x, y, by = "Hash", all.x = T, all.y = T), list(v1,v2,v3,v4,v5))
+
 fwrite(res_var, "H:/GEMINI/Results/LengthofStay/cluster/reponse_var.csv")
