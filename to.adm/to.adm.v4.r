@@ -102,6 +102,7 @@ find_cohort <- function(x){
 }
 cohort <- find_cohort()
 
+
 fwrite(cohort, "C:/Users/guoyi/Desktop/to.adm/cohort.csv")
 cohort[physician=="SMH-261"]
 phy.sum <- ddply(cohort, ~physician, function(x)
@@ -144,7 +145,7 @@ check$read.in.30[1] - check$adj.read.in.30[1]
 plot.phy <- function(data, title, xlab = "Physician", 
                      ylab, nextreme = 1,
                      ave.fun, xstart = -2, digit = 1){
-  #data <- hide_site2(data)
+ # data <- hide_site2(data)
   df <- ddply(data, ~physician, .fun = ave.fun) %>% data.table
   digitform <- paste("%.", digit, "f", sep = "")
   names(df)[4] <- "phy.ave"
@@ -426,3 +427,34 @@ ggplot(phy.sum, aes(x = ave.cost, y = mortality, color = site)) +
   xlab("Average Cost ($)") + ylab("Mortality (%)")
 
 
+
+# total direct cost instead of RIW cost
+find_cost <- function(){
+  smh.adm <- readg(smh, adm)
+  sbk.adm <- readg(sbk, adm)
+  uhn.adm <- readg(uhn, adm)
+  msh.adm <- readg(msh, adm)
+  thp.adm <- readg(thp, adm)
+  TDC <- rbind(smh.adm[, .(EncID.new, Total.Direct.Cost)],
+               sbk.adm[, .(EncID.new, Total.Direct.Cost)],
+               uhn.adm[, .(EncID.new, Total.Direct.Cost)],
+               thp.adm[, .(EncID.new, Total.Direct.Cost)])
+  return(TDC)
+}
+
+cohort <- merge(cohort, find_cost(), by = "EncID.new", all.x = T, all.y = F)
+
+# ------------------------------- Total Direct Cost ----------------------------
+ave.tdc <- function(x){
+  data.frame(N = nrow(x),
+             site = x$Institution.Number[1],
+             ave = mean(x$Total.Direct.Cost, na.rm = T))
+}
+cohort[, Total.Direct.Cost:= as.numeric(Total.Direct.Cost)]
+png("ave.total.direct.cost.png", res = 250, width = 2200, height = 1200)
+plot.phy(cohort[Institution.Number!="SHS"],  "Average Total Direct Cost ($)", 
+         ylab = "Average Total Direct Cost ($)", ave.fun = ave.tdc, xstart = -5, digit = 0)
+dev.off()
+
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/no_sitename")
+setwd("C:/Users/guoyi/Desktop/to.adm/figures.v4/with_sitename")

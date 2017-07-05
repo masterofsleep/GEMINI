@@ -156,3 +156,36 @@ all.phy.name.new <- rbind(all.phy.name,
 # 
 # 
 # all.phy.name.new[duplicated(all.phy.name.new), ]
+
+
+
+# ----------------------------- new thp data -----------------------------------
+adm.names <- fread("H:/GEMINI/Results/DataSummary/physician_names/thp.physicians/thp.physicians_list.csv")
+mrp.names <- fread("H:/GEMINI/Results/DataSummary/physician_names/thp.physicians/thp.dad.mrp.csv")
+
+unique_names <- rbind(
+  adm.names[, .(first.name = AdmittingPhysicianFirstName,
+                last.name = AdmittingPhysicianLastName,
+                code = AdmittingPhysicianCode,
+                hashcode = ADM.CODE)],
+  adm.names[, .(first.name = DischargingPhysicianFirstName,
+                last.name = DischargingPhysicianLastName,
+                code = DischargingPhysicianCode,
+                hashcode = DIS.CODE)],
+  mrp.names[, .(first.name = MostResponsiblePhysicianFirstName,
+                last.name = MostResponsiblePhysicianLastName,
+                code = MostResponsibleDoctorCode,
+                hashcode = MRP.CODE)]
+)
+unique_names <- unique_names[,.N, by = .(first.name, last.name, code, hashcode)]
+
+all.name <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
+
+sum(unique_names$code%in%all.name[code.type=="thp", Code])
+unique_names[!code%in%all.name$Code]
+
+fwrite(unique_names[!code%in%all.name$Code],
+       "H:/GEMINI/Results/DataSummary/physician_names/thp.physicians/thp_new_names.csv")
+adm.new[Admitting.Code=="75f325be32eb7132685ff432180febc7d1f28ae0"]
+adm.new[Discharging.Code=="75f325be32eb7132685ff432180febc7d1f28ae0"]
+dad.new[MRP.CODE=="75f325be32eb7132685ff432180febc7d1f28ae0"]

@@ -571,3 +571,7 @@ con = dbConnect(RSQLite::SQLite(), dbname = "gemini.db")
 dbListTables(con)
 dbDisconnect(con)
 fwrite(adm, "H:/GEMINI/Data/GEMINI/gim.adm.csv")
+
+
+
+
