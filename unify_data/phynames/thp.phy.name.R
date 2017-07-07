@@ -189,3 +189,20 @@ fwrite(unique_names[!code%in%all.name$Code],
 adm.new[Admitting.Code=="75f325be32eb7132685ff432180febc7d1f28ae0"]
 adm.new[Discharging.Code=="75f325be32eb7132685ff432180febc7d1f28ae0"]
 dad.new[MRP.CODE=="75f325be32eb7132685ff432180febc7d1f28ae0"]
+
+# check with old physician list
+adm.names <- fread("H:/GEMINI/Results/DataSummary/physician_names/thp.physicians/thp.physicians_list.csv")
+
+find_new_code <- function(df){
+  df <- merge(df, all.name[code.type == "thp", .(Code, code.type, code.new, GIM)], 
+            by.x = "AdmittingPhysicianCode",by.y = "Code",
+            all.x = T, all.y = F)
+  df <- merge(df, all.name[code.type == "thp", .(Code, code.type, code.new, GIM)], 
+            by.x = "DischargingPhysicianCode",by.y = "Code",
+            all.x = T, all.y = F)
+  return(df)
+}
+
+adm.names_lab<- find_new_code(adm.names) 
+table(adm.names_lab$GIM.x, adm.names_lab$GIM.y, useNA = "ifany")
+adm.names_lab[, .N, by = .(GIM.x, GIM.y)]
