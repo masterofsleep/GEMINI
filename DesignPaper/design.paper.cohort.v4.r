@@ -3,9 +3,14 @@
 # ----------------------------- 2015-05-16 -------------------------------------
 library(gemini)
 lib.pa()
+
+
 phy.all <- readg(gim, all.phy)
 gemini.inc <- phy.all[(adm.GIM%in%c("y", "GP-GIM")|dis.GIM%in%c("y", "GP-GIM"))
          |str_sub(EncID.new,1, 2)=="15", EncID.new]
+
+
+
 # Adm Info
 gemini_adm <- function(){
   smh.adm <- readg(smh, adm)

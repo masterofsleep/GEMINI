@@ -50,7 +50,7 @@ find_cohort <- function(x){
   cohort <- cohort[Acute.LoS<=30]
   
   # 69558 hospitalizations, if select physicians first
-  cohort <- cohort[Acute.LoS<=30]
+  cohort <- cohort[LoS<=30]
   n.pat <- cohort[,.N, by = physician]
   cohort <- cohort[physician%in%n.pat[N>=100, physician]]
   
