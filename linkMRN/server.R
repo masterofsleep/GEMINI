@@ -32,17 +32,21 @@ shinyServer(function(input, output) {
       dat$EncID.new <- paste(input$site, dat$EncID.new, sep = "")
     }
     res1 <- 
-      merge(dat,
+      merge(link[,.(EncID.new, MRN)], dat,
             # edit the column names below to be the column names for MRN and EncID.new
             # in the link file
-            link[,.(EncID.new, MRN)], 
             by = "EncID.new",
-            all.x = T, all.y = F)
-    merge(res1, 
+            all.x = F, all.y = T)
+    if(input$vartoadd=="mrndt"){
+      res2 <- merge(res1,
           # edit the column names in the parenthesis to be the column names for 
           # admit and discharge date in the dad file
           dad[,.(EncID.new, ADMITDATE, DISCHARGEDATE)], by = "EncID.new",
           all.x = T, all.y = F)
+    }else if(input$vartoadd=="mrn"){
+      res2 <- res1
+    }
+    res2
   })
   output$table <- renderTable({
     head(datasetInput(), n = input$obs)

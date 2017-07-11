@@ -269,35 +269,41 @@ data.table(table(msh.rad[str_sub(ProcedureName, 1, 2)=="XR", ProcedureName])) %>
 
 
 # ---------------------------- THP Rad Data ------------------------------------
-setwd("R:/GEMINI/_RESTORE/THP/Radiology")
-rad_m <- readxl::read_excel("M_RAD_DeIdentified.xlsx")
-rad_c <- readxl::read_excel("CVH_RAD_DeIdentified.xlsx")
+#setwd("R:/GEMINI/_RESTORE/THP/Radiology")
+setwd("R:/GEMINI/_RESTORE/THP/Radiology/JULY2017")
+#rad_m <- readxl::read_excel("M_RAD_DeIdentified.xlsx")
+#rad_c <- readxl::read_excel("CVH_RAD_DeIdentified.xlsx")
 
-
-# -------------- 2017-05-08 ----- new files came from Terence
-rad_m <- fread("mRad_deidentified.csv")
 rad_c <- fread("cvhRad_deidentified.csv")
+rad_m <- fread("mRad_deidentified.csv")
+# -------------- 2017-05-08 ----- new files came from Terence
+#rad_m <- fread("mRad_deidentified.csv")
+#rad_c <- fread("cvhRad_deidentified.csv")
 apply(rad_m, 2, function(x)sum(is.na(x)|x=="")/length(x))
-apply(rad_c, 2, function(x)sum(is.na(x)|x=="")/length(x))
+apply(rad_c, 2, function(x)sum(is.na(x)|x==""))
 rad_m[TimeTestPerformed==""] -> check
 table(check$DateTestPerformed) 
 
 rad_c[is.na(TimeTestOrdered)|TimeTestOrdered==""] -> check_c1
 rad_c[is.na(DateTestPerformed)|DateTestPerformed==""] -> check_c2
 thp <- readg(thp, dad)
-thp$rad_m <- str_sub(thp$EncID.new, 3,8)%in%rad_m$EncIDnew
-thp$rad_c <- str_sub(thp$EncID.new, 3,8)%in%rad_c$EncIDnew
+thp.adm <- readg(thp, adm)
+thp <- merge(thp, thp.adm[,.(EncID.new, Institution)])
+thp$rad_m <- str_sub(thp$EncID.new, 3,8)%in%rad_m$EncID.new
+thp$rad_c <- str_sub(thp$EncID.new, 3,8)%in%rad_c$EncID.new
 
-ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_m)) + 
+ggplot(thp[Institution=="M"], aes(x = ymd(Discharge.Date), fill = rad_m)) + 
   geom_histogram(binwidth = 10)
 
-ggplot(thp, aes(x = ymd(Discharge.Date), fill = rad_c)) + 
+ggplot(thp[Institution=="C"], aes(x = ymd(Discharge.Date), fill = rad_c)) + 
+  geom_histogram(binwidth = 10)
+
+ggplot(thp, aes(x = ymd(Discharge.Date), fill = Institution)) + 
   geom_histogram(binwidth = 10)
 
 
-
-rad_m <- fread("mRad_deidentified.csv")
-rad_c <- fread("cvhRad_deidentified.csv")
+# rad_m <- fread("mRad_deidentified.csv")
+# rad_c <- fread("cvhRad_deidentified.csv")
 rad_m$EncID.new <- as.character(rad_m$EncID.new)
 rad_c$EncID.new <- as.character(rad_c$EncID.new)
 

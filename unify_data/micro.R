@@ -190,17 +190,22 @@ uhntime[is.na(Triage.Date), ':='(
 )]
 uhntime$EncID.new <- as.character(uhntime$EncID.new)
 setwd("R:/GEMINI/_RESTORE/UHN/Micro/TW")
-files <- list.files()
+files <- list.files()[2:13]
 for(i in files){
   dat <- fread(i)
+  dat[, X.:=NULL]
   print(nrow(dat))
+  if("admdate"%in%names(dat)) names(dat)[which(names(dat)=="admdate")] <- "ADM.DT"
   dat$EncID.new <- paste("13", dat$EncID.new, sep = "")
   dat <- merge(dat, uhntime, by = "EncID.new", all.x = T)
   dat <-dat[ymd(CDATE)>=ymd(Triage.Date)&
             ymd(CDATE)<=ymd(Discharge.Date)]
   print(nrow(dat))
-  #fwrite(dat, paste("H:/GEMINI/Data/UHN/Micro/TW/", i, sep = ""))
+  fwrite(dat, paste("H:/GEMINI/Data/UHN/Micro/TW/", i, sep = ""))
 }
+
+dat1 <- fread(files[2])
+dat2 <- fread(files[8])
 
 dat[,.(CDATE, CTIME, Triage.Date, Triage.Time, Discharge.Date,
        Discharge.Time, EncID.new)] -> check
@@ -241,10 +246,14 @@ files <- list.files()
 twh.micro <- NULL
 for(i in files){
   dat <- fread(i)
+  dat[, Order:=NULL]
   print(names(dat)[1:18])
-  twh.micro <- rbind(twh.micro, dat[, c(1:18), with = F])
+  twh.micro <- rbind(twh.micro, dat[, c(1:18), with = F], fill = T)
   fwrite(dat, i)
 }
+
+apply(twh.micro, 2, function(x)sum(is.na(x)))
+
 
 fwrite(tgh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.tgh.micro.csv")
 fwrite(twh.micro, "H:/GEMINI/Data/UHN/Micro/uhn.twh.micro.csv")

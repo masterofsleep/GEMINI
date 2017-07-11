@@ -105,4 +105,37 @@ fwrite(uhn.ecg, "H:/GEMINI/Data/UHN/Echo/uhn.ecg.csv")
 
 
 
+# ------------------------------- UHN NEW --------------------------------------
+# ------------------------------ 2017-07-11 ------------------------------------
+rm(list = ls())
+swdr("UHN/Echo")
+list.files(recursive = T)
+uhn.echo.new <- fread("uhn.echo.v3.csv")
+uhn.echo.old <- fread("old/uhn.echo.version2.csv")
 
+merge(uhn.echo.new[,.N, by = Procedure],
+      uhn.echo.old[,.N, by = Procedure], by = "Procedure", all.x =T, all.y = T) %>% 
+  fwrite("test_freq_comparison.csv")
+test.names <- unique(uhn.echo.new$Procedure)
+uhn.echo.new[, Test := ifelse(Procedure %in% test.names[c(1,4:6)], "ECG", "ECHO")]
+ggplot(uhn.echo.new, aes(mdy(str_sub(Procedure_Event_Date_Time, 1, 10)), fill = Test)) +
+  geom_histogram(binwidth = 10)
+
+ggplot(uhn.echo.new, aes(mdy(str_sub(Procedure_Event_Date_Time, 1, 10)), fill = Test)) +
+  geom_histogram(binwidth = 10)
+
+ggplot(uhn.echo.new, aes(mdy(str_sub(Discharge_Date_Time, 1, 10)), fill = Test)) +
+  geom_histogram(binwidth = 10)
+
+format_dt <- function(x){
+  return(as.character(mdy_hms(x)))
+}
+uhn.echo.new[, ':='(Performed.DtTm = format_dt(Procedure_Event_Date_Time),
+                    Ordered.DtTm = format_dt(Order_Date_Time),
+                    EncID.new = paste("15", EncID.new, sep = ""))]
+
+
+fwrite(uhn.echo.new[Test=="ECHO", .(Procedure, Visit_Type, Ordered.DtTm, Performed.DtTm, EncID.new)],
+       "H:/GEMINI/Data/UHN/Echo/uhn.echo.csv")
+fwrite(uhn.echo.new[Test=="ECG", .(Procedure, Visit_Type, Ordered.DtTm, Performed.DtTm, EncID.new)],
+       "H:/GEMINI/Data/UHN/Echo/uhn.ecg.csv")

@@ -148,3 +148,29 @@ names(er.int.new) <- names(er.int.old)[c(1,3,2,4:7)]
 er.int.new[, Occurrence.Type := str_replace_all(Occurrence.Type, "\\.|-", "")]
 er.int.new <- add_pr(er.int.new)
 fwrite(er.int.new, "H:/GEMINI/Data/THP/CIHI/thp.er_int.nophi.csv")
+
+
+
+# ---check old -------
+adm.old <- fread("H:/GEMINI/DataBackup/Data170214/THP/CIHI/thp.adm.nophi.csv")
+dad.old <- fread("H:/GEMINI/DataBackup/Data170214/THP/CIHI/thp.ip_dad.nophi.csv")
+
+dad.old <- merge(dad.old, adm.old[, .(EncID.new, Institution)])
+ggplot(dad.old, aes(x = ymd(Discharge.Date), fill = Institution)) + 
+  geom_histogram(binwidth = 10)
+
+adm.new <- readg(thp, adm)
+compare.sets(adm.new$EncID.new, adm.old$EncID.new)
+dad.old[, in.new:= EncID.new%in%adm.new$EncID.new]
+ggplot(dad.old, aes(ymd(Discharge.Date), fill = in.new)) + geom_histogram(binwidth = 10)
+
+adm.old[!EncID.new%in%adm.new$EncID.new]
+all.phy <- readg(gim, all.phy)
+all.phy[EncID.new%in%adm.old[!EncID.new%in%adm.new$EncID.new, EncID.new]] -> check
+
+apply(check, 2, function(x)sum(is.na(x)))
+phy.list <- fread("H:/GEMINI/Results/DataSummary/physician_names/complete.name.list/gemini.phy.list.new2.csv")
+
+
+check[, .N, by = adm.code][order(N, decreasing = T)]
+check[, .N, by = dis.code][order(N, decreasing = T)]

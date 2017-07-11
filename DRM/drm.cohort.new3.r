@@ -200,6 +200,16 @@ gemini.inc <- phy.all[(adm.GIM%in%c("y", "GP-GIM")|dis.GIM%in%c("y", "GP-GIM"))
                       |str_sub(EncID.new,1, 2)=="15", EncID.new]
 drm.cohort <- all.dad[EncID.new%in%drm.cohort&EncID.new%in%gemini.inc]
 table(drm.cohort$Institution.Number)
+
+# flow chart numbers
+step1 <- all.dad[EncID.new%in%gemini.inc&EncID.new%in%antibio.inc[n.abx>=2, EncID.new]]
+table(step1$Institution.Number)
+step2 <- step1[EncID.new%in%ns.cul$EncID.new]
+table(step2$Institution.Number)
+
+
+
+
 for(i in unique(drm.cohort$Institution.Number)){
   dat <- drm.cohort[Institution.Number==i,
                     .(EncID.new, Admit.Date, Admit.Time,
